@@ -1,0 +1,12 @@
+venv/
+__pycache__/
+*.pyc
+*.pickle
+*.jsonl
+.vscode/
+.env
+node_modules/
+build/
+dist/
+coverage/
+*.log
