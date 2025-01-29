@@ -4,23 +4,23 @@ from datetime import datetime
 import logging
 import importlib
 
-from openai import ChatCompletion, ChatCompletionRequest, ChatCompletionResponse
+# from openai import
 
 from app.firestore import get_document_by_id
-from app.schema import CompletionsInputSchema
+from app.models import CompletionsInput, Message
 from app.config import TEMPLATE_COLLECTION_NAME, MODEL_COLLECTION_NAME, CONNECTOR_COLLECTION_NAME
 
-def chat_completions(user_input: CompletionsInputSchema) -> list[MessageType]:
-    # get template from firebase by id
-    prompt_template = get_document_by_id(TEMPLATE_COLLECTION_NAME, user_input.prompt)
-    # get model from firebase by id
-    large_model = get_document_by_id(MODEL_COLLECTION_NAME, prompt_template.model)
-    # get connector from firebase by id
-    connector = get_document_by_id(CONNECTOR_COLLECTION_NAME, prompt_template.connector)
-    # create the completion request
-    connector_function = importlib.import_module(f'Connector.{connector.function}')
-    context_from_connector = connector_function(user_input.query)
-    # create the completion request
-    completion_function = importlib.import_module(f'LargeModel.{large_model.function}')
-    completion_response = completion_function(user_input.query, prompt_template, context_from_connector)
-    return completion_response
+def chat_completions(user_input: CompletionsInput) -> list[Message]:
+  # get template from firebase by id
+  prompt_template = get_document_by_id(TEMPLATE_COLLECTION_NAME, user_input.prompt)
+  # get model from firebase by id
+  large_model = get_document_by_id(MODEL_COLLECTION_NAME, prompt_template.model)
+  # get connector from firebase by id
+  connector = get_document_by_id(CONNECTOR_COLLECTION_NAME, prompt_template.connector)
+  # create the completion request
+  connector_function = importlib.import_module(f'Connector.{connector.function}')
+  context_from_connector = connector_function(user_input.query)
+  # create the completion request
+  completion_function = importlib.import_module(f'LargeModel.{large_model.function}')
+  completion_response = completion_function(user_input.query, prompt_template, context_from_connector)
+  return completion_response

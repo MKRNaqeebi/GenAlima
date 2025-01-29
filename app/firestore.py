@@ -7,7 +7,7 @@ from firebase_admin import credentials, initialize_app, firestore, auth
 import requests
 import jwt
 
-from config import GOOGLE_CLOUD_PROJECT, SECRET_KEY, FIRE_LOGIN_API_URL
+from app.config import GOOGLE_CLOUD_PROJECT, SECRET_KEY, FIRE_LOGIN_API_URL
 
 cred = credentials.Certificate(GOOGLE_CLOUD_PROJECT)
 initialize_app(cred)
@@ -15,7 +15,7 @@ db = firestore.client()
 
 def save_document_to_firebase(collection_name, document):
     if "id" in document:
-        db.collection(collection_name).document(item["id"]).set(document)
+        db.collection(collection_name).document(document["id"]).set(document)
     else:
         db.collection(collection_name).add(document)
 
