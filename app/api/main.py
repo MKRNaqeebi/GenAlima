@@ -1,3 +1,6 @@
+"""
+This file is used to include all the routers in the APIRouter.
+"""
 from fastapi import APIRouter
 
 from app.api.routes import items, login, private, users, utils
@@ -11,4 +14,4 @@ api_router.include_router(items.router)
 
 
 if settings.ENVIRONMENT == "local":
-    api_router.include_router(private.router)
+  api_router.include_router(private.router)

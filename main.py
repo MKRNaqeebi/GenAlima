@@ -1,9 +1,9 @@
 """
 This is the main file for the FastAPI application. It contains the routes for the API endpoints.
 """
-from fastapi import FastAPI, HTTPException
-import sentry_sdk
+from fastapi import FastAPI
 from fastapi.routing import APIRoute
+import sentry_sdk
 from starlette.middleware.cors import CORSMiddleware
 
 from app.api.main import api_router
