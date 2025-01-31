@@ -85,21 +85,13 @@ def get_connectors() -> PromptTemplate:
   return get_documents_from_firebase(CONNECTOR_COLLECTION_NAME)
 
 @app.get("/")
+@app.get("/login")
+@app.get("/settings")
+@app.get("/items")
+@app.get("/admin")
+@app.get("/signup")
+@app.get("/recover-password")
 async def serve_index(request: Request):
-  """
-  Serve the frontend application.
-  """
-  return templates.TemplateResponse("index.html", {"request": request})
-
-@app.get("/c/new")
-async def serve_new(request: Request):
-  """
-  Serve the frontend application.
-  """
-  return templates.TemplateResponse("index.html", {"request": request})
-
-@app.get("/c/settings")
-async def serve_settings(request: Request):
   """
   Serve the frontend application.
   """
