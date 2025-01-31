@@ -37,7 +37,6 @@ app = FastAPI(
   generate_unique_id_function=custom_generate_unique_id,
 )
 
-app.mount("/static", StaticFiles(directory=f"{BUILD_PATH}/static"), name="static")
 app.mount("/assets", StaticFiles(directory=f"{BUILD_PATH}/assets"), name="assets")
 templates = Jinja2Templates(directory=BUILD_PATH)
 
