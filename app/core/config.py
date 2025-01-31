@@ -70,7 +70,7 @@ class Settings(BaseSettings):
 
   @computed_field  # type: ignore[prop-decorator]
   @property
-  def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
+  def sqlalchemy_database_uri(self) -> PostgresDsn:
     """
     Build the database URL.
     """
@@ -91,12 +91,12 @@ class Settings(BaseSettings):
   SMTP_PASSWORD: str | None = None
   # TODO: update type to EmailStr when sqlmodel supports it
   EMAILS_FROM_EMAIL: str | None = None
-  EMAILS_FROM_NAME: str | None = None
+  emails_from_name: str | None = None
 
   @model_validator(mode="after")
   def _set_default_emails_from(self) -> Self:
-    if not self.EMAILS_FROM_NAME:
-      self.EMAILS_FROM_NAME = self.PROJECT_NAME
+    if not self.emails_from_name:
+      self.emails_from_name = self.PROJECT_NAME
     return self
 
   EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48
@@ -116,9 +116,9 @@ class Settings(BaseSettings):
   FIRST_SUPERUSER_PASSWORD: str
 
   def _check_default_secret(self, var_name: str, value: str | None) -> None:
-    if value == "changethis":
+    if value == "change-this":
       message = (
-        f'The value of {var_name} is "changethis", '
+        f'The value of {var_name} is "change-this", '
         "for security, please change it, at least for deployments."
       )
       if self.ENVIRONMENT == "local":

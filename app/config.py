@@ -28,8 +28,9 @@ GOOGLE_CLOUD_PROJECT = os.getenv("GOOGLE_CLOUD_PROJECT")
 FIRE_LOGIN_API_URL = os.getenv("FIRE_LOGIN_API_URL")
 FIRE_WEB_API_KEY = os.getenv('FIRE_WEB_API_KEY', '')
 FIRE_LOGIN_API_URL = os.getenv(
-    'FIRE_LOGIN_API_URL', f'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIRE_WEB_API_KEY}')
-SECRET_KEY = os.getenv('SECRET_KEY', 'wrtxsQA28DT9lolMKvdlgwd2nY5www')
+  'FIRE_LOGIN_API_URL',
+  f'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIRE_WEB_API_KEY}')
+SECRET_KEY = os.getenv('SECRET_KEY', 'helloQA28DT9lolMKamran-2nY5www')
 CHAT_COLLECTION_NAME = os.getenv('CHAT_COLLECTION_NAME', 'chat')
 MODEL_COLLECTION_NAME = os.getenv('MODEL_COLLECTION_NAME', 'model')
 USER_COLLECTION_NAME = os.getenv('USER_COLLECTION_NAME', 'user')
@@ -85,30 +86,21 @@ class Settings(BaseSettings):
   POSTGRES_USER: str
   POSTGRES_PASSWORD: str = ""
   POSTGRES_DB: str = ""
-  # Environment variables
-  # GOOGLE_CLOUD_PROJECT = os.getenv("GOOGLE_CLOUD_PROJECT")
-  # FIRE_LOGIN_API_URL = os.getenv("FIRE_LOGIN_API_URL")
-  # FIRE_WEB_API_KEY = os.getenv('FIRE_WEB_API_KEY', '')
-  # FIRE_LOGIN_API_URL = os.getenv(
-  #   'FIRE_LOGIN_API_URL', f'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIRE_WEB_API_KEY}')
-  # SECRET_KEY = os.getenv('SECRET_KEY', 'wrtxsQA28DT9lolMKvdlgwd2nY5www')
-  # CHAT_COLLECTION_NAME = os.getenv('CHAT_COLLECTION_NAME', 'chat')
-  # MODEL_COLLECTION_NAME = os.getenv('MODEL_COLLECTION_NAME', 'model')
-  # USER_COLLECTION_NAME = os.getenv('USER_COLLECTION_NAME', 'user')
-  # TEMPLATE_COLLECTION_NAME = os.getenv('TEMPLATE_COLLECTION_NAME', 'template')
-  # CONNECTOR_COLLECTION_NAME = os.getenv('CONNECTOR_COLLECTION_NAME', 'connector')
 
   @computed_field  # type: ignore[prop-decorator]
   @property
-  def SQLALCHEMY_DATABASE_URI(self) -> PostgresDsn:
-      return MultiHostUrl.build(
-          scheme="postgresql+psycopg",
-          username=self.POSTGRES_USER,
-          password=self.POSTGRES_PASSWORD,
-          host=self.POSTGRES_SERVER,
-          port=self.POSTGRES_PORT,
-          path=self.POSTGRES_DB,
-      )
+  def sqlalchemy_database_uri(self) -> PostgresDsn:
+    """
+    Build the SQLAlchemy database URI
+    """
+    return MultiHostUrl.build(
+      scheme="postgresql+psycopg",
+      username=self.POSTGRES_USER,
+      password=self.POSTGRES_PASSWORD,
+      host=self.POSTGRES_SERVER,
+      port=self.POSTGRES_PORT,
+      path=self.POSTGRES_DB,
+    )
 
   SMTP_TLS: bool = True
   SMTP_SSL: bool = False
@@ -118,12 +110,12 @@ class Settings(BaseSettings):
   SMTP_PASSWORD: str | None = None
   # TODO: update type to EmailStr when sqlmodel supports it
   EMAILS_FROM_EMAIL: str | None = None
-  EMAILS_FROM_NAME: str | None = None
+  emails_from_name: str | None = None
 
   @model_validator(mode="after")
   def _set_default_emails_from(self) -> Self:
-    if not self.EMAILS_FROM_NAME:
-      self.EMAILS_FROM_NAME = self.PROJECT_NAME
+    if not self.emails_from_name:
+      self.emails_from_name = self.PROJECT_NAME
     return self
 
   EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48
@@ -131,6 +123,9 @@ class Settings(BaseSettings):
   @computed_field  # type: ignore[prop-decorator]
   @property
   def emails_enabled(self) -> bool:
+    """
+    Check if email settings are enabled
+    """
     return bool(self.SMTP_HOST and self.EMAILS_FROM_EMAIL)
 
   # TODO: update type to EmailStr when sqlmodel supports it
@@ -140,9 +135,9 @@ class Settings(BaseSettings):
   FIRST_SUPERUSER_PASSWORD: str
 
   def _check_default_secret(self, var_name: str, value: str | None) -> None:
-    if value == "changethis":
+    if value == "change-this":
       message = (
-        f'The value of {var_name} is "changethis", '
+        f'The value of {var_name} is "change-this", '
         "for security, please change it, at least for deployments."
       )
       if self.ENVIRONMENT == "local":

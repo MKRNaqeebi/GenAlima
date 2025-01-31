@@ -13,8 +13,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 from app.models import SQLModel  # noqa
 from app.core.config import settings # noqa
 
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
+# pylint: disable=no-member
 config = context.config
 
 # Interpret the config file for Python logging.
@@ -39,7 +38,7 @@ def get_url():
   """
   Get the database URL from the settings.
   """
-  return str(settings.SQLALCHEMY_DATABASE_URI)
+  return str(settings.sqlalchemy_database_uri)
 
 def run_migrations_offline():
   """
