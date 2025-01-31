@@ -52,13 +52,6 @@ if settings.all_cors_origins:
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
-@app.get("/")
-def read_root():
-  """
-  Root endpoint for the FastAPI application.
-  """
-  return {"Hello": "World"}
-
 @app.get("/api/completions")
 @auth_required
 def get_completions(user_input: CompletionsInput) -> list[Message]:
