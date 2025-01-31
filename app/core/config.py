@@ -22,7 +22,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Environment variables
-GOOGLE_CLOUD_PROJECT = os.getenv("GOOGLE_CLOUD_PROJECT")
+google_key = os.getenv("GOOGLE_CLOUD_PROJECT_JSON")
+if google_key:
+  with open("google_key.json", "w", encoding="utf-8") as f:
+    f.write(google_key)
+  GOOGLE_CLOUD_PROJECT = "google_key.json"
 FIRE_LOGIN_API_URL = os.getenv("FIRE_LOGIN_API_URL")
 FIRE_WEB_API_KEY = os.getenv('FIRE_WEB_API_KEY', '')
 FIRE_LOGIN_API_URL = os.getenv(
