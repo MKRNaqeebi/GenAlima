@@ -9,6 +9,7 @@ jinja2==3.1.5
 alembic==1.14.1
 httpx==0.28.1
 psycopg[binary]==3.2.4
+psycopg2-binary==2.9.10
 sqlmodel==0.0.22
 bcrypt==4.0.1
 pydantic-settings==2.7.1
@@ -20,3 +21,4 @@ ruff==0.9.4
 pre-commit==4.1.0
 types-passlib==1.7.7.20241221
 coverage==7.6.10
+uvicorn==0.34.0
