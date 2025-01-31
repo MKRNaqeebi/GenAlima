@@ -14,78 +14,79 @@ class Organization(SQLModel):
   """
   This is the schema for the organization
   """
-  id: str
-  name: str
-  description: str
-  createdAt: datetime
-  updatedAt: datetime
+  id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+  name: str = Field(max_length=255)
+  description: str | None = Field(default=None, max_length=255)
+  created_at: datetime = Field(default_factory=datetime.utcnow)
+  updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class LargeModel(SQLModel):
   """
   This is the schema for the large model
   """
-  id: str
-  name: str
-  description: str
-  rank: int
-  provider: str
-  organization: str
-  active: bool
-  createdAt: datetime
-  updatedAt: datetime
+  id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+  name: str = Field(max_length=255)
+  description: str | None = Field(default=None, max_length=255)
+  rank: int = Field(default=0)
+  provider: str | None = Field(default=None, max_length=255)
+  organization: str | None = Field(default=None, max_length=255)
+  active: bool = Field(default=True)
+  created_at: datetime = Field(default_factory=datetime.utcnow)
+  updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class Connector(SQLModel):
   """
   This is the schema for the connector
   """
-  id: str
-  name: str
-  description: str
-  function: str
-  organization: str
-  active: bool
-  createdAt: datetime
-  updatedAt: datetime
+  id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+  name: str = Field(max_length=255)
+  description: str | None = Field(default=None, max_length=255)
+  function: str | None = Field(default=None, max_length=255)
+  organization: str | None = Field(default=None, max_length=255)
+  active: bool = Field(default=True)
+  created_at: datetime = Field(default_factory=datetime.utcnow)
+  updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class PromptTemplate(SQLModel):
   """
   This is the schema for the prompt
   """
-  id: str
-  title: str
-  description: str
-  instructions: str
-  organization: str
-  template: str
-  placeholder: str
-  model: str
-  connector: str
-  active: bool
-  createdAt: datetime
-  updatedAt: datetime
+  id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+  title: str = Field(max_length=255)
+  description: str | None = Field(default=None, max_length=255)
+  instructions: str | None = Field(default=None, max_length=255)
+  organization: str | None = Field(default=None, max_length=255)
+  template: str | None = Field(default=None, max_length=255)
+  placeholder: str | None = Field(default=None, max_length=255)
+  model: str | None = Field(default=None, max_length=255)
+  connector: str | None = Field(default=None, max_length=255)
+  active: bool = Field(default=True)
+  created_at: datetime = Field(default_factory=datetime.utcnow)
+  updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class Message(SQLModel):
   """
   This is the schema for the message
   """
-  id: Optional[str]
-  role: str
-  content: str
-  createdAt: datetime
-  updatedAt: datetime
+  id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+  role: str = Field(max_length=255)
+  content: str = Field(max_length=255)
+  created_at: datetime = Field(default_factory=datetime.utcnow)
+  updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 class CompletionsInput(SQLModel):
   """
   This is the schema for the input data to the get_completions endpoint.
   """
-  query: str
-  prompt: Optional[str]
-  history: Optional[list[Message]]
+  id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+  query: str = Field(max_length=255)
+  prompt: Optional[str] = Field(default=None, max_length=255)
+  history: Optional[list[Message]] = Field(default=None)
 
 
 # Shared properties
@@ -155,15 +156,15 @@ class Chat(SQLModel):
   """
   This is the schema for the chat
   """
-  id: str
-  user: User
-  model: LargeModel
-  template: PromptTemplate
-  organization: Organization
-  history: list[dict]
-  organization: str
-  createdAt: datetime
-  updatedAt: datetime
+  id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+  user: User | None = Field(default=None)
+  model: LargeModel | None = Field(default=None)
+  template: PromptTemplate | None = Field(default=None)
+  organization: Organization | None = Field(default=None)
+  history: list[dict] = Field(default=[])
+  organization: str | None = Field(default=None, max_length=255)
+  created_at: datetime = Field(default_factory=datetime.utcnow)
+  updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
 # Properties to return via API, id is always required
@@ -225,8 +226,8 @@ class ItemPublic(ItemBase):
   """
   Properties to return via API, id is always required
   """
-  id: uuid.UUID
-  owner_id: uuid.UUID
+  id: uuid.UUID | None = None
+  owner_id: uuid.UUID | None = None
 
 
 class ItemsPublic(SQLModel):
@@ -237,7 +238,6 @@ class ItemsPublic(SQLModel):
   count: int
 
 
-# JSON payload containing access token
 class Token(SQLModel):
   """
   JSON payload containing access token
@@ -246,7 +246,6 @@ class Token(SQLModel):
   token_type: str = "bearer"
 
 
-# Contents of JWT token
 class TokenPayload(SQLModel):
   """
   Contents of JWT token

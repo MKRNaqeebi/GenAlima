@@ -1,18 +1,22 @@
 """
 This is the main file for the FastAPI application. It contains the routes for the API endpoints.
 """
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.routing import APIRoute
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 import sentry_sdk
 from starlette.middleware.cors import CORSMiddleware
 
 from app.api.main import api_router
-from app.core.config import settings
+from app.core.config import (
+  settings, MODEL_COLLECTION_NAME, TEMPLATE_COLLECTION_NAME, CONNECTOR_COLLECTION_NAME,
+  BUILD_PATH
+)
 from app.completions import chat_completions
 from app.utils import auth_required
 from app.models import CompletionsInput, Message, LargeModel, PromptTemplate
 from app.firestore import get_documents_from_firebase
-from app.config import MODEL_COLLECTION_NAME, TEMPLATE_COLLECTION_NAME, CONNECTOR_COLLECTION_NAME
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -32,6 +36,10 @@ app = FastAPI(
   openapi_url=f"{settings.API_V1_STR}/openapi.json",
   generate_unique_id_function=custom_generate_unique_id,
 )
+
+app.mount("/static", StaticFiles(directory=f"{BUILD_PATH}/static"), name="static")
+app.mount("/assets", StaticFiles(directory=f"{BUILD_PATH}/assets"), name="assets")
+templates = Jinja2Templates(directory=BUILD_PATH)
 
 # Set all CORS enabled origins
 if settings.all_cors_origins:
@@ -83,6 +91,27 @@ def get_connectors() -> PromptTemplate:
   Endpoint for getting the prompt templates.
   """
   return get_documents_from_firebase(CONNECTOR_COLLECTION_NAME)
+
+@app.get("/")
+async def serve_index(request: Request):
+  """
+  Serve the frontend application.
+  """
+  return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/c/new")
+async def serve_new(request: Request):
+  """
+  Serve the frontend application.
+  """
+  return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/c/settings")
+async def serve_settings(request: Request):
+  """
+  Serve the frontend application.
+  """
+  return templates.TemplateResponse("index.html", {"request": request})
 
 if __name__ == "__main__":
   import uvicorn
