@@ -8,7 +8,7 @@ import { StrictMode } from "react"
 import { OpenAPI } from "./client"
 import theme from "./theme"
 
-OpenAPI.BASE = import.meta.env.VITE_API_URL || "/"
+OpenAPI.BASE = import.meta.env.VITE_API_URL || "https://genalima-689759362301.us-central1.run.app"
 OpenAPI.TOKEN = async () => {
   return localStorage.getItem("access_token") || ""
 }
