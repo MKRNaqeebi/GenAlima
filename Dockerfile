@@ -29,3 +29,7 @@ CMD uvicorn main:app --host 0.0.0.0 --port 8080
 # docker build -t alima:1 .
 # docker rm gen -f
 # docker run --name=gen -p 8080:8080 alima:1
+
+# run migrations
+# alembic revision -m 'add chat' --autogenerate
+# alembic upgrade head

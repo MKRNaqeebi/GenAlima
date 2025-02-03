@@ -9,14 +9,9 @@ import sentry_sdk
 from starlette.middleware.cors import CORSMiddleware
 
 from app.api.main import api_router
-from app.core.config import (
-  settings, MODEL_COLLECTION_NAME, TEMPLATE_COLLECTION_NAME, CONNECTOR_COLLECTION_NAME,
-  BUILD_PATH
-)
-from app.completions import chat_completions
+from app.core.config import settings
 from app.utils import auth_required
-from app.models import CompletionsInput, Message, LargeModel, PromptTemplate
-from app.firestore import get_documents_from_firebase
+from app.models import CompletionInput, Message
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -37,8 +32,8 @@ app = FastAPI(
   generate_unique_id_function=custom_generate_unique_id,
 )
 
-app.mount("/assets", StaticFiles(directory=f"{BUILD_PATH}/assets"), name="assets")
-templates = Jinja2Templates(directory=BUILD_PATH)
+app.mount("/assets", StaticFiles(directory=f"{settings.BUILD_PATH}/assets"), name="assets")
+templates = Jinja2Templates(directory=settings.BUILD_PATH)
 
 # Set all CORS enabled origins
 if settings.all_cors_origins:
@@ -54,35 +49,11 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 
 @app.get("/api/completions")
 @auth_required
-def get_completions(user_input: CompletionsInput) -> list[Message]:
+def get_completions(user_input: CompletionInput) -> list[Message]:
   """
   Endpoint for generating completions for the user input.
   """
-  return chat_completions(user_input)
-
-@app.get("/api/models")
-@auth_required
-def get_model() -> LargeModel:
-  """
-  Endpoint for getting the model configuration.
-  """
-  return get_documents_from_firebase(MODEL_COLLECTION_NAME)
-
-@app.get("/api/templates")
-@auth_required
-def get_templates() -> PromptTemplate:
-  """
-  Endpoint for getting the prompt templates.
-  """
-  return get_documents_from_firebase(TEMPLATE_COLLECTION_NAME)
-
-@app.get("/api/connectors")
-@auth_required
-def get_connectors() -> PromptTemplate:
-  """
-  Endpoint for getting the prompt templates.
-  """
-  return get_documents_from_firebase(CONNECTOR_COLLECTION_NAME)
+  return {"completions": user_input}
 
 @app.get("/")
 @app.get("/login")

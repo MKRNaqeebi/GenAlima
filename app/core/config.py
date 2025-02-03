@@ -21,25 +21,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# Environment variables
-google_key = os.getenv("GOOGLE_CLOUD_PROJECT_JSON")
-if google_key:
-  with open("ai-with-mk.key.json", "w", encoding="utf-8") as f:
-    f.write(google_key)
-  GOOGLE_CLOUD_PROJECT = "ai-with-mk.key.json"
-FIRE_LOGIN_API_URL = os.getenv("FIRE_LOGIN_API_URL")
-FIRE_WEB_API_KEY = os.getenv('FIRE_WEB_API_KEY', '')
-FIRE_LOGIN_API_URL = os.getenv(
-  'FIRE_LOGIN_API_URL',
-  f'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIRE_WEB_API_KEY}')
-SECRET_KEY = os.getenv('SECRET_KEY', 'helloQA28DT9lolMKamran-2nY5www')
-CHAT_COLLECTION_NAME = os.getenv('CHAT_COLLECTION_NAME', 'chat')
-MODEL_COLLECTION_NAME = os.getenv('MODEL_COLLECTION_NAME', 'model')
-USER_COLLECTION_NAME = os.getenv('USER_COLLECTION_NAME', 'user')
-TEMPLATE_COLLECTION_NAME = os.getenv('TEMPLATE_COLLECTION_NAME', 'template')
-CONNECTOR_COLLECTION_NAME = os.getenv('CONNECTOR_COLLECTION_NAME', 'connector')
-BUILD_PATH = os.getenv('BUILD_PATH', 'frontend/dist')
-
 def parse_cors(v: Any) -> list[str] | str:
   """
   Parse CORS origins from a string or a list of strings.
@@ -67,6 +48,7 @@ class Settings(BaseSettings):
   ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
   FRONTEND_HOST: str = "http://localhost:5173"
   ENVIRONMENT: Literal["local", "staging", "production"] = "local"
+  BUILD_PATH: str = os.getenv('BUILD_PATH', 'frontend/dist')
 
   BACKEND_CORS_ORIGINS: Annotated[
       list[AnyUrl] | str, BeforeValidator(parse_cors)
