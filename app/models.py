@@ -70,6 +70,9 @@ class User(UserBase, table=True):
   id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
   hashed_password: str
   items: list["Item"] = Relationship(back_populates="owner", cascade_delete=True)
+  organizations: list["Organization"] = Relationship(back_populates="owner", cascade_delete=True)
+  templates: list["Template"] = Relationship(back_populates="owner", cascade_delete=True)
+  chats: list["Chat"] = Relationship(back_populates="owner", cascade_delete=True)
 
 
 class UserPublic(UserBase):
@@ -119,7 +122,7 @@ class Organization(OrganizationBase, table=True):
   owner_id: uuid.UUID = Field(
     foreign_key="user.id", nullable=False, ondelete="CASCADE"
   )
-  owner: User | None = Relationship(back_populates="items")
+  owner: User | None = Relationship(back_populates="organizations")
 
 
 class OrganizationPublic(OrganizationBase):
@@ -329,6 +332,7 @@ class Chat(ChatBase, table=True):
     foreign_key="user.id", nullable=False, ondelete="CASCADE"
   )
   owner: User | None = Relationship(back_populates="chats")
+  messages: list["Message"] = Relationship(back_populates="chat", cascade_delete=True)
   created_at: datetime = Field(default_factory=datetime.utcnow)
   updated_at: datetime = Field(default_factory=datetime.utcnow)
 
