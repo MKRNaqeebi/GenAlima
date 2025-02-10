@@ -279,7 +279,7 @@ export class ChatsService {
   ): CancelablePromise<ChatsReadChatsResponse> {
     return __request(OpenAPI, {
       method: "GET",
-      url: "/api/v1/Chats/",
+      url: "/api/v1/chats/",
       query: {
         skip: data.skip,
         limit: data.limit,
@@ -295,7 +295,7 @@ export class ChatsService {
   ): CancelablePromise<ChatsCreateChatResponse> {
     return __request(OpenAPI, {
       method: "POST",
-      url: "/api/v1/Chats/",
+      url: "/api/v1/chats/",
       body: data.requestBody,
       mediaType: "application/json",
       errors: {
@@ -309,7 +309,7 @@ export class ChatsService {
   ): CancelablePromise<ChatsReadChatResponse> {
     return __request(OpenAPI, {
       method: "GET",
-      url: "/api/v1/Chats/{id}",
+      url: "/api/v1/chats/{id}",
       path: {
         id: data.id,
       },
@@ -324,7 +324,7 @@ export class ChatsService {
   ): CancelablePromise<ChatsUpdateChatResponse> {
     return __request(OpenAPI, {
       method: "PUT",
-      url: "/api/v1/Chats/{id}",
+      url: "/api/v1/chats/{id}",
       path: {
         id: data.id,
       },
@@ -341,7 +341,7 @@ export class ChatsService {
   ): CancelablePromise<ChatsDeleteChatResponse> {
     return __request(OpenAPI, {
       method: "DELETE",
-      url: "/api/v1/Chats/{id}",
+      url: "/api/v1/chats/{id}",
       path: {
         id: data.id,
       },
@@ -359,7 +359,7 @@ export class MessagesService {
   ): CancelablePromise<MessagesReadMessagesResponse> {
     return __request(OpenAPI, {
       method: "GET",
-      url: "/api/v1/templates/",
+      url: "/api/v1/messages/",
       query: {
         skip: data.skip,
         limit: data.limit,
@@ -375,7 +375,7 @@ export class MessagesService {
   ): CancelablePromise<MessagesCreateMessageResponse> {
     return __request(OpenAPI, {
       method: "POST",
-      url: "/api/v1/templates/",
+      url: "/api/v1/messages/",
       body: data.requestBody,
       mediaType: "application/json",
       errors: {
@@ -389,7 +389,7 @@ export class MessagesService {
   ): CancelablePromise<MessagesReadMessageResponse> {
     return __request(OpenAPI, {
       method: "GET",
-      url: "/api/v1/templates/{id}",
+      url: "/api/v1/messages/{id}",
       path: {
         id: data.id,
       },
@@ -404,7 +404,7 @@ export class MessagesService {
   ): CancelablePromise<MessagesUpdateMessageResponse> {
     return __request(OpenAPI, {
       method: "PUT",
-      url: "/api/v1/templates/{id}",
+      url: "/api/v1/messages/{id}",
       path: {
         id: data.id,
       },
@@ -421,7 +421,7 @@ export class MessagesService {
   ): CancelablePromise<MessagesDeleteMessageResponse> {
     return __request(OpenAPI, {
       method: "DELETE",
-      url: "/api/v1/templates/{id}",
+      url: "/api/v1/messages/{id}",
       path: {
         id: data.id,
       },
