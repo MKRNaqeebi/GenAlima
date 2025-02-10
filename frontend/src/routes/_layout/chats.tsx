@@ -16,7 +16,6 @@ import { useEffect } from "react"
 import { z } from "zod"
 
 import { ChatsService } from "../../client"
-import ActionsMenu from "../../components/Common/ActionsMenu"
 import { PaginationFooter } from "../../components/Common/PaginationFooter.tsx"
   
 const chatsSearchSchema = z.object({
@@ -71,7 +70,6 @@ function ChatsTable() {
             <Tr>
               <Th>ID</Th>
               <Th>Title</Th>
-              <Th>Actions</Th>
             </Tr>
           </Thead>
           {isPending ? (
@@ -91,9 +89,6 @@ function ChatsTable() {
                   <Td>{chat.id}</Td>
                   <Td isTruncated maxWidth="150px">
                     {chat.title}
-                  </Td>
-                  <Td>
-                    <ActionsMenu type={"Chat"} value={chat} />
                   </Td>
                 </Tr>
               ))}

@@ -4,6 +4,8 @@ import {
   FormErrorMessage,
   FormLabel,
   Input,
+  Textarea,
+  Checkbox,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -17,20 +19,20 @@ import { type SubmitHandler, useForm } from "react-hook-form"
 
 import {
   type ApiError,
-  type ItemPublic,
-  type ItemUpdate,
-  ItemsService,
+  type TemplatePublic,
+  type TemplateUpdate,
+  TemplatesService,
 } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
 import { handleError } from "../../utils"
 
-interface EditItemProps {
-  item: ItemPublic
+interface EditTemplateProps {
+  template: TemplatePublic
   isOpen: boolean
   onClose: () => void
 }
 
-const EditItem = ({ item, isOpen, onClose }: EditItemProps) => {
+const EditTemplate = ({ template, isOpen, onClose }: EditTemplateProps) => {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
   const {
@@ -38,28 +40,28 @@ const EditItem = ({ item, isOpen, onClose }: EditItemProps) => {
     handleSubmit,
     reset,
     formState: { isSubmitting, errors, isDirty },
-  } = useForm<ItemUpdate>({
+  } = useForm<TemplateUpdate>({
     mode: "onBlur",
     criteriaMode: "all",
-    defaultValues: item,
+    defaultValues: template,
   })
 
   const mutation = useMutation({
-    mutationFn: (data: ItemUpdate) =>
-      ItemsService.updateItem({ id: item.id, requestBody: data }),
+    mutationFn: (data: TemplateUpdate) =>
+      TemplatesService.updateTemplate({ id: template.id, requestBody: data }),
     onSuccess: () => {
-      showToast("Success!", "Item updated successfully.", "success")
+      showToast("Success!", "Template updated successfully.", "success")
       onClose()
     },
     onError: (err: ApiError) => {
       handleError(err, showToast)
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["items"] })
+      queryClient.invalidateQueries({ queryKey: ["templates"] })
     },
   })
 
-  const onSubmit: SubmitHandler<ItemUpdate> = async (data) => {
+  const onSubmit: SubmitHandler<TemplateUpdate> = async (data) => {
     mutation.mutate(data)
   }
 
@@ -78,7 +80,7 @@ const EditItem = ({ item, isOpen, onClose }: EditItemProps) => {
       >
         <ModalOverlay />
         <ModalContent as="form" onSubmit={handleSubmit(onSubmit)}>
-          <ModalHeader>Edit Item</ModalHeader>
+          <ModalHeader>Edit Template</ModalHeader>
           <ModalCloseButton />
           <ModalBody pb={6}>
             <FormControl isInvalid={!!errors.title}>
@@ -103,6 +105,58 @@ const EditItem = ({ item, isOpen, onClose }: EditItemProps) => {
                 type="text"
               />
             </FormControl>
+
+            <FormControl mt={4}>
+              <FormLabel htmlFor="instructions">Instructions</FormLabel>
+              <Textarea
+                id="instructions"
+                {...register("instructions")}
+                placeholder="Instructions"
+              />
+            </FormControl>
+            <FormControl mt={4}>
+              <FormLabel htmlFor="template">Template</FormLabel>
+              <Textarea
+                id="template"
+                {...register("template")}
+                placeholder="Template"
+              />
+            </FormControl>
+            <FormControl mt={4}>
+              <FormLabel htmlFor="placeholder">Placeholder</FormLabel>
+              <Input
+                id="placeholder"
+                {...register("placeholder")}
+                placeholder="Placeholder"
+                type="text"
+              />
+            </FormControl>
+            <FormControl mt={4}>
+              <FormLabel htmlFor="model">Model</FormLabel>
+              <Input
+                id="model"
+                {...register("model")}
+                placeholder="Model"
+                type="text"
+              />
+            </FormControl>
+            <FormControl mt={4}>
+              <FormLabel htmlFor="connector">Connector</FormLabel>
+              <Input
+                id="connector"
+                {...register("connector")}
+                placeholder="Connector"
+                type="text"
+              />
+            </FormControl>
+            <FormControl mt={4}>
+              <Checkbox
+                id="active"
+                {...register("active")}
+                type="checkbox"
+              />
+              <FormLabel htmlFor="active">Active</FormLabel>
+            </FormControl>
           </ModalBody>
           <ModalFooter gap={3}>
             <Button
@@ -121,4 +175,4 @@ const EditItem = ({ item, isOpen, onClose }: EditItemProps) => {
   )
 }
 
-export default EditItem
+export default EditTemplate

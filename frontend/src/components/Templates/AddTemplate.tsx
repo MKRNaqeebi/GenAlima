@@ -4,6 +4,8 @@ import {
   FormErrorMessage,
   FormLabel,
   Input,
+  Textarea,
+  Checkbox,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -90,12 +92,62 @@ const AddTemplate = ({ isOpen, onClose }: AddTemplateProps) => {
             </FormControl>
             <FormControl mt={4}>
               <FormLabel htmlFor="description">Description</FormLabel>
-              <Input
+              <Textarea
                 id="description"
                 {...register("description")}
                 placeholder="Description"
+              />
+            </FormControl>
+            <FormControl mt={4}>
+              <FormLabel htmlFor="instructions">Instructions</FormLabel>
+              <Textarea
+                id="instructions"
+                {...register("instructions")}
+                placeholder="Instructions"
+              />
+            </FormControl>
+            <FormControl mt={4}>
+              <FormLabel htmlFor="template">Template</FormLabel>
+              <Textarea
+                id="template"
+                {...register("template")}
+                placeholder="Template"
+              />
+            </FormControl>
+            <FormControl mt={4}>
+              <FormLabel htmlFor="placeholder">Placeholder</FormLabel>
+              <Input
+                id="placeholder"
+                {...register("placeholder")}
+                placeholder="Placeholder"
                 type="text"
               />
+            </FormControl>
+            <FormControl mt={4}>
+              <FormLabel htmlFor="model">Model</FormLabel>
+              <Input
+                id="model"
+                {...register("model")}
+                placeholder="Model"
+                type="text"
+              />
+            </FormControl>
+            <FormControl mt={4}>
+              <FormLabel htmlFor="connector">Connector</FormLabel>
+              <Input
+                id="connector"
+                {...register("connector")}
+                placeholder="Connector"
+                type="text"
+              />
+            </FormControl>
+            <FormControl mt={4}>
+              <Checkbox
+                id="active"
+                {...register("active")}
+                type="checkbox"
+              />
+              <FormLabel htmlFor="active">Active</FormLabel>
             </FormControl>
           </ModalBody>
 

@@ -16,7 +16,6 @@ import { useEffect } from "react"
 import { z } from "zod"
 
 import { MessagesService } from "../../client"
-import ActionsMenu from "../../components/Common/ActionsMenu"
 import { PaginationFooter } from "../../components/Common/PaginationFooter.tsx"
 
 const messagesSearchSchema = z.object({
@@ -72,7 +71,6 @@ function MessagesTable() {
               <Th>ID</Th>
               <Th>Role</Th>
               <Th>Content</Th>
-              <Th>Actions</Th>
             </Tr>
           </Thead>
           {isPending ? (
@@ -99,9 +97,6 @@ function MessagesTable() {
                     maxWidth="150px"
                   >
                     {message.content || "N/A"}
-                  </Td>
-                  <Td>
-                    <ActionsMenu type={"Message"} value={message} />
                   </Td>
                 </Tr>
               ))}
