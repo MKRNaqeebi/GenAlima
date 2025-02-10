@@ -8,7 +8,10 @@ from fastapi import APIRouter, HTTPException
 from sqlmodel import func, select
 
 from app.api.deps import CurrentUser, SessionDep
-from app.models import Organization, OrganizationCreate, OrganizationPublic, OrganizationsPublic, OrganizationUpdate, Message
+from app.models import (
+  Organization, OrganizationCreate, OrganizationPublic, OrganizationsPublic, OrganizationUpdate,
+  Message
+)
 
 router = APIRouter(prefix="/organizations", tags=["organizations"])
 

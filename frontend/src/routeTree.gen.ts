@@ -17,8 +17,11 @@ import { Route as RecoverPasswordImport } from './routes/recover-password'
 import { Route as LoginImport } from './routes/login'
 import { Route as LayoutImport } from './routes/_layout'
 import { Route as LayoutIndexImport } from './routes/_layout/index'
+import { Route as LayoutTemplatesImport } from './routes/_layout/templates'
 import { Route as LayoutSettingsImport } from './routes/_layout/settings'
+import { Route as LayoutMessagesImport } from './routes/_layout/messages'
 import { Route as LayoutItemsImport } from './routes/_layout/items'
+import { Route as LayoutChatsImport } from './routes/_layout/chats'
 import { Route as LayoutAdminImport } from './routes/_layout/admin'
 
 // Create/Update Routes
@@ -53,13 +56,28 @@ const LayoutIndexRoute = LayoutIndexImport.update({
   getParentRoute: () => LayoutRoute,
 } as any)
 
+const LayoutTemplatesRoute = LayoutTemplatesImport.update({
+  path: '/templates',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
 const LayoutSettingsRoute = LayoutSettingsImport.update({
   path: '/settings',
   getParentRoute: () => LayoutRoute,
 } as any)
 
+const LayoutMessagesRoute = LayoutMessagesImport.update({
+  path: '/messages',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
 const LayoutItemsRoute = LayoutItemsImport.update({
   path: '/items',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
+const LayoutChatsRoute = LayoutChatsImport.update({
+  path: '/chats',
   getParentRoute: () => LayoutRoute,
 } as any)
 
@@ -96,12 +114,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutAdminImport
       parentRoute: typeof LayoutImport
     }
+    '/_layout/chats': {
+      preLoaderRoute: typeof LayoutChatsImport
+      parentRoute: typeof LayoutImport
+    }
     '/_layout/items': {
       preLoaderRoute: typeof LayoutItemsImport
       parentRoute: typeof LayoutImport
     }
+    '/_layout/messages': {
+      preLoaderRoute: typeof LayoutMessagesImport
+      parentRoute: typeof LayoutImport
+    }
     '/_layout/settings': {
       preLoaderRoute: typeof LayoutSettingsImport
+      parentRoute: typeof LayoutImport
+    }
+    '/_layout/templates': {
+      preLoaderRoute: typeof LayoutTemplatesImport
       parentRoute: typeof LayoutImport
     }
     '/_layout/': {
@@ -116,8 +146,11 @@ declare module '@tanstack/react-router' {
 export const routeTree = rootRoute.addChildren([
   LayoutRoute.addChildren([
     LayoutAdminRoute,
+    LayoutChatsRoute,
     LayoutItemsRoute,
+    LayoutMessagesRoute,
     LayoutSettingsRoute,
+    LayoutTemplatesRoute,
     LayoutIndexRoute,
   ]),
   LoginRoute,

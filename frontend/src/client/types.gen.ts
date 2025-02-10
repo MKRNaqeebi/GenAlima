@@ -18,9 +18,59 @@ export type ItemCreate = {
   description?: string | null
 }
 
+export type TemplateCreate = {
+  title: string
+  description?: string | null
+  instructions?: string | null
+  template?: string | null
+  placeholder?: string | null
+  model?: string | null
+  connector?: string | null
+  active?: boolean
+}
+
+export type ChatCreate = {
+  title: string
+  template_id?: string | null
+}
+
+export type MessageCreate = {
+  role: string
+  content: string
+  chat_id?: string
+}
+
 export type ItemPublic = {
   title: string
   description?: string | null
+  id: string
+  owner_id: string
+}
+
+export type TemplatePublic = {
+  title: string
+  description?: string | null
+  instructions?: string | null
+  template?: string | null
+  placeholder?: string | null
+  model?: string | null
+  connector?: string | null
+  active?: boolean
+  id: string
+  owner_id: string
+}
+
+export type ChatPublic = {
+  title: string
+  template_id?: string | null
+  id: string
+  owner_id: string
+}
+
+export type MessagePublic = {
+  role: string
+  content: string
+  chat_id?: string | null
   id: string
   owner_id: string
 }
@@ -30,9 +80,46 @@ export type ItemsPublic = {
   count: number
 }
 
+export type TemplatesPublic = {
+  data: Array<TemplatePublic>
+  count: number
+}
+
+export type ChatsPublic = {
+  data: Array<ChatPublic>
+  count: number
+}
+
+export type MessagesPublic = {
+  data: Array<MessagePublic>
+  count: number
+}
+
 export type ItemUpdate = {
   title?: string | null
   description?: string | null
+}
+
+export type TemplateUpdate = {
+  title?: string | null
+  description?: string | null
+  instructions?: string | null
+  template?: string | null
+  placeholder?: string | null
+  model?: string | null
+  connector?: string | null
+  active?: boolean
+}
+
+export type ChatUpdate = {
+  title?: string | null
+  template_id?: string | null
+}
+
+export type MessageUpdate = {
+  role?: string | null
+  content?: string | null
+  chat_id?: string | null
 }
 
 export type Message = {
@@ -105,32 +192,128 @@ export type ItemsReadItemsData = {
   skip?: number
 }
 
+export type TemplatesReadTemplatesData = {
+  limit?: number
+  skip?: number
+}
+
+export type ChatsReadChatsData = {
+  limit?: number
+  skip?: number
+}
+
+export type MessagesReadMessagesData = {
+  limit?: number
+  skip?: number
+}
+
 export type ItemsReadItemsResponse = ItemsPublic
+
+export type TemplatesReadTemplatesResponse = TemplatesPublic
+
+export type ChatsReadChatsResponse = ChatsPublic
+
+export type MessagesReadMessagesResponse = MessagesPublic
 
 export type ItemsCreateItemData = {
   requestBody: ItemCreate
 }
 
+export type TemplatesCreateTemplateData = {
+  requestBody: TemplateCreate
+}
+
+export type ChatsCreateChatData = {
+  requestBody: ChatCreate
+}
+
+export type MessagesCreateMessageData = {
+  requestBody: MessageCreate
+}
+
 export type ItemsCreateItemResponse = ItemPublic
+
+export type TemplatesCreateTemplateResponse = TemplatePublic
+
+export type ChatsCreateChatResponse = ChatPublic
+
+export type MessagesCreateMessageResponse = MessagePublic
 
 export type ItemsReadItemData = {
   id: string
 }
 
+export type TemplatesReadTemplateData = {
+  id: string
+}
+
+export type ChatsReadChatData = {
+  id: string
+}
+
+export type MessagesReadMessageData = {
+  id: string
+}
+
 export type ItemsReadItemResponse = ItemPublic
+
+export type TemplatesReadTemplateResponse = TemplatePublic
+
+export type ChatsReadChatResponse = ChatPublic
+
+export type MessagesReadMessageResponse = MessagePublic
 
 export type ItemsUpdateItemData = {
   id: string
   requestBody: ItemUpdate
 }
 
+export type TemplatesUpdateTemplateData = {
+  id: string
+  requestBody: TemplateUpdate
+}
+
+export type ChatsUpdateChatData = {
+  id: string
+  requestBody: ChatUpdate
+}
+
+export type MessagesUpdateMessageData = {
+  id: string
+  requestBody: MessageUpdate
+}
+
 export type ItemsUpdateItemResponse = ItemPublic
+
+export type TemplatesUpdateTemplateResponse = TemplatePublic
+
+export type ChatsUpdateChatResponse = ChatPublic
+
+export type MessagesUpdateMessageResponse = MessagePublic
 
 export type ItemsDeleteItemData = {
   id: string
 }
 
+export type TemplatesDeleteTemplateData = {
+  id: string
+}
+
+export type ChatsDeleteChatData = {
+  id: string
+}
+
+export type MessagesDeleteMessageData = {
+  id: string
+}
+
 export type ItemsDeleteItemResponse = Message
+
+export type TemplatesDeleteTemplateResponse = Message
+
+export type ChatsDeleteChatResponse = Message
+
+export type MessagesDeleteMessageResponse = Message
 
 export type LoginLoginAccessTokenData = {
   formData: Body_login_login_access_token

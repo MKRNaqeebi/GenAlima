@@ -23,6 +23,33 @@ import type {
   LoginResetPasswordResponse,
   LoginRecoverPasswordHtmlContentData,
   LoginRecoverPasswordHtmlContentResponse,
+  TemplatesReadTemplatesResponse,
+  TemplatesCreateTemplateData,
+  TemplatesCreateTemplateResponse,
+  TemplatesReadTemplateData,
+  TemplatesReadTemplateResponse,
+  TemplatesUpdateTemplateData,
+  TemplatesUpdateTemplateResponse,
+  TemplatesDeleteTemplateData,
+  TemplatesDeleteTemplateResponse,
+  ChatsReadChatsResponse,
+  ChatsCreateChatData,
+  ChatsCreateChatResponse,
+  ChatsReadChatData,
+  ChatsReadChatResponse,
+  ChatsUpdateChatData,
+  ChatsUpdateChatResponse,
+  ChatsDeleteChatData,
+  ChatsDeleteChatResponse,
+  MessagesReadMessagesResponse,
+  MessagesCreateMessageData,
+  MessagesCreateMessageResponse,
+  MessagesReadMessageData,
+  MessagesReadMessageResponse,
+  MessagesUpdateMessageData,
+  MessagesUpdateMessageResponse,
+  MessagesDeleteMessageData,
+  MessagesDeleteMessageResponse,
   UsersReadUsersData,
   UsersReadUsersResponse,
   UsersCreateUserData,
@@ -157,6 +184,244 @@ export class ItemsService {
     return __request(OpenAPI, {
       method: "DELETE",
       url: "/api/v1/items/{id}",
+      path: {
+        id: data.id,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+}
+
+export class TemplatesService {
+  public static readTemplates(
+    data: ItemsReadItemsData = {},
+  ): CancelablePromise<TemplatesReadTemplatesResponse> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/templates/",
+      query: {
+        skip: data.skip,
+        limit: data.limit,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  public static createTemplate(
+    data: TemplatesCreateTemplateData,
+  ): CancelablePromise<TemplatesCreateTemplateResponse> {
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/api/v1/templates/",
+      body: data.requestBody,
+      mediaType: "application/json",
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  public static readTemplate(
+    data: TemplatesReadTemplateData,
+  ): CancelablePromise<TemplatesReadTemplateResponse> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/templates/{id}",
+      path: {
+        id: data.id,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  public static updateTemplate(
+    data: TemplatesUpdateTemplateData,
+  ): CancelablePromise<TemplatesUpdateTemplateResponse> {
+    return __request(OpenAPI, {
+      method: "PUT",
+      url: "/api/v1/templates/{id}",
+      path: {
+        id: data.id,
+      },
+      body: data.requestBody,
+      mediaType: "application/json",
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  public static deleteTemplate(
+    data: TemplatesDeleteTemplateData,
+  ): CancelablePromise<TemplatesDeleteTemplateResponse> {
+    return __request(OpenAPI, {
+      method: "DELETE",
+      url: "/api/v1/templates/{id}",
+      path: {
+        id: data.id,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+}
+
+export class ChatsService {
+  public static readChats(
+    data: ItemsReadItemsData = {},
+  ): CancelablePromise<ChatsReadChatsResponse> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/Chats/",
+      query: {
+        skip: data.skip,
+        limit: data.limit,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  public static createChat(
+    data: ChatsCreateChatData,
+  ): CancelablePromise<ChatsCreateChatResponse> {
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/api/v1/Chats/",
+      body: data.requestBody,
+      mediaType: "application/json",
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  public static readChat(
+    data: ChatsReadChatData,
+  ): CancelablePromise<ChatsReadChatResponse> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/Chats/{id}",
+      path: {
+        id: data.id,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  public static updateChat(
+    data: ChatsUpdateChatData,
+  ): CancelablePromise<ChatsUpdateChatResponse> {
+    return __request(OpenAPI, {
+      method: "PUT",
+      url: "/api/v1/Chats/{id}",
+      path: {
+        id: data.id,
+      },
+      body: data.requestBody,
+      mediaType: "application/json",
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  public static deleteChat(
+    data: ChatsDeleteChatData,
+  ): CancelablePromise<ChatsDeleteChatResponse> {
+    return __request(OpenAPI, {
+      method: "DELETE",
+      url: "/api/v1/Chats/{id}",
+      path: {
+        id: data.id,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+}
+
+
+export class MessagesService {
+  public static readMessages(
+    data: ItemsReadItemsData = {},
+  ): CancelablePromise<MessagesReadMessagesResponse> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/templates/",
+      query: {
+        skip: data.skip,
+        limit: data.limit,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  public static createMessage(
+    data: MessagesCreateMessageData,
+  ): CancelablePromise<MessagesCreateMessageResponse> {
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/api/v1/templates/",
+      body: data.requestBody,
+      mediaType: "application/json",
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  public static readMessage(
+    data: MessagesReadMessageData,
+  ): CancelablePromise<MessagesReadMessageResponse> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/templates/{id}",
+      path: {
+        id: data.id,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  public static updateMessage(
+    data: MessagesUpdateMessageData,
+  ): CancelablePromise<MessagesUpdateMessageResponse> {
+    return __request(OpenAPI, {
+      method: "PUT",
+      url: "/api/v1/templates/{id}",
+      path: {
+        id: data.id,
+      },
+      body: data.requestBody,
+      mediaType: "application/json",
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  public static deleteMessage(
+    data: MessagesDeleteMessageData,
+  ): CancelablePromise<MessagesDeleteMessageResponse> {
+    return __request(OpenAPI, {
+      method: "DELETE",
+      url: "/api/v1/templates/{id}",
       path: {
         id: data.id,
       },
