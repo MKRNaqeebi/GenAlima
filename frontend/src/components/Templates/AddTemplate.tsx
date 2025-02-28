@@ -99,14 +99,6 @@ const AddTemplate = ({ isOpen, onClose }: AddTemplateProps) => {
               />
             </FormControl>
             <FormControl mt={4}>
-              <FormLabel htmlFor="instructions">Instructions</FormLabel>
-              <Textarea
-                id="instructions"
-                {...register("instructions")}
-                placeholder="Instructions"
-              />
-            </FormControl>
-            <FormControl mt={4}>
               <FormLabel htmlFor="template">Template</FormLabel>
               <Textarea
                 id="template"

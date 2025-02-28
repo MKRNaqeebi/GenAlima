@@ -247,8 +247,7 @@ class TemplateBase(SQLModel):
   """
   title: str = Field(max_length=255)
   description: str | None = Field(default=None, max_length=255)
-  instructions: str | None = Field(default=None, max_length=255)
-  template: str | None = Field(default=None, max_length=255)
+  template: str | None = Field(default=None, max_length=4096)
   placeholder: str | None = Field(default=None, max_length=255)
   model: str | None = Field(default=None, max_length=255)
   connector: str | None = Field(default=None, max_length=255)

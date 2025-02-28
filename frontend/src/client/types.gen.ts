@@ -21,7 +21,6 @@ export type ItemCreate = {
 export type TemplateCreate = {
   title: string
   description?: string | null
-  instructions?: string | null
   template?: string | null
   placeholder?: string | null
   model?: string | null
@@ -50,7 +49,6 @@ export type ItemPublic = {
 export type TemplatePublic = {
   title: string
   description?: string | null
-  instructions?: string | null
   template?: string | null
   placeholder?: string | null
   model?: string | null
@@ -103,7 +101,6 @@ export type ItemUpdate = {
 export type TemplateUpdate = {
   title?: string | null
   description?: string | null
-  instructions?: string | null
   template?: string | null
   placeholder?: string | null
   model?: string | null
