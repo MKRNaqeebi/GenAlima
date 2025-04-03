@@ -215,6 +215,7 @@ class ConnectorUpdate(ConnectorBase):
   """
   name: str | None = Field(default=None, min_length=1, max_length=255)  # type: ignore
   description: str | None = Field(default=None, max_length=255)
+  active: bool | None = Field(default=None)
 
 
 class Connector(ConnectorBase, table=True):
@@ -356,7 +357,7 @@ class MessageBase(SQLModel):
   This is the schema for the message
   """
   role: str = Field(max_length=255)
-  content: str = Field(max_length=255)
+  content: str = Field(max_length=4096)
 
 
 class MessageCreate(MessageBase):
@@ -371,7 +372,7 @@ class MessageUpdate(MessageBase):
   Properties to receive on item update
   """
   role: str | None = Field(default=None, min_length=1, max_length=255)  # type: ignore
-  content: str | None = Field(default=None, max_length=255)
+  content: str | None = Field(default=None, max_length=4096)
 
 
 class Message(MessageBase, table=True):
@@ -380,7 +381,7 @@ class Message(MessageBase, table=True):
   """
   id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
   role: str = Field(max_length=255)
-  content: str = Field(max_length=255)
+  content: str = Field(max_length=4096)
   chat_id: uuid.UUID = Field(
     foreign_key="chat.id", nullable=False, ondelete="CASCADE"
   )

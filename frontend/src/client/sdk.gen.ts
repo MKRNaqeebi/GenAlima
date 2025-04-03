@@ -23,6 +23,15 @@ import type {
   LoginResetPasswordResponse,
   LoginRecoverPasswordHtmlContentData,
   LoginRecoverPasswordHtmlContentResponse,
+  ConnectorsReadConnectorsResponse,
+  ConnectorsCreateConnectorData,
+  ConnectorsCreateConnectorResponse,
+  ConnectorsReadConnectorData,
+  ConnectorsReadConnectorResponse,
+  ConnectorsUpdateConnectorData,
+  ConnectorsUpdateConnectorResponse,
+  ConnectorsDeleteConnectorData,
+  ConnectorsDeleteConnectorResponse,
   TemplatesReadTemplatesResponse,
   TemplatesCreateTemplateData,
   TemplatesCreateTemplateResponse,
@@ -184,6 +193,127 @@ export class ItemsService {
     return __request(OpenAPI, {
       method: "DELETE",
       url: "/api/v1/items/{id}",
+      path: {
+        id: data.id,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+}
+
+export class ConnectorsService {
+  /**
+   * Read Connectors
+   * Retrieve connectors.
+   * @param data The data for the request.
+   * @param data.skip
+   * @param data.limit
+   * @returns ConnectorsPublic Successful Response
+   * @throws ApiError
+   */
+  public static readConnectors(
+    data: ItemsReadItemsData = {},
+  ): CancelablePromise<ConnectorsReadConnectorsResponse> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/connectors/",
+      query: {
+        skip: data.skip,
+        limit: data.limit,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  /**
+   * Create Connector
+   * Create new connector.
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @returns ConnectorPublic Successful Response
+   * @throws ApiError
+   */
+  public static createConnector(
+    data: ConnectorsCreateConnectorData,
+  ): CancelablePromise<ConnectorsCreateConnectorResponse> {
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/api/v1/connectors/",
+      body: data.requestBody,
+      mediaType: "application/json",
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  /**
+   * Read Connector
+   * Get connector by ID.
+   * @param data The data for the request.
+   * @param data.id
+   * @returns ConnectorPublic Successful Response
+   * @throws ApiError
+   */
+  public static readConnector(
+    data: ConnectorsReadConnectorData,
+  ): CancelablePromise<ConnectorsReadConnectorResponse> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/connectors/{id}",
+      path: {
+        id: data.id,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  /**
+   * Update Connector
+   * Update an connector.
+   * @param data The data for the request.
+   * @param data.id
+   * @param data.requestBody
+   * @returns ConnectorPublic Successful Response
+   * @throws ApiError
+   */
+  public static updateConnector(
+    data: ConnectorsUpdateConnectorData,
+  ): CancelablePromise<ConnectorsUpdateConnectorResponse> {
+    return __request(OpenAPI, {
+      method: "PUT",
+      url: "/api/v1/connectors/{id}",
+      path: {
+        id: data.id,
+      },
+      body: data.requestBody,
+      mediaType: "application/json",
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  /**
+   * Delete Connector
+   * Delete an connector.
+   * @param data The data for the request.
+   * @param data.id
+   * @returns Message Successful Response
+   * @throws ApiError
+   */
+  public static deleteConnector(
+    data: ConnectorsDeleteConnectorData,
+  ): CancelablePromise<ConnectorsDeleteConnectorResponse> {
+    return __request(OpenAPI, {
+      method: "DELETE",
+      url: "/api/v1/connectors/{id}",
       path: {
         id: data.id,
       },

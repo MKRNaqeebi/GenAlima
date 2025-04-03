@@ -3,11 +3,10 @@ This module contains the logic for generating completions for the user input.
 """
 import importlib
 
-# from openai import
 from app.firestore import get_document_by_id
-from app.models import CompletionsInput, Message
+from app.models import MessageBase
 
-def chat_completions(user_input: CompletionsInput) -> list[Message]:
+def chat_completions(user_input: MessageBase) -> list[MessageBase]:
   """
   Generate completions for the user input.
   """

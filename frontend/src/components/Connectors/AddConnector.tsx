@@ -4,6 +4,7 @@ import {
   FormErrorMessage,
   FormLabel,
   Input,
+  Textarea,
   Checkbox,
   Modal,
   ModalBody,
@@ -16,40 +17,38 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { type SubmitHandler, useForm } from "react-hook-form"
 
-import {
-  type ApiError,
-  type ConnectorPublic,
-  type ConnectorUpdate,
-  ConnectorsService,
-} from "../../client"
+import { type ApiError, type ConnectorCreate, ConnectorsService } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
 import { handleError } from "../../utils"
 
-interface EditConnectorProps {
-  connector: ConnectorPublic
+interface AddConnectorProps {
   isOpen: boolean
   onClose: () => void
 }
 
-const EditConnector = ({ connector, isOpen, onClose }: EditConnectorProps) => {
+const AddConnector = ({ isOpen, onClose }: AddConnectorProps) => {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
   const {
     register,
     handleSubmit,
     reset,
-    formState: { isSubmitting, errors, isDirty },
-  } = useForm<ConnectorUpdate>({
+    formState: { errors, isSubmitting },
+  } = useForm<ConnectorCreate>({
     mode: "onBlur",
     criteriaMode: "all",
-    defaultValues: connector,
+    defaultValues: {
+      title: "",
+      description: "",
+    },
   })
 
   const mutation = useMutation({
-    mutationFn: (data: ConnectorUpdate) =>
-      ConnectorsService.updateConnector({ id: connector.id, requestBody: data }),
+    mutationFn: (data: ConnectorCreate) =>
+      ConnectorsService.createConnector({ requestBody: data }),
     onSuccess: () => {
-      showToast("Success!", "Connector updated successfully.", "success")
+      showToast("Success!", "Connector created successfully.", "success")
+      reset()
       onClose()
     },
     onError: (err: ApiError) => {
@@ -60,13 +59,8 @@ const EditConnector = ({ connector, isOpen, onClose }: EditConnectorProps) => {
     },
   })
 
-  const onSubmit: SubmitHandler<ConnectorUpdate> = async (data) => {
+  const onSubmit: SubmitHandler<ConnectorCreate> = (data) => {
     mutation.mutate(data)
-  }
-
-  const onCancel = () => {
-    reset()
-    onClose()
   }
 
   return (
@@ -79,16 +73,17 @@ const EditConnector = ({ connector, isOpen, onClose }: EditConnectorProps) => {
       >
         <ModalOverlay />
         <ModalContent as="form" onSubmit={handleSubmit(onSubmit)}>
-          <ModalHeader>Edit Connector</ModalHeader>
+          <ModalHeader>Add Connector</ModalHeader>
           <ModalCloseButton />
           <ModalBody pb={6}>
-            <FormControl isInvalid={!!errors.title}>
+            <FormControl isRequired isInvalid={!!errors.title}>
               <FormLabel htmlFor="title">Title</FormLabel>
               <Input
                 id="title"
                 {...register("title", {
-                  required: "Title is required",
+                  required: "Title is required.",
                 })}
+                placeholder="Title"
                 type="text"
               />
               {errors.title && (
@@ -97,11 +92,18 @@ const EditConnector = ({ connector, isOpen, onClose }: EditConnectorProps) => {
             </FormControl>
             <FormControl mt={4}>
               <FormLabel htmlFor="description">Description</FormLabel>
-              <Input
+              <Textarea
                 id="description"
                 {...register("description")}
                 placeholder="Description"
-                type="text"
+              />
+            </FormControl>
+            <FormControl mt={4}>
+              <FormLabel htmlFor="function">Function</FormLabel>
+              <Textarea
+                id="function"
+                {...register("function")}
+                placeholder="Function"
               />
             </FormControl>
             <FormControl mt={4}>
@@ -113,16 +115,12 @@ const EditConnector = ({ connector, isOpen, onClose }: EditConnectorProps) => {
               <FormLabel htmlFor="active">Active</FormLabel>
             </FormControl>
           </ModalBody>
+
           <ModalFooter gap={3}>
-            <Button
-              variant="primary"
-              type="submit"
-              isLoading={isSubmitting}
-              isDisabled={!isDirty}
-            >
+            <Button variant="primary" type="submit" isLoading={isSubmitting}>
               Save
             </Button>
-            <Button onClick={onCancel}>Cancel</Button>
+            <Button onClick={onClose}>Cancel</Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
@@ -130,4 +128,4 @@ const EditConnector = ({ connector, isOpen, onClose }: EditConnectorProps) => {
   )
 }
 
-export default EditConnector
+export default AddConnector

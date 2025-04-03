@@ -18,6 +18,13 @@ export type ItemCreate = {
   description?: string | null
 }
 
+export type ConnectorCreate = {
+  title: string
+  description?: string | null
+  function: string
+  active?: boolean
+}
+
 export type TemplateCreate = {
   title: string
   description?: string | null
@@ -42,6 +49,15 @@ export type MessageCreate = {
 export type ItemPublic = {
   title: string
   description?: string | null
+  id: string
+  owner_id: string
+}
+
+export type ConnectorPublic = {
+  title: string
+  description?: string | null
+  function: string
+  active?: boolean
   id: string
   owner_id: string
 }
@@ -78,6 +94,11 @@ export type ItemsPublic = {
   count: number
 }
 
+export type ConnectorsPublic = {
+  data: Array<ConnectorPublic>
+  count: number
+}
+
 export type TemplatesPublic = {
   data: Array<TemplatePublic>
   count: number
@@ -96,6 +117,13 @@ export type MessagesPublic = {
 export type ItemUpdate = {
   title?: string | null
   description?: string | null
+}
+
+export type ConnectorUpdate = {
+  title?: string | null
+  description?: string | null
+  function?: string | null
+  active?: boolean
 }
 
 export type TemplateUpdate = {
@@ -189,6 +217,11 @@ export type ItemsReadItemsData = {
   skip?: number
 }
 
+export type ConnectorsReadConnectorsData = {
+  limit?: number
+  skip?: number
+}
+
 export type TemplatesReadTemplatesData = {
   limit?: number
   skip?: number
@@ -206,6 +239,8 @@ export type MessagesReadMessagesData = {
 
 export type ItemsReadItemsResponse = ItemsPublic
 
+export type ConnectorsReadConnectorsResponse = ConnectorsPublic
+
 export type TemplatesReadTemplatesResponse = TemplatesPublic
 
 export type ChatsReadChatsResponse = ChatsPublic
@@ -214,6 +249,10 @@ export type MessagesReadMessagesResponse = MessagesPublic
 
 export type ItemsCreateItemData = {
   requestBody: ItemCreate
+}
+
+export type ConnectorsCreateConnectorData = {
+  requestBody: ConnectorCreate
 }
 
 export type TemplatesCreateTemplateData = {
@@ -230,6 +269,8 @@ export type MessagesCreateMessageData = {
 
 export type ItemsCreateItemResponse = ItemPublic
 
+export type ConnectorsCreateConnectorResponse = ConnectorPublic
+
 export type TemplatesCreateTemplateResponse = TemplatePublic
 
 export type ChatsCreateChatResponse = ChatPublic
@@ -237,6 +278,10 @@ export type ChatsCreateChatResponse = ChatPublic
 export type MessagesCreateMessageResponse = MessagePublic
 
 export type ItemsReadItemData = {
+  id: string
+}
+
+export type ConnectorsReadConnectorData = {
   id: string
 }
 
@@ -254,6 +299,8 @@ export type MessagesReadMessageData = {
 
 export type ItemsReadItemResponse = ItemPublic
 
+export type ConnectorsReadConnectorResponse = ConnectorPublic
+
 export type TemplatesReadTemplateResponse = TemplatePublic
 
 export type ChatsReadChatResponse = ChatPublic
@@ -263,6 +310,11 @@ export type MessagesReadMessageResponse = MessagePublic
 export type ItemsUpdateItemData = {
   id: string
   requestBody: ItemUpdate
+}
+
+export type ConnectorsUpdateConnectorData = {
+  id: string
+  requestBody: ConnectorUpdate
 }
 
 export type TemplatesUpdateTemplateData = {
@@ -282,6 +334,8 @@ export type MessagesUpdateMessageData = {
 
 export type ItemsUpdateItemResponse = ItemPublic
 
+export type ConnectorsUpdateConnectorResponse = ConnectorPublic
+
 export type TemplatesUpdateTemplateResponse = TemplatePublic
 
 export type ChatsUpdateChatResponse = ChatPublic
@@ -289,6 +343,10 @@ export type ChatsUpdateChatResponse = ChatPublic
 export type MessagesUpdateMessageResponse = MessagePublic
 
 export type ItemsDeleteItemData = {
+  id: string
+}
+
+export type ConnectorsDeleteConnectorData = {
   id: string
 }
 
@@ -305,6 +363,8 @@ export type MessagesDeleteMessageData = {
 }
 
 export type ItemsDeleteItemResponse = Message
+
+export type ConnectorsDeleteConnectorResponse = Message
 
 export type TemplatesDeleteTemplateResponse = Message
 

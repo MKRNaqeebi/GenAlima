@@ -222,6 +222,11 @@ export const sendRequest = async <T>(
     return await axiosClient.request(requestConfig)
   } catch (error) {
     const axiosError = error as AxiosError<T>
+    // if response status is 403 Forbidden, log the user out
+    if (axiosError.response?.status === 403) {
+      localStorage.removeItem("access_token")
+      window.location.href = "/login"
+    }
     if (axiosError.response) {
       return axiosError.response
     }

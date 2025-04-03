@@ -4,33 +4,15 @@ Application settings.
 import os
 import secrets
 import warnings
-from typing import Annotated, Any, Literal
+from typing import Literal
 
-from pydantic import (
-  AnyUrl,
-  BeforeValidator,
-  HttpUrl,
-  PostgresDsn,
-  computed_field,
-  model_validator,
-)
+from pydantic import (HttpUrl, PostgresDsn, computed_field, model_validator )
 from pydantic_core import Url
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Self
 from dotenv import load_dotenv
 
 load_dotenv()
-
-def parse_cors(v: Any) -> list[str] | str:
-  """
-  Parse CORS origins from a string or a list of strings.
-  """
-  if isinstance(v, str) and not v.startswith("["):
-    return [i.strip() for i in v.split(",")]
-  elif isinstance(v, list | str):
-    return v
-  raise ValueError(v)
-
 
 class Settings(BaseSettings):
   """
@@ -44,35 +26,30 @@ class Settings(BaseSettings):
   )
   API_V1_STR: str = "/api/v1"
   SECRET_KEY: str = secrets.token_urlsafe(32)
-  # 60 minutes * 24 hours * 8 days = 8 days
-  ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
-  FRONTEND_HOST: str = "http://localhost:5173"
+  ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", str(60 * 24 * 8)))
+  FRONTEND_HOST: str = os.getenv("FRONTEND_HOST", "http://localhost:5173")
   ENVIRONMENT: Literal["local", "staging", "production"] = "local"
   BUILD_PATH: str = os.getenv('BUILD_PATH', 'frontend/dist')
 
-  BACKEND_CORS_ORIGINS: Annotated[
-      list[AnyUrl] | str, BeforeValidator(parse_cors)
-  ] = []
+  BACKEND_CORS_ORIGINS: str = os.getenv("BACKEND_CORS_ORIGINS", "*")
 
-  @computed_field  # type: ignore[prop-decorator]
+  @computed_field
   @property
   def all_cors_origins(self) -> list[str]:
     """
     Return a list of all CORS origins.
     """
-    return [str(origin).rstrip("/") for origin in self.BACKEND_CORS_ORIGINS] + [
-      self.FRONTEND_HOST
-    ]
+    return self.BACKEND_CORS_ORIGINS.split(",") + [self.FRONTEND_HOST]
 
-  PROJECT_NAME: str
-  SENTRY_DSN: HttpUrl | None = None
-  POSTGRES_SERVER: str
-  POSTGRES_PORT: int = 5432
-  POSTGRES_USER: str
-  POSTGRES_PASSWORD: str = ""
-  POSTGRES_DB: str = ""
+  PROJECT_NAME: str = os.getenv("PROJECT_NAME", "FastAPI Template")
+  SENTRY_DSN: HttpUrl | None = os.getenv("SENTRY_DSN", None)
+  POSTGRES_SERVER: str = os.getenv("POSTGRES_SERVER", "localhost")
+  POSTGRES_PORT: int = int(os.getenv("POSTGRES_PORT", "5432"))
+  POSTGRES_USER: str = os.getenv("POSTGRES_USER", "postgres")
+  POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "change-this")
+  POSTGRES_DB: str = os.getenv("POSTGRES_DB", "fastapi_template")
 
-  @computed_field  # type: ignore[prop-decorator]
+  @computed_field
   @property
   def sqlalchemy_database_uri(self) -> PostgresDsn:
     """
@@ -105,7 +82,7 @@ class Settings(BaseSettings):
 
   EMAIL_RESET_TOKEN_EXPIRE_HOURS: int = 48
 
-  @computed_field  # type: ignore[prop-decorator]
+  @computed_field
   @property
   def emails_enabled(self) -> bool:
     """
@@ -113,11 +90,9 @@ class Settings(BaseSettings):
     """
     return bool(self.SMTP_HOST and self.EMAILS_FROM_EMAIL)
 
-  # TODO: update type to EmailStr when sqlmodel supports it
   EMAIL_TEST_USER: str = "test@example.com"
-  # TODO: update type to EmailStr when sqlmodel supports it
-  FIRST_SUPERUSER: str
-  FIRST_SUPERUSER_PASSWORD: str
+  FIRST_SUPERUSER: str = os.getenv("FIRST_SUPERUSER", "mkrnaqeebi@gmail.com")
+  FIRST_SUPERUSER_PASSWORD: str = os.getenv("FIRST_SUPERUSER_PASSWORD", "change-this")
 
   def _check_default_secret(self, var_name: str, value: str | None) -> None:
     if value == "change-this":
@@ -140,4 +115,4 @@ class Settings(BaseSettings):
     return self
 
 
-settings = Settings()  # type: ignore
+settings = Settings()

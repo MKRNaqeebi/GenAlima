@@ -4,6 +4,7 @@ import {
   FormErrorMessage,
   FormLabel,
   Input,
+  Textarea,
   Checkbox,
   Modal,
   ModalBody,
@@ -18,20 +19,20 @@ import { type SubmitHandler, useForm } from "react-hook-form"
 
 import {
   type ApiError,
-  type ConnectorPublic,
-  type ConnectorUpdate,
-  ConnectorsService,
+  type TemplatePublic,
+  type TemplateUpdate,
+  TemplatesService,
 } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
 import { handleError } from "../../utils"
 
-interface EditConnectorProps {
-  connector: ConnectorPublic
+interface EditTemplateProps {
+  template: TemplatePublic
   isOpen: boolean
   onClose: () => void
 }
 
-const EditConnector = ({ connector, isOpen, onClose }: EditConnectorProps) => {
+const EditTemplate = ({ template, isOpen, onClose }: EditTemplateProps) => {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
   const {
@@ -39,28 +40,28 @@ const EditConnector = ({ connector, isOpen, onClose }: EditConnectorProps) => {
     handleSubmit,
     reset,
     formState: { isSubmitting, errors, isDirty },
-  } = useForm<ConnectorUpdate>({
+  } = useForm<TemplateUpdate>({
     mode: "onBlur",
     criteriaMode: "all",
-    defaultValues: connector,
+    defaultValues: template,
   })
 
   const mutation = useMutation({
-    mutationFn: (data: ConnectorUpdate) =>
-      ConnectorsService.updateConnector({ id: connector.id, requestBody: data }),
+    mutationFn: (data: TemplateUpdate) =>
+      TemplatesService.updateTemplate({ id: template.id, requestBody: data }),
     onSuccess: () => {
-      showToast("Success!", "Connector updated successfully.", "success")
+      showToast("Success!", "Template updated successfully.", "success")
       onClose()
     },
     onError: (err: ApiError) => {
       handleError(err, showToast)
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["connectors"] })
+      queryClient.invalidateQueries({ queryKey: ["templates"] })
     },
   })
 
-  const onSubmit: SubmitHandler<ConnectorUpdate> = async (data) => {
+  const onSubmit: SubmitHandler<TemplateUpdate> = async (data) => {
     mutation.mutate(data)
   }
 
@@ -79,7 +80,7 @@ const EditConnector = ({ connector, isOpen, onClose }: EditConnectorProps) => {
       >
         <ModalOverlay />
         <ModalContent as="form" onSubmit={handleSubmit(onSubmit)}>
-          <ModalHeader>Edit Connector</ModalHeader>
+          <ModalHeader>Edit Template</ModalHeader>
           <ModalCloseButton />
           <ModalBody pb={6}>
             <FormControl isInvalid={!!errors.title}>
@@ -101,6 +102,41 @@ const EditConnector = ({ connector, isOpen, onClose }: EditConnectorProps) => {
                 id="description"
                 {...register("description")}
                 placeholder="Description"
+                type="text"
+              />
+            </FormControl>
+            <FormControl mt={4}>
+              <FormLabel htmlFor="template">Template</FormLabel>
+              <Textarea
+                id="template"
+                {...register("template")}
+                placeholder="Template"
+              />
+            </FormControl>
+            <FormControl mt={4}>
+              <FormLabel htmlFor="placeholder">Placeholder</FormLabel>
+              <Input
+                id="placeholder"
+                {...register("placeholder")}
+                placeholder="Placeholder"
+                type="text"
+              />
+            </FormControl>
+            <FormControl mt={4}>
+              <FormLabel htmlFor="model">Model</FormLabel>
+              <Input
+                id="model"
+                {...register("model")}
+                placeholder="Model"
+                type="text"
+              />
+            </FormControl>
+            <FormControl mt={4}>
+              <FormLabel htmlFor="connector">Connector</FormLabel>
+              <Input
+                id="connector"
+                {...register("connector")}
+                placeholder="Connector"
                 type="text"
               />
             </FormControl>
@@ -130,4 +166,4 @@ const EditConnector = ({ connector, isOpen, onClose }: EditConnectorProps) => {
   )
 }
 
-export default EditConnector
+export default EditTemplate
