@@ -4,6 +4,7 @@ import {
   FormErrorMessage,
   FormLabel,
   Input,
+  Textarea,
   Checkbox,
   Modal,
   ModalBody,
@@ -18,20 +19,20 @@ import { type SubmitHandler, useForm } from "react-hook-form"
 
 import {
   type ApiError,
-  type TemplatePublic,
-  type TemplateUpdate,
-  TemplatesService,
+  type ChatPublic,
+  type ChatUpdate,
+  ChatsService,
 } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
 import { handleError } from "../../utils"
 
-interface EditTemplateProps {
-  template: TemplatePublic
+interface EditChatProps {
+  chat: ChatPublic
   isOpen: boolean
   onClose: () => void
 }
 
-const EditTemplate = ({ template, isOpen, onClose }: EditTemplateProps) => {
+const EditChat = ({ chat, isOpen, onClose }: EditChatProps) => {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
   const {
@@ -39,28 +40,28 @@ const EditTemplate = ({ template, isOpen, onClose }: EditTemplateProps) => {
     handleSubmit,
     reset,
     formState: { isSubmitting, errors, isDirty },
-  } = useForm<TemplateUpdate>({
+  } = useForm<ChatUpdate>({
     mode: "onBlur",
     criteriaMode: "all",
-    defaultValues: template,
+    defaultValues: chat,
   })
 
   const mutation = useMutation({
-    mutationFn: (data: TemplateUpdate) =>
-      TemplatesService.updateTemplate({ id: template.id, requestBody: data }),
+    mutationFn: (data: ChatUpdate) =>
+      ChatsService.updateChat({ id: chat.id, requestBody: data }),
     onSuccess: () => {
-      showToast("Success!", "Template updated successfully.", "success")
+      showToast("Success!", "Chat updated successfully.", "success")
       onClose()
     },
     onError: (err: ApiError) => {
       handleError(err, showToast)
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["templates"] })
+      queryClient.invalidateQueries({ queryKey: ["chats"] })
     },
   })
 
-  const onSubmit: SubmitHandler<TemplateUpdate> = async (data) => {
+  const onSubmit: SubmitHandler<ChatUpdate> = async (data) => {
     mutation.mutate(data)
   }
 
@@ -79,7 +80,7 @@ const EditTemplate = ({ template, isOpen, onClose }: EditTemplateProps) => {
       >
         <ModalOverlay />
         <ModalContent as="form" onSubmit={handleSubmit(onSubmit)}>
-          <ModalHeader>Edit Template</ModalHeader>
+          <ModalHeader>Edit Chat</ModalHeader>
           <ModalCloseButton />
           <ModalBody pb={6}>
             <FormControl isInvalid={!!errors.title}>
@@ -96,57 +97,13 @@ const EditTemplate = ({ template, isOpen, onClose }: EditTemplateProps) => {
               )}
             </FormControl>
             <FormControl mt={4}>
-              <FormLabel htmlFor="description">Description</FormLabel>
+              <FormLabel htmlFor="template_id">Template ID</FormLabel>
               <Input
-                id="description"
-                {...register("description")}
-                placeholder="Description"
+                id="template_id"
+                {...register("template_id")}
                 type="text"
+                placeholder="Optional"
               />
-            </FormControl>
-            <FormControl mt={4}>
-              <FormLabel htmlFor="template">Template</FormLabel>
-              <Input
-                id="template"
-                {...register("template")}
-                placeholder="Template"
-                type="text"
-              />
-            </FormControl>
-            <FormControl mt={4}>
-              <FormLabel htmlFor="placeholder">Placeholder</FormLabel>
-              <Input
-                id="placeholder"
-                {...register("placeholder")}
-                placeholder="Placeholder"
-                type="text"
-              />
-            </FormControl>
-            <FormControl mt={4}>
-              <FormLabel htmlFor="model">Model</FormLabel>
-              <Input
-                id="model"
-                {...register("model")}
-                placeholder="Model"
-                type="text"
-              />
-            </FormControl>
-            <FormControl mt={4}>
-              <FormLabel htmlFor="connector">Connector</FormLabel>
-              <Input
-                id="connector"
-                {...register("connector")}
-                placeholder="Connector"
-                type="text"
-              />
-            </FormControl>
-            <FormControl mt={4}>
-              <Checkbox
-                id="active"
-                {...register("active")}
-                type="checkbox"
-              />
-              <FormLabel htmlFor="active">Active</FormLabel>
             </FormControl>
           </ModalBody>
           <ModalFooter gap={3}>
@@ -166,4 +123,4 @@ const EditTemplate = ({ template, isOpen, onClose }: EditTemplateProps) => {
   )
 }
 
-export default EditTemplate
+export default EditChat

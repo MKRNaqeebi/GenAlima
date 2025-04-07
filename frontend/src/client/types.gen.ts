@@ -19,7 +19,7 @@ export type ItemCreate = {
 }
 
 export type ConnectorCreate = {
-  title: string
+  name: string
   description?: string | null
   function: string
   active?: boolean
@@ -54,7 +54,7 @@ export type ItemPublic = {
 }
 
 export type ConnectorPublic = {
-  title: string
+  name: string
   description?: string | null
   function: string
   active?: boolean
@@ -120,7 +120,7 @@ export type ItemUpdate = {
 }
 
 export type ConnectorUpdate = {
-  title?: string | null
+  name?: string | null
   description?: string | null
   function?: string | null
   active?: boolean

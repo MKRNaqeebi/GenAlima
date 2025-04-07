@@ -16,6 +16,9 @@ import { useEffect } from "react"
 import { z } from "zod"
 
 import { MessagesService } from "../../client"
+import AddMessage from "../../components/Messages/AddMessage"
+import Navbar from "../../components/Common/Navbar"
+import ActionsMenu from "../../components/Common/ActionsMenu"
 import { PaginationFooter } from "../../components/Common/PaginationFooter.tsx"
 
 const messagesSearchSchema = z.object({
@@ -98,6 +101,9 @@ function MessagesTable() {
                   >
                     {message.content || "N/A"}
                   </Td>
+                  <Td>
+                    <ActionsMenu type={"Message"} value={message} />
+                  </Td>
                 </Tr>
               ))}
             </Tbody>
@@ -120,6 +126,7 @@ function Messages() {
       <Heading size="lg" textAlign={{ base: "center", md: "left" }} pt={12}>
         Messages Management
       </Heading>
+      <Navbar type={"Message"} addModalAs={AddMessage} />
       <MessagesTable />
     </Container>
   )

@@ -16,6 +16,9 @@ import { useEffect } from "react"
 import { z } from "zod"
 
 import { ChatsService } from "../../client"
+import AddChat from "../../components/Chats/AddChat"
+import Navbar from "../../components/Common/Navbar"
+import ActionsMenu from "../../components/Common/ActionsMenu"
 import { PaginationFooter } from "../../components/Common/PaginationFooter.tsx"
   
 const chatsSearchSchema = z.object({
@@ -90,6 +93,9 @@ function ChatsTable() {
                   <Td isTruncated maxWidth="150px">
                     {chat.title}
                   </Td>
+                  <Td>
+                    <ActionsMenu type={"Chat"} value={chat} />
+                  </Td>
                 </Tr>
               ))}
             </Tbody>
@@ -112,6 +118,7 @@ function Chats() {
       <Heading size="lg" textAlign={{ base: "center", md: "left" }} pt={12}>
         Chats Management
       </Heading>
+      <Navbar type={"Chat"} addModalAs={AddChat} />
       <ChatsTable />
     </Container>
   )

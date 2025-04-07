@@ -9,15 +9,18 @@ import {
 import { BsThreeDotsVertical } from "react-icons/bs"
 import { FiEdit, FiTrash } from "react-icons/fi"
 
-import type { ItemPublic, UserPublic, TemplatePublic } from "../../client"
+import type { ItemPublic, UserPublic, TemplatePublic, ConnectorPublic, ChatPublic, MessagePublic } from "../../client"
 import EditUser from "../Admin/EditUser"
 import EditItem from "../Items/EditItem"
 import EditTemplate from "../Templates/EditTemplate"
+import EditChat from "../Chats/EditChat"
+import EditMessage from "../Messages/EditMessage"
+import EditConnector from "../Connectors/EditConnector"
 import Delete from "./DeleteAlert"
 
 interface ActionsMenuProps {
   type: string
-  value: ItemPublic | UserPublic | TemplatePublic
+  value: ItemPublic | UserPublic | TemplatePublic | ConnectorPublic | ChatPublic | MessagePublic
   disabled?: boolean
 }
 
@@ -52,6 +55,24 @@ const ActionsMenu = ({ type, value, disabled }: ActionsMenuProps) => {
         {type === "User" ? (
           <EditUser
             user={value as UserPublic}
+            isOpen={editUserModal.isOpen}
+            onClose={editUserModal.onClose}
+          />
+        ) : type === "Connector" ? (
+          <EditConnector
+            connector={value as ConnectorPublic}
+            isOpen={editUserModal.isOpen}
+            onClose={editUserModal.onClose}
+          />
+        ) : type === "Chat" ? (
+          <EditChat
+            chat={value as ChatPublic}
+            isOpen={editUserModal.isOpen}
+            onClose={editUserModal.onClose}
+          />
+        ) : type === "Message" ? (
+          <EditMessage
+            message={value as MessagePublic}
             isOpen={editUserModal.isOpen}
             onClose={editUserModal.onClose}
           />

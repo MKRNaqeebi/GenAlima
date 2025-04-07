@@ -4,8 +4,6 @@ import {
   FormErrorMessage,
   FormLabel,
   Input,
-  Textarea,
-  Checkbox,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -19,20 +17,20 @@ import { type SubmitHandler, useForm } from "react-hook-form"
 
 import {
   type ApiError,
-  type ConnectorPublic,
-  type ConnectorUpdate,
-  ConnectorsService,
+  type MessagePublic,
+  type MessageUpdate,
+  MessagesService,
 } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
 import { handleError } from "../../utils"
 
-interface EditConnectorProps {
-  connector: ConnectorPublic
+interface EditMessageProps {
+  message: MessagePublic
   isOpen: boolean
   onClose: () => void
 }
 
-const EditConnector = ({ connector, isOpen, onClose }: EditConnectorProps) => {
+const EditMessage = ({ message, isOpen, onClose }: EditMessageProps) => {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
   const {
@@ -40,28 +38,28 @@ const EditConnector = ({ connector, isOpen, onClose }: EditConnectorProps) => {
     handleSubmit,
     reset,
     formState: { isSubmitting, errors, isDirty },
-  } = useForm<ConnectorUpdate>({
+  } = useForm<MessageUpdate>({
     mode: "onBlur",
     criteriaMode: "all",
-    defaultValues: connector,
+    defaultValues: message,
   })
 
   const mutation = useMutation({
-    mutationFn: (data: ConnectorUpdate) =>
-      ConnectorsService.updateConnector({ id: connector.id, requestBody: data }),
+    mutationFn: (data: MessageUpdate) =>
+      MessagesService.updateMessage({ id: message.id, requestBody: data }),
     onSuccess: () => {
-      showToast("Success!", "Connector updated successfully.", "success")
+      showToast("Success!", "Message updated successfully.", "success")
       onClose()
     },
     onError: (err: ApiError) => {
       handleError(err, showToast)
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["connectors"] })
+      queryClient.invalidateQueries({ queryKey: ["messages"] })
     },
   })
 
-  const onSubmit: SubmitHandler<ConnectorUpdate> = async (data) => {
+  const onSubmit: SubmitHandler<MessageUpdate> = async (data) => {
     mutation.mutate(data)
   }
 
@@ -80,37 +78,45 @@ const EditConnector = ({ connector, isOpen, onClose }: EditConnectorProps) => {
       >
         <ModalOverlay />
         <ModalContent as="form" onSubmit={handleSubmit(onSubmit)}>
-          <ModalHeader>Edit Connector</ModalHeader>
+          <ModalHeader>Edit Message</ModalHeader>
           <ModalCloseButton />
           <ModalBody pb={6}>
-            <FormControl isInvalid={!!errors.name}>
-              <FormLabel htmlFor="name">Name</FormLabel>
+            <FormControl isInvalid={!!errors.chat_id}>
+              <FormLabel htmlFor="chat_id">Chat ID</FormLabel>
               <Input
-                id="name"
-                {...register("name", {
-                  required: "Name is required",
+                id="chat_id"
+                {...register("chat_id", {
+                  required: "Chat ID is required",
+                })}
+                type="text"
+                isDisabled
+              />
+              {errors.chat_id && (
+                <FormErrorMessage>{errors.chat_id.message}</FormErrorMessage>
+              )}
+            </FormControl>
+            <FormControl isInvalid={!!errors.content}>
+              <FormLabel htmlFor="content">Content</FormLabel>
+              <Input
+                id="content"
+                {...register("content", {
+                  required: "Content is required",
                 })}
                 type="text"
               />
-              {errors.name && (
-                <FormErrorMessage>{errors.name.message}</FormErrorMessage>
+              {errors.content && (
+                <FormErrorMessage>{errors.content.message}</FormErrorMessage>
               )}
             </FormControl>
             <FormControl mt={4}>
-              <FormLabel htmlFor="description">Description</FormLabel>
-              <Textarea
-                id="description"
-                {...register("description")}
-                placeholder="Description"
-              ></Textarea>
-            </FormControl>
-            <FormControl mt={4}>
-              <Checkbox
-                id="active"
-                {...register("active")}
-                type="checkbox"
+              <FormLabel htmlFor="role">Role</FormLabel>
+              <Input
+                id="role"
+                {...register("role", {
+                  required: "Role is required",
+                })}
+                type="text"
               />
-              <FormLabel htmlFor="active">Active</FormLabel>
             </FormControl>
           </ModalBody>
           <ModalFooter gap={3}>
@@ -130,4 +136,4 @@ const EditConnector = ({ connector, isOpen, onClose }: EditConnectorProps) => {
   )
 }
 
-export default EditConnector
+export default EditMessage

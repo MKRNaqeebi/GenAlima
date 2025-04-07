@@ -71,7 +71,6 @@ function ConnectorsTable() {
         <Table size={{ base: "sm", md: "md" }}>
           <Thead>
             <Tr>
-              <Th>ID</Th>
               <Th>Title</Th>
               <Th>Description</Th>
               <Th>Function</Th>
@@ -93,9 +92,8 @@ function ConnectorsTable() {
             <Tbody>
               {connectors?.data.map((connector) => (
                 <Tr key={connector.id} opacity={isPlaceholderData ? 0.5 : 1}>
-                  <Td>{connector.id}</Td>
                   <Td isTruncated maxWidth="150px">
-                    {connector.title}
+                    {connector.name}
                   </Td>
                   <Td
                     color={!connector.description ? "ui.dim" : "inherit"}
@@ -103,6 +101,12 @@ function ConnectorsTable() {
                     maxWidth="150px"
                   >
                     {connector.description || "N/A"}
+                  </Td>
+                  <Td isTruncated maxWidth="150px">
+                    {connector.function}
+                  </Td>
+                  <Td isTruncated maxWidth="150px">
+                    {connector.active ? "Yes" : "No"}
                   </Td>
                   <Td>
                     <ActionsMenu type={"Connector"} value={connector} />

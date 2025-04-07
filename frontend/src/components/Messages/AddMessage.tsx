@@ -4,8 +4,6 @@ import {
   FormErrorMessage,
   FormLabel,
   Input,
-  Textarea,
-  Checkbox,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -17,16 +15,16 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { type SubmitHandler, useForm } from "react-hook-form"
 
-import { type ApiError, type ConnectorCreate, ConnectorsService } from "../../client"
+import { type ApiError, type MessageCreate, MessagesService } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
 import { handleError } from "../../utils"
 
-interface AddConnectorProps {
+interface AddMessageProps {
   isOpen: boolean
   onClose: () => void
 }
 
-const AddConnector = ({ isOpen, onClose }: AddConnectorProps) => {
+const AddMessage = ({ isOpen, onClose }: AddMessageProps) => {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
   const {
@@ -34,20 +32,19 @@ const AddConnector = ({ isOpen, onClose }: AddConnectorProps) => {
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<ConnectorCreate>({
+  } = useForm<MessageCreate>({
     mode: "onBlur",
     criteriaMode: "all",
     defaultValues: {
-      name: "",
-      description: "",
+      content: "",
     },
   })
 
   const mutation = useMutation({
-    mutationFn: (data: ConnectorCreate) =>
-      ConnectorsService.createConnector({ requestBody: data }),
+    mutationFn: (data: MessageCreate) =>
+      MessagesService.createMessage({ requestBody: data }),
     onSuccess: () => {
-      showToast("Success!", "Connector created successfully.", "success")
+      showToast("Success!", "Message created successfully.", "success")
       reset()
       onClose()
     },
@@ -55,11 +52,11 @@ const AddConnector = ({ isOpen, onClose }: AddConnectorProps) => {
       handleError(err, showToast)
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["connectors"] })
+      queryClient.invalidateQueries({ queryKey: ["messages"] })
     },
   })
 
-  const onSubmit: SubmitHandler<ConnectorCreate> = (data) => {
+  const onSubmit: SubmitHandler<MessageCreate> = (data) => {
     mutation.mutate(data)
   }
 
@@ -73,46 +70,47 @@ const AddConnector = ({ isOpen, onClose }: AddConnectorProps) => {
       >
         <ModalOverlay />
         <ModalContent as="form" onSubmit={handleSubmit(onSubmit)}>
-          <ModalHeader>Add Connector</ModalHeader>
+          <ModalHeader>Add Message</ModalHeader>
           <ModalCloseButton />
           <ModalBody pb={6}>
-            <FormControl isRequired isInvalid={!!errors.name}>
-              <FormLabel htmlFor="name">Name</FormLabel>
+            <FormControl isRequired isInvalid={!!errors.chat_id}>
+              <FormLabel htmlFor="chat_id">Chat ID</FormLabel>
               <Input
-                id="name"
-                {...register("name", {
-                  required: "Name is required.",
+                id="chat_id"
+                {...register("chat_id", {
+                  required: "Chat ID is required.",
                 })}
-                placeholder="Name"
+                placeholder="Chat ID"
                 type="text"
               />
-              {errors.name && (
-                <FormErrorMessage>{errors.name.message}</FormErrorMessage>
+              {errors.chat_id && (
+                <FormErrorMessage>{errors.chat_id.message}</FormErrorMessage>
+              )}
+            </FormControl>
+            <FormControl isRequired isInvalid={!!errors.content}>
+              <FormLabel htmlFor="content">Content</FormLabel>
+              <Input
+                id="content"
+                {...register("content", {
+                  required: "Content is required.",
+                })}
+                placeholder="Content"
+                type="text"
+              />
+              {errors.content && (
+                <FormErrorMessage>{errors.content.message}</FormErrorMessage>
               )}
             </FormControl>
             <FormControl mt={4}>
-              <FormLabel htmlFor="description">Description</FormLabel>
-              <Textarea
-                id="description"
-                {...register("description")}
-                placeholder="Description"
+              <FormLabel htmlFor="role">Role</FormLabel>
+              <Input
+                id="role"
+                {...register("role", {
+                  required: "Role is required.",
+                })}
+                placeholder="Role"
+                type="text"
               />
-            </FormControl>
-            <FormControl mt={4}>
-              <FormLabel htmlFor="function">Function</FormLabel>
-              <Textarea
-                id="function"
-                {...register("function")}
-                placeholder="Function"
-              />
-            </FormControl>
-            <FormControl mt={4}>
-              <Checkbox
-                id="active"
-                {...register("active")}
-                type="checkbox"
-              />
-              <FormLabel htmlFor="active">Active</FormLabel>
             </FormControl>
           </ModalBody>
 
@@ -128,4 +126,4 @@ const AddConnector = ({ isOpen, onClose }: AddConnectorProps) => {
   )
 }
 
-export default AddConnector
+export default AddMessage
