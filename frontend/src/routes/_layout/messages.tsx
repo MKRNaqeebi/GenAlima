@@ -71,9 +71,10 @@ function MessagesTable() {
         <Table size={{ base: "sm", md: "md" }}>
           <Thead>
             <Tr>
-              <Th>ID</Th>
+              <Th>Chat ID</Th>
               <Th>Role</Th>
               <Th>Content</Th>
+              <Th>Actions</Th>
             </Tr>
           </Thead>
           {isPending ? (
@@ -90,7 +91,7 @@ function MessagesTable() {
             <Tbody>
               {messages?.data.map((message) => (
                 <Tr key={message.id} opacity={isPlaceholderData ? 0.5 : 1}>
-                  <Td>{message.id}</Td>
+                  <Td>{message.chat_id}</Td>
                   <Td isTruncated maxWidth="150px">
                     {message.role}
                   </Td>

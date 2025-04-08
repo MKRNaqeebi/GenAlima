@@ -73,6 +73,8 @@ function ChatsTable() {
             <Tr>
               <Th>ID</Th>
               <Th>Title</Th>
+              <Th>Template ID</Th>
+              <Th>Actions</Th>
             </Tr>
           </Thead>
           {isPending ? (
@@ -90,12 +92,9 @@ function ChatsTable() {
               {chats?.data.map((chat) => (
                 <Tr key={chat.id} opacity={isPlaceholderData ? 0.5 : 1}>
                   <Td>{chat.id}</Td>
-                  <Td isTruncated maxWidth="150px">
-                    {chat.title}
-                  </Td>
-                  <Td>
-                    <ActionsMenu type={"Chat"} value={chat} />
-                  </Td>
+                  <Td>{chat.title}</Td>
+                  <Td>{chat.template_id}</Td>
+                  <Td><ActionsMenu type={"Chat"} value={chat} /></Td>
                 </Tr>
               ))}
             </Tbody>
