@@ -21,6 +21,20 @@ class OpenAIService:
         """
         self.client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
+    def get_text_to_embedding(self, text: str) -> List[float]:
+        """
+        Convert text to embedding representation.
+        Args:
+            text (str): The input text to convert.
+        Returns:
+            List[float]: A list representing the embedding.
+        """
+        embedding = self.client.embeddings.create(
+            input=text,
+            model="text-embedding-3-small",
+        )["data"][0]["embedding"]
+        return embedding
+
     def call_openai_model(
         self, model: str, messages: List[Dict[str, str]]
         ) -> Dict[str, Any]:
@@ -56,4 +70,4 @@ class OpenAIService:
             yield event.choices[0].delta.content
         return ""
 
-gen_openai = OpenAIService()
+gen_openai_model = OpenAIService()

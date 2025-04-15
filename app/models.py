@@ -543,7 +543,7 @@ class KnowledgePublic(KnowledgeBase):
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
-class KnowledgesPublicResponse(SQLModel):
+class KnowledgesPublic(SQLModel):
     """
     Properties to return via API, id is always required
     """

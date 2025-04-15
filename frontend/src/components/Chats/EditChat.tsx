@@ -4,8 +4,6 @@ import {
   FormErrorMessage,
   FormLabel,
   Input,
-  Textarea,
-  Checkbox,
   Modal,
   ModalBody,
   ModalCloseButton,

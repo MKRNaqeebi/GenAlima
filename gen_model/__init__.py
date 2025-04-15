@@ -1,7 +1,7 @@
 """
 Gen Model
 """
-from gen_model.gen_openai import gen_openai
+from gen_model.gen_openai import gen_openai_model
 
 def call_gen_model(
     model: str, messages: list[dict[str, str]]
@@ -17,5 +17,5 @@ def call_gen_model(
         dict[str, str]: The response from the OpenAI API.
     """
     if model in ["gpt-4o", "gpt-4o-32k", "gpt-4o-mini"]:
-        return gen_openai.call_openai_model(model=model, messages=messages)
-    return gen_openai.call_openai_model(model=model, messages=messages)
+        return gen_openai_model.call_openai_model(model=model, messages=messages)
+    return gen_openai_model.call_openai_model(model=model, messages=messages)
