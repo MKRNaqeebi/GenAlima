@@ -31,9 +31,8 @@ class OpenAIService:
         """
         embedding = self.client.embeddings.create(
             input=text,
-            model="text-embedding-3-small",
-        )["data"][0]["embedding"]
-        return embedding
+            model="text-embedding-3-small")
+        return embedding.data[0].embedding
 
     def call_openai_model(
         self, model: str, messages: List[Dict[str, str]]

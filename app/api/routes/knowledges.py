@@ -2,10 +2,13 @@
 Knowledges API routes.
 """
 import uuid
+from datetime import datetime
 from typing import Any
+from uuid import uuid4
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile
 from sqlmodel import func, select
+import pymupdf
 
 from app.api.deps import CurrentUser, SessionDep
 from app.models import (
@@ -28,7 +31,7 @@ def read_knowledges(
         count = session.exec(count_statement).one()
         # pylint: disable=no-member
         statement = select(Knowledge).offset(skip).limit(limit).order_by(
-            Knowledge.created_at.desc())
+            Knowledge.updated_at.desc())
         knowledges = session.exec(statement).all()
         return KnowledgesPublic(data=knowledges, count=count)
     count_statement = (
@@ -38,7 +41,7 @@ def read_knowledges(
     statement = (
         select(Knowledge).where(Knowledge.owner_id == current_user.id).offset(skip).limit(
             # pylint: disable=no-member
-            limit)).order_by(Knowledge.created_at.desc())
+            limit)).order_by(Knowledge.updated_at.desc())
     knowledges = session.exec(statement).all()
     return KnowledgesPublic(data=knowledges, count=count)
 
@@ -80,6 +83,41 @@ def create_knowledge(
     return knowledge
 
 
+@router.post("/files/", response_model=KnowledgesPublic)
+def create_knowledge_by_files(
+    *, session: SessionDep, current_user: CurrentUser, files: list[UploadFile]) -> Any:
+    """
+    Create new knowledge.
+    curl -X 'POST' \
+        'http://127.0.0.1:8000/api/v1/knowledges/files/' \
+        -H 'accept: application/json' \
+        -H 'Content-Type: multipart/form-data' \
+        -F 'files=@net-zero-andrea.pdf' \
+        -F 'files=@phasesForAI-GoogleDocs.pdf' \
+        -H 'Authorization: Bearer '
+    """
+    if not current_user.is_superuser:
+        raise HTTPException(status_code=400, detail="Not enough permissions")
+    knowledges = []
+    for my_file in files:
+        pdf_content = pymupdf.open(stream=my_file.file.read(), filetype="pdf")
+        page_number = 0
+        for page in pdf_content:
+            page_text = page.get_text()
+            content_vector = gen_openai_model.get_text_to_embedding(page_text)
+            knowledge = Knowledge(
+                id=str(uuid4()), content=page_text, chunk_number=page_number,
+                page_number=page_number, content_vector=content_vector, owner_id=current_user.id,
+                filename=my_file.filename, category="General", updated_at=datetime.utcnow())
+            session.add(knowledge)
+            session.commit()
+            session.refresh(knowledge)
+            page_number += 1
+        pdf_content.close()
+        my_file.file.close()
+    return KnowledgesPublic(data=knowledges, count=len(knowledges))
+
+
 @router.delete("/{id}")
 def delete_knowledge(
     session: SessionDep, current_user: CurrentUser,
@@ -97,3 +135,24 @@ def delete_knowledge(
     session.delete(knowledge)
     session.commit()
     return Knowledge(knowledge="Knowledge deleted successfully")
+
+@router.get("/search/{text}", response_model=KnowledgePublic)
+def search_knowledge(
+    session: SessionDep, current_user: CurrentUser,
+    # pylint: disable=redefined-builtin
+    text: str
+) -> Any:
+    """
+    Search knowledge by content.
+    # get knowledge by content with vector distance number
+    session.exec(select(Knowledge).filter(Knowledge.embedding.l2_distance([3, 1, 2]) < 5))
+    """
+    text_vector = gen_openai_model.get_text_to_embedding(text)
+    statement = (
+        select(Knowledge).where(Knowledge.owner_id == current_user.id).order_by(
+            # pylint: disable=no-member
+            Knowledge.content_vector.l2_distance(text_vector)).limit(10))
+    knowledges = session.exec(statement).all()
+    if not knowledges:
+        raise HTTPException(status_code=404, detail="Knowledge not found")
+    return KnowledgesPublic(data=knowledges, count=len(knowledges))

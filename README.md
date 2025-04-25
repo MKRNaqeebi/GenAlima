@@ -8,14 +8,16 @@ Tasks are divided into the integration of data sources, core pipeline, and the f
 
 ### Data Source (Integrate with)
 
-- [ ] Google Drive
-- [ ] OneDrive
-- [ ] Dropbox
-- [ ] SQL Database
-- [ ] Firebase
-- [ ] MongoDB
-- [ ] Notion
-- [ ] GitHub
+- [ ] File Upload
+  - [ ] Upload PDF file using web ui
+  - [ ] Upload markdown file using web ui
+  - [ ] Upload text file using web ui
+  - [ ] Upload docx file using web ui
+- [ ] Online Files from storage, e.g. Google bucket, AWS S3, Azure Blob
+- [ ] Google Drive, OneDrive, Dropbox
+- [ ] SQL Database, e.g. PostgreSQL, MySQL, SQLite
+- [ ] NoSQL Database, e.g. MongoDB, Firebase
+- [ ] Document Management Systems, e.g. Confluence, Notion, GitHub, WebPage
 
 ### Core Platform
 

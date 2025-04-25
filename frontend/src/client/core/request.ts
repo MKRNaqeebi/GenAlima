@@ -105,6 +105,10 @@ export const getFormData = (
       .forEach(([key, value]) => {
         if (Array.isArray(value)) {
           value.forEach((v) => process(key, v))
+        } else if (value.toString() === "[object FileList]") {
+          for (let i = 0; i < value.length; i++) {
+            process(key, value[i])
+          }
         } else {
           process(key, value)
         }

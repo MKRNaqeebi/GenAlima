@@ -59,6 +59,15 @@ import type {
   MessagesUpdateMessageResponse,
   MessagesDeleteMessageData,
   MessagesDeleteMessageResponse,
+  KnowledgesReadKnowledgesResponse,
+  KnowledgesCreateKnowledgeData,
+  KnowledgesCreateKnowledgeResponse,
+  KnowledgesReadKnowledgeData,
+  KnowledgesReadKnowledgeResponse,
+  KnowledgesUpdateKnowledgeData,
+  KnowledgesUpdateKnowledgeResponse,
+  KnowledgesDeleteKnowledgeData,
+  KnowledgesDeleteKnowledgeResponse,
   UsersReadUsersData,
   UsersReadUsersResponse,
   UsersCreateUserData,
@@ -561,6 +570,101 @@ export class MessagesService {
     })
   }
 }
+
+
+export class KnowledgesService {
+  public static readKnowledges(
+    data: ItemsReadItemsData = {},
+  ): CancelablePromise<KnowledgesReadKnowledgesResponse> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/knowledges/",
+      query: {
+        skip: data.skip,
+        limit: data.limit,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  public static createKnowledge(
+    data: KnowledgesCreateKnowledgeData,
+  ): CancelablePromise<KnowledgesCreateKnowledgeResponse> {
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/api/v1/knowledges/",
+      body: data.requestBody,
+      mediaType: "application/json",
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  public static createKnowledgeWithFiles(
+    data: KnowledgesCreateKnowledgeData,
+  ): CancelablePromise<KnowledgesCreateKnowledgeResponse> {
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/api/v1/knowledges/files/",
+      mediaType: "multipart/form-data",
+      formData: data.requestBody,
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  public static readKnowledge(
+    data: KnowledgesReadKnowledgeData,
+  ): CancelablePromise<KnowledgesReadKnowledgeResponse> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/knowledges/{id}",
+      path: {
+        id: data.id,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  public static updateKnowledge(
+    data: KnowledgesUpdateKnowledgeData,
+  ): CancelablePromise<KnowledgesUpdateKnowledgeResponse> {
+    return __request(OpenAPI, {
+      method: "PUT",
+      url: "/api/v1/knowledges/{id}",
+      path: {
+        id: data.id,
+      },
+      body: data.requestBody,
+      mediaType: "application/json",
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  public static deleteKnowledge(
+    data: KnowledgesDeleteKnowledgeData,
+  ): CancelablePromise<KnowledgesDeleteKnowledgeResponse> {
+    return __request(OpenAPI, {
+      method: "DELETE",
+      url: "/api/v1/knowledges/{id}",
+      path: {
+        id: data.id,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+}
+
 
 export class LoginService {
   /**

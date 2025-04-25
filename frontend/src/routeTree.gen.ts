@@ -20,6 +20,7 @@ import { Route as LayoutIndexImport } from './routes/_layout/index'
 import { Route as LayoutTemplatesImport } from './routes/_layout/templates'
 import { Route as LayoutSettingsImport } from './routes/_layout/settings'
 import { Route as LayoutMessagesImport } from './routes/_layout/messages'
+import { Route as LayoutKnowledgesImport } from './routes/_layout/knowledges'
 import { Route as LayoutItemsImport } from './routes/_layout/items'
 import { Route as LayoutConnectorsImport } from './routes/_layout/connectors'
 import { Route as LayoutChatsImport } from './routes/_layout/chats'
@@ -69,6 +70,11 @@ const LayoutSettingsRoute = LayoutSettingsImport.update({
 
 const LayoutMessagesRoute = LayoutMessagesImport.update({
   path: '/messages',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
+const LayoutKnowledgesRoute = LayoutKnowledgesImport.update({
+  path: '/knowledges',
   getParentRoute: () => LayoutRoute,
 } as any)
 
@@ -132,6 +138,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutItemsImport
       parentRoute: typeof LayoutImport
     }
+    '/_layout/knowledges': {
+      preLoaderRoute: typeof LayoutKnowledgesImport
+      parentRoute: typeof LayoutImport
+    }
     '/_layout/messages': {
       preLoaderRoute: typeof LayoutMessagesImport
       parentRoute: typeof LayoutImport
@@ -159,6 +169,7 @@ export const routeTree = rootRoute.addChildren([
     LayoutChatsRoute,
     LayoutConnectorsRoute,
     LayoutItemsRoute,
+    LayoutKnowledgesRoute,
     LayoutMessagesRoute,
     LayoutSettingsRoute,
     LayoutTemplatesRoute,

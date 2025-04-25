@@ -46,6 +46,10 @@ export type MessageCreate = {
   chat_id?: string
 }
 
+export type KnowledgeCreate = {
+  files: Array<File>
+}
+
 export type ItemPublic = {
   title: string
   description?: string | null
@@ -89,6 +93,16 @@ export type MessagePublic = {
   owner_id: string
 }
 
+export type KnowledgePublic = {
+  category: string
+  content: string
+  filename: string
+  page_number: number
+  chunk_number: number
+  id: string
+  owner_id: string
+}
+
 export type ItemsPublic = {
   data: Array<ItemPublic>
   count: number
@@ -111,6 +125,11 @@ export type ChatsPublic = {
 
 export type MessagesPublic = {
   data: Array<MessagePublic>
+  count: number
+}
+
+export type KnowledgesPublic = {
+  data: Array<KnowledgePublic>
   count: number
 }
 
@@ -145,6 +164,14 @@ export type MessageUpdate = {
   role?: string | null
   content?: string | null
   chat_id?: string | null
+}
+
+export type KnowledgeUpdate = {
+  category?: string | null
+  content?: string | null
+  filename?: string | null
+  page_number?: number | null
+  chunk_number?: number | null
 }
 
 export type Message = {
@@ -237,6 +264,11 @@ export type MessagesReadMessagesData = {
   skip?: number
 }
 
+export type KnowledgesReadKnowledgesData = {
+  limit?: number
+  skip?: number
+}
+
 export type ItemsReadItemsResponse = ItemsPublic
 
 export type ConnectorsReadConnectorsResponse = ConnectorsPublic
@@ -246,6 +278,8 @@ export type TemplatesReadTemplatesResponse = TemplatesPublic
 export type ChatsReadChatsResponse = ChatsPublic
 
 export type MessagesReadMessagesResponse = MessagesPublic
+
+export type KnowledgesReadKnowledgesResponse = KnowledgesPublic
 
 export type ItemsCreateItemData = {
   requestBody: ItemCreate
@@ -267,6 +301,10 @@ export type MessagesCreateMessageData = {
   requestBody: MessageCreate
 }
 
+export type KnowledgesCreateKnowledgeData = {
+  requestBody: KnowledgeCreate
+}
+
 export type ItemsCreateItemResponse = ItemPublic
 
 export type ConnectorsCreateConnectorResponse = ConnectorPublic
@@ -276,6 +314,8 @@ export type TemplatesCreateTemplateResponse = TemplatePublic
 export type ChatsCreateChatResponse = ChatPublic
 
 export type MessagesCreateMessageResponse = MessagePublic
+
+export type KnowledgesCreateKnowledgeResponse = KnowledgePublic
 
 export type ItemsReadItemData = {
   id: string
@@ -297,6 +337,10 @@ export type MessagesReadMessageData = {
   id: string
 }
 
+export type KnowledgesReadKnowledgeData = {
+  id: string
+}
+
 export type ItemsReadItemResponse = ItemPublic
 
 export type ConnectorsReadConnectorResponse = ConnectorPublic
@@ -306,6 +350,8 @@ export type TemplatesReadTemplateResponse = TemplatePublic
 export type ChatsReadChatResponse = ChatPublic
 
 export type MessagesReadMessageResponse = MessagePublic
+
+export type KnowledgesReadKnowledgeResponse = KnowledgePublic
 
 export type ItemsUpdateItemData = {
   id: string
@@ -332,6 +378,11 @@ export type MessagesUpdateMessageData = {
   requestBody: MessageUpdate
 }
 
+export type KnowledgesUpdateKnowledgeData = {
+  id: string
+  requestBody: KnowledgeUpdate
+}
+
 export type ItemsUpdateItemResponse = ItemPublic
 
 export type ConnectorsUpdateConnectorResponse = ConnectorPublic
@@ -341,6 +392,8 @@ export type TemplatesUpdateTemplateResponse = TemplatePublic
 export type ChatsUpdateChatResponse = ChatPublic
 
 export type MessagesUpdateMessageResponse = MessagePublic
+
+export type KnowledgesUpdateKnowledgeResponse = KnowledgePublic
 
 export type ItemsDeleteItemData = {
   id: string
@@ -362,6 +415,10 @@ export type MessagesDeleteMessageData = {
   id: string
 }
 
+export type KnowledgesDeleteKnowledgeData = {
+  id: string
+}
+
 export type ItemsDeleteItemResponse = Message
 
 export type ConnectorsDeleteConnectorResponse = Message
@@ -371,6 +428,8 @@ export type TemplatesDeleteTemplateResponse = Message
 export type ChatsDeleteChatResponse = Message
 
 export type MessagesDeleteMessageResponse = Message
+
+export type KnowledgesDeleteKnowledgeResponse = Message
 
 export type LoginLoginAccessTokenData = {
   formData: Body_login_login_access_token
