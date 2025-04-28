@@ -513,7 +513,7 @@ class KnowledgeBase(SQLModel):
     chunk_number: int = Field(default=1)
 
 
-class KnowledgeBaseUpdate(KnowledgeBase):
+class KnowledgeUpdate(KnowledgeBase):
     """
     Properties to receive on item update
     """
