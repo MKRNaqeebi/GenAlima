@@ -9,7 +9,7 @@ from typing import List
 from pydantic import EmailStr
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import Column
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship, SQLModel, JSON
 
 
 # Shared properties
@@ -109,13 +109,6 @@ class OrganizationBase(SQLModel):
     description: str | None = Field(default=None, max_length=255)
 
 
-class OrganizationCreate(OrganizationBase):
-    """
-    Properties to receive on item creation
-    """
-    pass
-
-
 class OrganizationUpdate(OrganizationBase):
     """
     Properties to receive on item update
@@ -164,13 +157,6 @@ class LargeModelBase(SQLModel):
     active: bool = Field(default=True)
 
 
-class LargeModelCreate(LargeModelBase):
-    """
-    Properties to receive on item creation
-    """
-    pass
-
-
 class LargeModelUpdate(LargeModelBase):
     """
     Properties to receive on item update
@@ -212,13 +198,6 @@ class ConnectorBase(SQLModel):
     description: str | None = Field(default=None, max_length=255)
     function: str | None = Field(default=None, max_length=255)
     active: bool = Field(default=True)
-
-
-class ConnectorCreate(ConnectorBase):
-    """
-    Properties to receive on item creation
-    """
-    pass
 
 
 class ConnectorUpdate(ConnectorBase):
@@ -266,13 +245,6 @@ class TemplateBase(SQLModel):
     model: str | None = Field(default=None, max_length=255)
     connector: str | None = Field(default=None, max_length=255)
     active: bool = Field(default=True)
-
-
-class TemplateCreate(TemplateBase):
-    """
-    Properties to receive on item creation
-    """
-    pass
 
 
 class TemplateUpdate(TemplateBase):
@@ -432,14 +404,6 @@ class ItemBase(SQLModel):
     description: str | None = Field(default=None, max_length=255)
 
 
-# Properties to receive on item creation
-class ItemCreate(ItemBase):
-    """
-    Properties to receive on item creation
-    """
-    pass
-
-
 # Properties to receive on item update
 class ItemUpdate(ItemBase):
     """
@@ -505,12 +469,11 @@ class NewPassword(SQLModel):
 class KnowledgeBase(SQLModel):
     """
     Base model for knowledge-related data.
+    source_type: pdf, txt, word, md, webpage, etc
     """
-    category: str = Field(max_length=64)
+    source_type: str = Field(default="pdf", max_length=64)
     content: str
-    filename: str | None = Field(default=None, max_length=255)
-    page_number: int = Field(default=1)
-    chunk_number: int = Field(default=1)
+    meta: dict = Field(sa_column=Column(JSON))
 
 
 class KnowledgeUpdate(KnowledgeBase):

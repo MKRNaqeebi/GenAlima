@@ -9,7 +9,7 @@ from sqlmodel import func, select
 
 from app.api.deps import CurrentUser, SessionDep
 from app.models import (
-    Template, TemplateCreate, TemplatePublic, TemplatesPublic, TemplateUpdate, Message)
+    Template, TemplateBase, TemplatePublic, TemplatesPublic, TemplateUpdate, Message)
 
 router = APIRouter(prefix="/templates", tags=["templates"])
 
@@ -64,7 +64,7 @@ def read_template(
 
 @router.post("/", response_model=TemplatePublic)
 def create_template(
-    *, session: SessionDep, current_user: CurrentUser, template_in: TemplateCreate
+    *, session: SessionDep, current_user: CurrentUser, template_in: TemplateBase
 ) -> Any:
     """
     Create new template.

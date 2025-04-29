@@ -9,8 +9,8 @@ from sqlmodel import func, select
 
 from app.api.deps import CurrentUser, SessionDep
 from app.models import (
-    Message, MessageBase, MessagePublic, MessagesPublic, MessageUpdate, Chat)
-from gen_model import call_gen_model
+    Message, MessageBase, MessagePublic, MessagesPublic, MessageUpdate, Chat, Knowledge)
+from gen_model import call_gen_model, gen_openai_model
 
 router = APIRouter(prefix="/messages", tags=["messages"])
 
@@ -58,6 +58,23 @@ def read_message(
     return message
 
 
+def get_message_knowledge(
+        session: SessionDep, current_user: CurrentUser, message_content: str) -> str:
+    """
+    Get message by ID.
+    """
+    # convert message_content to vector using openai
+    embedding = gen_openai_model.get_text_to_embedding(message_content)
+    messages = session.exec(select(Knowledge).where(Knowledge.owner_id==current_user.id).order_by(
+        # pylint: disable=no-member
+        Knowledge.content_vector.l2_distance(embedding)).limit(3)).all()
+    # get the knowledge content and convert it to string
+    knowledge_content = "\n### Knowledge relevant to the message\n"
+    for knowledge in messages:
+        knowledge_content += f"- {knowledge.content}\n"
+    return knowledge_content
+
+
 @router.post("/", response_model=MessagePublic)
 def create_message(
     *, session: SessionDep, current_user: CurrentUser, message_in: MessageBase
@@ -77,8 +94,9 @@ def create_message(
     session.add(message)
     session.commit()
     session.refresh(message)
-    # TODO: get data from connector and pass it to the system prompt
-    messages.append({"role": "system", "content": chat.template.template})
+    # get data from connector and pass it to the system prompt
+    knowledge_content = get_message_knowledge(session, current_user, message.content)
+    messages.append({"role": "system", "content": f"{chat.template.template}\n{knowledge_content}"})
     messages.append({"role": message_in.role, "content": message_in.content})
     response = call_gen_model(chat.template.model, messages)
     resp_message = Message(

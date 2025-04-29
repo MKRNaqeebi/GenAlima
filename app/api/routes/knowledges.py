@@ -106,9 +106,11 @@ def create_knowledge_by_files(
             page_text = page.get_text()
             content_vector = gen_openai_model.get_text_to_embedding(page_text)
             knowledge = Knowledge(
-                id=str(uuid4()), content=page_text, chunk_number=page_number,
-                page_number=page_number, content_vector=content_vector, owner_id=current_user.id,
-                filename=my_file.filename, category="General", updated_at=datetime.utcnow())
+                id=str(uuid4()), content=page_text, content_vector=content_vector,
+                owner_id=current_user.id, meta={
+                    "filename": my_file.filename, "page_number": page_number,
+                    "chunk_number": page_number, "category": "General"
+                }, source_type="pdf", updated_at=datetime.utcnow())
             session.add(knowledge)
             session.commit()
             session.refresh(knowledge)

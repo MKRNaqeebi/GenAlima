@@ -9,7 +9,7 @@ from sqlmodel import func, select
 
 from app.api.deps import CurrentUser, SessionDep
 from app.models import (
-    Connector, ConnectorCreate, ConnectorPublic, ConnectorsPublic, ConnectorUpdate, Message)
+    Connector, ConnectorBase, ConnectorPublic, ConnectorsPublic, ConnectorUpdate, Message)
 
 router = APIRouter(prefix="/connectors", tags=["connectors"])
 
@@ -47,7 +47,7 @@ def read_connector(
 
 @router.post("/", response_model=ConnectorPublic)
 def create_connector(
-    *, session: SessionDep, current_user: CurrentUser, connector_in: ConnectorCreate
+    *, session: SessionDep, current_user: CurrentUser, connector_in: ConnectorBase
 ) -> Any:
     """
     Create new connector.

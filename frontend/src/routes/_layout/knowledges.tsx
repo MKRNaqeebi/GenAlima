@@ -15,7 +15,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useEffect } from "react"
 import { z } from "zod"
 
-import { KnowledgesService } from "../../client"
+import { KnowledgePublic, KnowledgesService } from "../../client"
 import AddKnowledge from "../../components/Knowledges/AddKnowledge"
 import Navbar from "../../components/Common/Navbar"
 import ActionsMenu from "../../components/Common/ActionsMenu"
@@ -71,10 +71,8 @@ function KnowledgesTable() {
         <Table size={{ base: "sm", md: "md" }}>
           <Thead>
             <Tr>
-              <Th>File Name</Th>
               <Th>Content</Th>
-              <Th>Page Number</Th>
-              <Th>Page Chuck Number</Th>
+              <Th>Meta</Th>
               <Th>Actions</Th>
             </Tr>
           </Thead>
@@ -90,14 +88,12 @@ function KnowledgesTable() {
             </Tbody>
           ) : (
             <Tbody>
-              {knowledges?.data.map((knowledge) => (
+              {knowledges?.data.map((knowledge: KnowledgePublic) => (
                 <Tr key={knowledge.id} opacity={isPlaceholderData ? 0.5 : 1}>
-                  <Td>{knowledge.filename}</Td>
-                  <Td isTruncated maxWidth="150px">
+                  <Td isTruncated maxWidth="300px">
                     {knowledge.content}
                   </Td>
-                  <Td>{knowledge.page_number}</Td>
-                  <Td>{knowledge.chunk_number}</Td>
+                  <Td>{JSON.stringify(knowledge.meta)}</Td>
                   <Td>
                     <ActionsMenu type={"Knowledge"} value={knowledge} />
                   </Td>

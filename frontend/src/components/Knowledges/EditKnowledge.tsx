@@ -81,19 +81,6 @@ const EditKnowledge = ({ knowledge, isOpen, onClose }: EditKnowledgeProps) => {
           <ModalHeader>Edit Knowledge</ModalHeader>
           <ModalCloseButton />
           <ModalBody pb={6}>
-            <FormControl isInvalid={!!errors.filename}>
-              <FormLabel htmlFor="filename">Filename</FormLabel>
-              <Input
-                id="filename"
-                {...register("filename", {
-                  required: "Filename is required",
-                })}
-                type="text"
-              />
-              {errors.filename && (
-                <FormErrorMessage>{errors.filename.message}</FormErrorMessage>
-              )}
-            </FormControl>
             <FormControl isInvalid={!!errors.content}>
               <FormLabel htmlFor="content">Content</FormLabel>
               <Input
@@ -105,22 +92,6 @@ const EditKnowledge = ({ knowledge, isOpen, onClose }: EditKnowledgeProps) => {
               />
               {errors.content && (
                 <FormErrorMessage>{errors.content.message}</FormErrorMessage>
-              )}
-            </FormControl>
-            <FormControl mt={4}>
-              <FormLabel htmlFor="pagepage_number">Page Number</FormLabel>
-              <Input
-                id="page_number"
-                {...register("page_number", {
-                  required: "Page Number is required",
-                })}
-                type="number"
-                min={1}
-                step={1}
-                defaultValue={knowledge.page_number}
-              />
-              {errors.page_number && (
-                <FormErrorMessage>{errors.page_number.message}</FormErrorMessage>
               )}
             </FormControl>
           </ModalBody>

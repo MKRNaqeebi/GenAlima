@@ -94,11 +94,8 @@ export type MessagePublic = {
 }
 
 export type KnowledgePublic = {
-  category: string
   content: string
-  filename: string
-  page_number: number
-  chunk_number: number
+  meta: JSON
   id: string
   owner_id: string
 }
