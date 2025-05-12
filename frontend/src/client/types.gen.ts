@@ -44,6 +44,7 @@ export type MessageCreate = {
   role: string
   content: string
   chat_id?: string
+  owner_id: string
 }
 
 export type KnowledgeCreate = {

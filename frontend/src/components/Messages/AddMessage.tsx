@@ -18,6 +18,7 @@ import { type SubmitHandler, useForm } from "react-hook-form"
 import { type ApiError, type MessageCreate, MessagesService } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
 import { handleError } from "../../utils"
+import useAuth from "../../hooks/useAuth"
 
 interface AddMessageProps {
   isOpen: boolean
@@ -26,6 +27,7 @@ interface AddMessageProps {
 
 const AddMessage = ({ isOpen, onClose }: AddMessageProps) => {
   const queryClient = useQueryClient()
+  const { user } = useAuth()
   const showToast = useCustomToast()
   const {
     register,
@@ -57,6 +59,12 @@ const AddMessage = ({ isOpen, onClose }: AddMessageProps) => {
   })
 
   const onSubmit: SubmitHandler<MessageCreate> = (data) => {
+    if (user){
+      data.owner_id=user.id
+    }
+    else{
+      data.owner_id=''
+    }
     mutation.mutate(data)
   }
 

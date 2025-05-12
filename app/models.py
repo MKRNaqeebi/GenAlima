@@ -372,6 +372,7 @@ class MessageBase(SQLModel):
     chat_id: uuid.UUID = Field(
         foreign_key="chat.id", nullable=False, ondelete="CASCADE"
     )
+    owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False, ondelete="CASCADE") 
 
 
 class MessageUpdate(MessageBase):
@@ -395,6 +396,7 @@ class Message(MessageBase, table=True):
     )
     chat: Chat | None = Relationship(back_populates="messages")
     created_at: datetime = Field(default_factory=datetime.utcnow)
+    owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False, ondelete="CASCADE")
 
 
 class MessagePublic(MessageBase):
