@@ -99,9 +99,10 @@ function ChatInterface() {
   })
 
   // Show all messages from the specific chat (both user and assistant)
-  const chatMessages = messages?.data.filter(message => 
-    message.chat_id === chatId
-  ) || []
+  // Reverse the order to show oldest messages first (proper chat order)
+  const chatMessages = messages?.data
+    .filter(message => message.chat_id === chatId)
+    .reverse() || []
 
   const sendMessageMutation = useMutation({
     mutationFn: (data: MessageCreate) =>
