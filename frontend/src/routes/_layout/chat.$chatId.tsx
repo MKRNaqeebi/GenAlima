@@ -15,7 +15,7 @@ import {
 } from "@chakra-ui/react"
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { z } from "zod"
 import { ArrowForwardIcon } from "@chakra-ui/icons"
 
@@ -86,6 +86,7 @@ function ChatInterface() {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
   const [newMessage, setNewMessage] = useState('')
+  const messagesEndRef = useRef<HTMLDivElement>(null)
   
   const { page } = Route.useSearch()
   const { chatId } = Route.useParams()
@@ -104,6 +105,19 @@ function ChatInterface() {
     .filter(message => message.chat_id === chatId)
     .reverse() || []
 
+  // Check if the last message is from user and there's no assistant response yet
+  const lastMessage = chatMessages[chatMessages.length - 1]
+  const isWaitingForResponse = lastMessage?.role === 'user'
+
+  // Auto-scroll to bottom when messages change
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [chatMessages])
+
   const sendMessageMutation = useMutation({
     mutationFn: (data: MessageCreate) =>
       MessagesService.createMessage({ requestBody: data }),
@@ -118,7 +132,7 @@ function ChatInterface() {
   })
 
   const handleSendMessage = () => {
-    if (!newMessage.trim()) return
+    if (!newMessage.trim() || isWaitingForResponse || sendMessageMutation.isPending) return
     
     sendMessageMutation.mutate({
       content: newMessage,
@@ -172,6 +186,8 @@ function ChatInterface() {
               />
             ))
           )}
+          {/* Invisible element to scroll to */}
+          <div ref={messagesEndRef} />
         </VStack>
       </Box>
 
@@ -180,18 +196,23 @@ function ChatInterface() {
         <CardBody>
           <HStack spacing={2} w="full">
             <Input
-              placeholder="Type your message..."
+              placeholder={
+                isWaitingForResponse 
+                  ? "Waiting for assistant response..." 
+                  : "Type your message..."
+              }
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyDown={handleKeyPress}
               flex="1"
+              isDisabled={isWaitingForResponse || sendMessageMutation.isPending}
             />
             <IconButton
               aria-label="Send message"
               icon={<ArrowForwardIcon />}
               onClick={handleSendMessage}
               isLoading={sendMessageMutation.isPending}
-              isDisabled={!newMessage.trim()}
+              isDisabled={!newMessage.trim() || isWaitingForResponse || sendMessageMutation.isPending}
               colorScheme="blue"
             />
           </HStack>
