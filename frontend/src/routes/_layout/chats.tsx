@@ -2,24 +2,25 @@ import {
   Container,
   Heading,
   SkeletonText,
-  Table,
-  TableContainer,
-  Tbody,
-  Td,
-  Th,
-  Thead,
-  Tr,
+  VStack,
+  HStack,
+  Box,
+  Card,
+  CardBody,
+  Text,
+  Badge,
+  Icon,
+  Flex,
 } from "@chakra-ui/react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { createFileRoute, useNavigate } from "@tanstack/react-router"
+import { createFileRoute, Link } from "@tanstack/react-router"
 import { useEffect } from "react"
 import { z } from "zod"
+import { ChatIcon, ChevronRightIcon } from "@chakra-ui/icons"
 
 import { ChatsService } from "../../client"
 import AddChat from "../../components/Chats/AddChat"
 import Navbar from "../../components/Common/Navbar"
-import ActionsMenu from "../../components/Common/ActionsMenu"
-import { PaginationFooter } from "../../components/Common/PaginationFooter.tsx"
   
 const chatsSearchSchema = z.object({
   page: z.number().catch(1),
@@ -40,85 +41,132 @@ function getChatsQueryOptions({ page }: { page: number }) {
   }
 }
 
-function ChatsTable() {
+interface ChatItemProps {
+  id: string
+  title: string
+  template_id?: string | null
+}
+
+function ChatItem({ id, title, template_id }: ChatItemProps) {
+  return (
+    <Link to={`/chat/${id}`} style={{ textDecoration: 'none' }}>
+      <Card
+        cursor="pointer"
+        transition="all 0.2s"
+        _hover={{
+          shadow: 'md',
+          transform: 'translateY(-2px)',
+          borderColor: 'blue.200'
+        }}
+        border="1px solid"
+        borderColor="gray.200"
+      >
+        <CardBody>
+          <Flex justify="space-between" align="center">
+            <HStack spacing={3} flex={1}>
+              <Box>
+                <Icon as={ChatIcon} color="blue.500" boxSize={5} />
+              </Box>
+              <VStack align="start" spacing={1} flex={1}>
+                <Text fontWeight="semibold" fontSize="md" noOfLines={1}>
+                  {title || 'Untitled Chat'}
+                </Text>
+                <HStack spacing={2}>
+                  <Text fontSize="sm" color="gray.500">
+                    ID: {id.slice(0, 8)}...
+                  </Text>
+                  {template_id && (
+                    <Badge colorScheme="blue" size="sm">
+                      Template: {template_id.slice(0, 8)}...
+                    </Badge>
+                  )}
+                </HStack>
+              </VStack>
+            </HStack>
+            <Icon as={ChevronRightIcon} color="gray.400" boxSize={4} />
+          </Flex>
+        </CardBody>
+      </Card>
+    </Link>
+  )
+}
+
+function ChatsList() {
   const queryClient = useQueryClient()
   const { page } = Route.useSearch()
-  const navigate = useNavigate({ from: Route.fullPath })
-  const setPage = (page: number) =>
-    navigate({ search: (prev: {[key: string]: string}) => ({ ...prev, page }) })
 
   const {
     data: chats,
     isPending,
-    isPlaceholderData,
   } = useQuery({
     ...getChatsQueryOptions({ page }),
     placeholderData: (prevData) => prevData,
   })
 
-  const hasNextPage = !isPlaceholderData && chats?.data.length === PER_PAGE
-  const hasPreviousPage = page > 1
-
   useEffect(() => {
-    if (hasNextPage) {
-      queryClient.prefetchQuery(getChatsQueryOptions({ page: page + 1 }))
-    }
-  }, [page, queryClient, hasNextPage])
+    // Prefetch all chats for better UX
+    queryClient.prefetchQuery(getChatsQueryOptions({ page: page + 1 }))
+  }, [page, queryClient])
+
+  if (isPending) {
+    return (
+      <VStack spacing={4} align="stretch">
+        {Array.from({ length: 5 }).map((_, index) => (
+          <Card key={index}>
+            <CardBody>
+              <HStack spacing={3}>
+                <SkeletonText noOfLines={1} width="20px" />
+                <VStack align="start" spacing={1} flex={1}>
+                  <SkeletonText noOfLines={1} width="200px" />
+                  <SkeletonText noOfLines={1} width="150px" />
+                </VStack>
+              </HStack>
+            </CardBody>
+          </Card>
+        ))}
+      </VStack>
+    )
+  }
+
+  if (!chats?.data.length) {
+    return (
+      <Box textAlign="center" py={10}>
+        <Icon as={ChatIcon} boxSize={12} color="gray.300" mb={4} />
+        <Text fontSize="lg" color="gray.500" mb={2}>
+          No chats found
+        </Text>
+        <Text fontSize="sm" color="gray.400">
+          Create your first chat to get started
+        </Text>
+      </Box>
+    )
+  }
 
   return (
-    <>
-      <TableContainer>
-        <Table size={{ base: "sm", md: "md" }}>
-          <Thead>
-            <Tr>
-              <Th>ID</Th>
-              <Th>Title</Th>
-              <Th>Template ID</Th>
-              <Th>Actions</Th>
-            </Tr>
-          </Thead>
-          {isPending ? (
-            <Tbody>
-              <Tr>
-                {new Array(4).fill(null).map((_, index) => (
-                  <Td key={index}>
-                    <SkeletonText noOfLines={1} paddingBlock="16px" />
-                  </Td>
-                ))}
-              </Tr>
-            </Tbody>
-          ) : (
-            <Tbody>
-              {chats?.data.map((chat) => (
-                <Tr key={chat.id} opacity={isPlaceholderData ? 0.5 : 1}>
-                  <Td>{chat.id}</Td>
-                  <Td>{chat.title}</Td>
-                  <Td>{chat.template_id}</Td>
-                  <Td><ActionsMenu type={"Chat"} value={chat} /></Td>
-                </Tr>
-              ))}
-            </Tbody>
-          )}
-        </Table>
-      </TableContainer>
-      <PaginationFooter
-        page={page}
-        onChangePage={setPage}
-        hasNextPage={hasNextPage}
-        hasPreviousPage={hasPreviousPage}
-      />
-    </>
+    <VStack spacing={3} align="stretch">
+      {chats.data.map((chat) => (
+        <ChatItem
+          key={chat.id}
+          id={chat.id}
+          title={chat.title}
+          template_id={chat.template_id}
+        />
+      ))}
+    </VStack>
   )
 }
 
 function Chats() {
   return (
-    <Container maxW="full">
-      <Heading size="lg" textAlign={{ base: "center", md: "left" }} pt={12}>
-        Chats Management
+    <Container maxW="4xl">
+      <Heading size="lg" textAlign={{ base: "center", md: "left" }} pt={12} mb={2}>
+        Your Chats
       </Heading>
+      <Text color="gray.600" mb={6}>
+        Click on any chat to start messaging
+      </Text>
       <Navbar type={"Chat"} addModalAs={AddChat} />
-      <ChatsTable />
+      <ChatsList />
     </Container>
   )
 }

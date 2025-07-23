@@ -23,23 +23,18 @@ import { MessagesService, type MessageCreate } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
 import { handleError } from "../../utils"
 
-const messagesSearchSchema = z.object({
+const chatSearchSchema = z.object({
   page: z.number().catch(1),
 })
 
-const messagesParamsSchema = z.object({
-  chatId: z.string(),
+export const Route = createFileRoute("/_layout/chat/$chatId")({
+  component: Chat,
+  validateSearch: (search) => chatSearchSchema.parse(search),
 })
 
-export const Route = createFileRoute("/_layout/messages")({
-  component: Messages,
-  validateSearch: (search) => messagesSearchSchema.parse(search),
-  parseParams: (params) => messagesParamsSchema.parse(params),
-})
+const PER_PAGE = 50
 
-const PER_PAGE = 5
-
-function getMessagesQueryOptions({ page, chatId }: { page: number; chatId?: string }) {
+function getMessagesQueryOptions({ page, chatId }: { page: number; chatId: string }) {
   return {
     queryFn: () =>
       MessagesService.readMessages({ skip: (page - 1) * PER_PAGE, limit: PER_PAGE }),
@@ -103,9 +98,9 @@ function ChatInterface() {
     placeholderData: (prevData) => prevData,
   })
 
-  // Filter to show only user messages from the specific chat
-  const userMessages = messages?.data.filter(message => 
-    message.role === 'user' && message.chat_id === chatId
+  // Show all messages from the specific chat (both user and assistant)
+  const chatMessages = messages?.data.filter(message => 
+    message.chat_id === chatId
   ) || []
 
   const sendMessageMutation = useMutation({
@@ -162,12 +157,12 @@ function ChatInterface() {
         mb={4}
       >
         <VStack spacing={0} align="stretch">
-          {userMessages.length === 0 ? (
+          {chatMessages.length === 0 ? (
             <Text textAlign="center" color="gray.500" py={8}>
-              No user messages found. Start a conversation!
+              No messages in this chat. Start a conversation!
             </Text>
           ) : (
-            userMessages.map((message) => (
+            chatMessages.map((message) => (
               <MessageBubble
                 key={message.id}
                 content={message.content || 'No content'}
@@ -205,13 +200,13 @@ function ChatInterface() {
   )
 }
 
-function Messages() {
+function Chat() {
   const { chatId } = Route.useParams()
   
   return (
     <Container maxW="4xl">
       <Heading size="lg" textAlign={{ base: "center", md: "left" }} pt={12} mb={2}>
-        Chat Messages
+        Chat Conversation
       </Heading>
       <Text color="gray.600" mb={6}>
         Chat ID: {chatId}
