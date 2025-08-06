@@ -7,10 +7,6 @@ cachetools==5.5.1
 certifi==2024.12.14
 cffi==1.17.1
 cfgv==3.4.0
-chardet==5.2.0
-charset-normalizer==3.4.1
-click==8.1.8
-coverage==7.6.10
 cryptography==44.0.0
 cssselect==1.2.0
 cssutils==2.11.1
@@ -50,7 +46,6 @@ pluggy==1.5.0
 pre_commit==4.1.0
 premailer==3.10.0
 proto-plus==1.26.0
-protobuf==5.29.3
 psycopg==3.2.4
 psycopg-binary==3.2.4
 psycopg2-binary==2.9.10

@@ -4,7 +4,7 @@ Application settings.
 import os
 import secrets
 import warnings
-from typing import Literal
+from enum import Enum
 
 from pydantic import (HttpUrl, PostgresDsn, computed_field, model_validator)
 from pydantic_core import Url
@@ -14,6 +14,17 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+class Environment(str, Enum):
+    """Application environment types.
+
+    Defines the possible environments the application can run in:
+    development, staging, production, and test.
+    """
+
+    DEVELOPMENT = "development"
+    STAGING = "staging"
+    PRODUCTION = "production"
+    TEST = "test"
 
 class Settings(BaseSettings):
     """
@@ -30,7 +41,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(
         os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", str(60 * 24 * 8)))
     FRONTEND_HOST: str = os.getenv("FRONTEND_HOST", "http://localhost:5173")
-    ENVIRONMENT: Literal["local", "staging", "production"] = "local"
+    ENVIRONMENT: Environment = Environment.DEVELOPMENT
     BUILD_PATH: str = os.getenv('BUILD_PATH', 'frontend/dist')
 
     BACKEND_CORS_ORIGINS: str = os.getenv("BACKEND_CORS_ORIGINS", "*")
