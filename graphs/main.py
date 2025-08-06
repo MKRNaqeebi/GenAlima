@@ -74,10 +74,12 @@ class GraphState(BaseModel):
         try:
             uuid.UUID(v)
             return v
-        except ValueError:
+        except ValueError as exc:
             # If not a UUID, check for safe characters only
             if not re.match(r"^[a-zA-Z0-9_\-]+$", v):
-                raise ValueError("Session ID must contain only alphanumeric characters, underscores, and hyphens")
+                raise ValueError(
+                    "Session ID must contain only alphanumeric characters, underscores, and hyphens"
+                ) from exc
             return v
 
 
@@ -205,7 +207,7 @@ class LangGraphAgent:
 
                 continue
 
-        raise Exception(f"Failed to get a response from the LLM after {max_retries} attempts")
+        raise RuntimeError(f"Failed to get a response from the LLM after {max_retries} attempts")
 
     # Define our tool node
     async def _tool_call(self, state: GraphState) -> GraphState:
@@ -244,8 +246,7 @@ class LangGraphAgent:
         if not last_message.tool_calls:
             return "end"
         # Otherwise if there is, we continue
-        else:
-            return "continue"
+        return "continue"
 
     async def create_graph(self) -> Optional[CompiledStateGraph]:
         """Create and configure the LangGraph workflow.
@@ -276,7 +277,7 @@ class LangGraphAgent:
                     # In production, proceed without checkpointer if needed
                     checkpointer = None
                     if settings.ENVIRONMENT != Environment.PRODUCTION:
-                        raise Exception("Connection pool initialization failed")
+                        raise ConnectionError("Connection pool initialization failed")
 
                 self._graph = graph_builder.compile(
                     checkpointer=checkpointer, debug=settings.ENVIRONMENT != Environment.PRODUCTION
@@ -303,7 +304,7 @@ class LangGraphAgent:
         messages: list[Message],
         session_id: str,
         user_id: Optional[str] = None,
-    ) -> list[dict]:
+    ) -> list[Message]:
         """Get a response from the LLM.
 
         Args:
@@ -312,7 +313,7 @@ class LangGraphAgent:
             user_id (Optional[str]): The user ID for Langfuse tracking.
 
         Returns:
-            list[dict]: The response from the LLM.
+            list[Message]: The response from the LLM.
         """
         if self._graph is None:
             self._graph = await self.create_graph()
@@ -335,7 +336,7 @@ class LangGraphAgent:
             raise e
 
     async def get_stream_response(
-        self, messages: list[Message], session_id: str, user_id: Optional[str] = None
+        self, messages: list[Message], session_id: str, user_id: Optional[str] = None  # pylint: disable=unused-argument
     ) -> AsyncGenerator[str, None]:
         """Get a stream response from the LLM.
 
@@ -359,11 +360,11 @@ class LangGraphAgent:
             ):
                 try:
                     yield token.content
-                except Exception as token_error:
+                except Exception as token_error:  # pylint: disable=broad-exception-caught
                     logger.error("Error processing token", error=str(token_error), session_id=session_id)
                     # Continue with next token even if current one fails
                     continue
-        except Exception as stream_error:
+        except Exception as stream_error:  # pylint: disable=broad-exception-caught
             logger.error("Error in stream processing", error=str(stream_error), session_id=session_id)
             raise stream_error
 
@@ -419,3 +420,5 @@ class LangGraphAgent:
         except Exception as e:
             logger.error("Failed to clear chat history", error=str(e))
             raise
+
+lang_graph_agent = LangGraphAgent()

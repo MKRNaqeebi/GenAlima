@@ -4,6 +4,7 @@ Application settings.
 # Standard library imports
 from enum import Enum
 import os
+from pathlib import Path
 import secrets
 import warnings
 
@@ -134,5 +135,32 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str | None = os.getenv("OPENAI_API_KEY")
     GEMINI_API_KEY: str | None = os.getenv("GEMINI_API_KEY")
     ANTHROPIC_API_KEY: str | None = os.getenv("ANTHROPIC_API_KEY")
+
+    # Logging configuration
+    LOG_DIR: Path = Path(os.getenv("LOG_DIR", "./logs"))
+    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
+    LOG_FORMAT: str = os.getenv("LOG_FORMAT", "json")
+
+    # LLM configuration
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "gpt-4o-mini")
+    DEFAULT_LLM_TEMPERATURE: float = float(os.getenv("DEFAULT_LLM_TEMPERATURE", "0.7"))
+    LLM_API_KEY: str | None = os.getenv("LLM_API_KEY", os.getenv("OPENAI_API_KEY"))
+    MAX_TOKENS: int = int(os.getenv("MAX_TOKENS", "2000"))
+    MAX_LLM_CALL_RETRIES: int = int(os.getenv("MAX_LLM_CALL_RETRIES", "3"))
+
+    # PostgreSQL configuration for LangGraph
+    POSTGRES_POOL_SIZE: int = int(os.getenv("POSTGRES_POOL_SIZE", "10"))
+
+    @computed_field
+    @property
+    def POSTGRES_URL(self) -> str:
+        """Build the PostgreSQL URL for async connections."""
+        return (
+            f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@"
+            f"{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        )
+
+    # LangGraph checkpoint tables
+    CHECKPOINT_TABLES: list[str] = ["checkpoints", "checkpoint_blobs", "checkpoint_writes"]
 
 settings = Settings()

@@ -13,14 +13,15 @@ from sqlmodel import func, select
 from app.api.deps import CurrentUser, SessionDep
 from app.models import (
     Chat,
-    Knowledge,
+    # Knowledge,
     Message,
     MessageBase,
     MessagePublic,
     MessagesPublic,
     MessageUpdate,
 )
-from gen_model import call_gen_model, gen_openai_model
+# from gen_model import call_gen_model, gen_openai_model
+from graphs.main import lang_graph_agent
 
 router = APIRouter(prefix="/messages", tags=["messages"])
 
@@ -68,25 +69,25 @@ def read_message(
     return message
 
 
-def get_message_knowledge(
-        session: SessionDep, current_user: CurrentUser, message_content: str) -> str:
-    """
-    Get message by ID.
-    """
-    # convert message_content to vector using openai
-    embedding = gen_openai_model.get_text_to_embedding(message_content)
-    messages = session.exec(select(Knowledge).where(Knowledge.owner_id==current_user.id).order_by(
-        # pylint: disable=no-member
-        Knowledge.content_vector.l2_distance(embedding)).limit(3)).all()
-    # get the knowledge content and convert it to string
-    knowledge_content = "\n### Knowledge relevant to the message\n"
-    for knowledge in messages:
-        knowledge_content += f"- {knowledge.content}\n"
-    return knowledge_content
+# def get_message_knowledge(
+#         session: SessionDep, current_user: CurrentUser, message_content: str) -> str:
+#     """
+#     Get message by ID.
+#     """
+#     # convert message_content to vector using openai
+#     embedding = gen_openai_model.get_text_to_embedding(message_content)
+#     messages = session.exec(select(Knowledge).where(Knowledge.owner_id==current_user.id).order_by(
+#         # pylint: disable=no-member
+#         Knowledge.content_vector.l2_distance(embedding)).limit(3)).all()
+#     # get the knowledge content and convert it to string
+#     knowledge_content = "\n### Knowledge relevant to the message\n"
+#     for knowledge in messages:
+#         knowledge_content += f"- {knowledge.content}\n"
+#     return knowledge_content
 
 
 @router.post("/", response_model=MessagePublic)
-def create_message(
+async def create_message(
     *, session: SessionDep, current_user: CurrentUser, message_in: MessageBase
 ) -> Any:
     """
@@ -98,19 +99,35 @@ def create_message(
     if not current_user.is_superuser and chat.owner_id != current_user.id:
         raise HTTPException(status_code=400, detail="Not enough permissions")
     message = Message.model_validate(message_in)
-    messages = []
+
+    # Prepare messages for the agent (convert to Message objects)
+    agent_messages = []
     for msg in chat.messages:
-        messages.append({"role": msg.role, "content": msg.content})
+        agent_messages.append(Message(role=msg.role, content=msg.content, chat_id=msg.chat_id))
+
+    # Add the new user message to the conversation
+    agent_messages.append(message)
+
     session.add(message)
     session.commit()
     session.refresh(message)
+
     # get data from connector and pass it to the system prompt
-    knowledge_content = get_message_knowledge(session, current_user, message.content)
-    messages.append({"role": "system", "content": f"{chat.template.template}\n{knowledge_content}"})
-    messages.append({"role": message_in.role, "content": message_in.content})
-    response = call_gen_model(chat.template.model, messages)
+    response = await lang_graph_agent.get_response(agent_messages, str(chat.id), str(current_user.id))
+    # knowledge_content = get_message_knowledge(session, current_user, message.content)
+    # messages.append({"role": "system", "content": f"{chat.template.template}\n{knowledge_content}"})
+    # messages.append({"role": message_in.role, "content": message_in.content})
+    # response = call_gen_model(chat.template.model, messages)
+    # Get the last message from the response (should be assistant response)
+    if not response:
+        raise HTTPException(status_code=500, detail="No response generated")
+
+    last_msg = response[-1]
     resp_message = Message(
-        chat_id=chat.id, role="assistant", content=response, owner_id=current_user.id)
+        chat_id=chat.id,
+        role="assistant",
+        content=last_msg.content
+    )
     session.add(resp_message)
     session.commit()
     session.refresh(resp_message)
