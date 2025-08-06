@@ -1,16 +1,23 @@
 """
 Organization routes.
 """
-import uuid
+# Standard library imports
 from typing import Any
+import uuid
 
+# Third-party imports
 from fastapi import APIRouter, HTTPException
 from sqlmodel import func, select
 
+# Local application imports
 from app.api.deps import CurrentUser, SessionDep
 from app.models import (
-    Organization, OrganizationBase, OrganizationPublic, OrganizationsPublic, OrganizationUpdate,
-    Message
+    Message,
+    Organization,
+    OrganizationBase,
+    OrganizationPublic,
+    OrganizationsPublic,
+    OrganizationUpdate,
 )
 
 router = APIRouter(prefix="/organizations", tags=["organizations"])
@@ -24,13 +31,13 @@ def read_organizations(
     Retrieve organizations.
     """
     if current_user.is_superuser:
-        count_statement = select(func.count()).select_from(Organization)
+        count_statement = select(func.count()).select_from(Organization)  # pylint: disable=not-callable
         count = session.exec(count_statement).one()
         statement = select(Organization).offset(skip).limit(limit)
         organizations = session.exec(statement).all()
     else:
         count_statement = (
-            select(func.count())
+            select(func.count())  # pylint: disable=not-callable
             .select_from(Organization)
             .where(Organization.owner_id == current_user.id)
         )
@@ -47,7 +54,7 @@ def read_organizations(
 
 
 @router.get("/{id}", response_model=OrganizationPublic)
-def read_organization(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
+def read_organization(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:  # pylint: disable=redefined-builtin
     """
     Get organization by ID.
     """
@@ -79,7 +86,7 @@ def update_organization(
     *,
     session: SessionDep,
     current_user: CurrentUser,
-    id: uuid.UUID,
+    id: uuid.UUID,  # pylint: disable=redefined-builtin
     organization_in: OrganizationUpdate,
 ) -> Any:
     """
@@ -100,7 +107,7 @@ def update_organization(
 
 @router.delete("/{id}")
 def delete_organization(
-    session: SessionDep, current_user: CurrentUser, id: uuid.UUID
+    session: SessionDep, current_user: CurrentUser, id: uuid.UUID  # pylint: disable=redefined-builtin
 ) -> Message:
     """
     Delete an organization.

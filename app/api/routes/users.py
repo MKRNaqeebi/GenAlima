@@ -1,9 +1,13 @@
-import uuid
+"""User management routes."""
+# Standard library imports
 from typing import Any
+import uuid
 
+# Third-party imports
 from fastapi import APIRouter, Depends, HTTPException
 from sqlmodel import col, delete, func, select
 
+# Local application imports
 from app import crud
 from app.api.deps import (
     CurrentUser,
@@ -39,7 +43,7 @@ def read_users(session: SessionDep, skip: int = 0, limit: int = 100) -> Any:
     Retrieve users.
     """
 
-    count_statement = select(func.count()).select_from(User)
+    count_statement = select(func.count()).select_from(User)  # pylint: disable=not-callable
     count = session.exec(count_statement).one()
 
     statement = select(User).offset(skip).limit(limit)

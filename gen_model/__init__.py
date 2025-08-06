@@ -1,7 +1,9 @@
 """
 Gen Model
 """
+# Local application imports
 from gen_model.gen_openai import gen_openai_model
+
 
 def call_gen_model(
     model: str, messages: list[dict[str, str]]

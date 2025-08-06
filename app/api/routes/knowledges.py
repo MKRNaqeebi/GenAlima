@@ -1,18 +1,20 @@
 """
 Knowledges API routes.
 """
-import uuid
+# Standard library imports
 from datetime import datetime
 from typing import Any
+import uuid
 from uuid import uuid4
 
+# Third-party imports
 from fastapi import APIRouter, HTTPException, UploadFile
-from sqlmodel import func, select
 import pymupdf
+from sqlmodel import func, select
 
+# Local application imports
 from app.api.deps import CurrentUser, SessionDep
-from app.models import (
-    Knowledge, KnowledgeBase, KnowledgePublic, KnowledgesPublic, Chat)
+from app.models import Chat, Knowledge, KnowledgeBase, KnowledgePublic, KnowledgesPublic
 from gen_model.gen_openai import gen_openai_model
 
 router = APIRouter(prefix="/knowledges", tags=["knowledges"])

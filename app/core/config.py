@@ -1,16 +1,18 @@
 """
 Application settings.
 """
+# Standard library imports
+from enum import Enum
 import os
 import secrets
 import warnings
-from enum import Enum
 
-from pydantic import (HttpUrl, PostgresDsn, computed_field, model_validator)
+# Third-party imports
+from dotenv import load_dotenv
+from pydantic import HttpUrl, PostgresDsn, computed_field, model_validator
 from pydantic_core import Url
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing_extensions import Self
-from dotenv import load_dotenv
 
 load_dotenv()
 

@@ -1,6 +1,7 @@
 """
 This is the main file for the FastAPI application. It contains the routes for the API endpoints.
 """
+# Third-party imports
 from fastapi import FastAPI, Request
 from fastapi.routing import APIRoute
 from fastapi.staticfiles import StaticFiles
@@ -8,10 +9,11 @@ from fastapi.templating import Jinja2Templates
 import sentry_sdk
 from starlette.middleware.cors import CORSMiddleware
 
+# Local application imports
 from app.api.main import api_router
 from app.core.config import settings
-from app.utils import auth_required
 from app.models import CompletionInput, Message
+from app.utils import auth_required
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -75,5 +77,6 @@ async def serve_index(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
 if __name__ == "__main__":
+    # Third-party imports
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True)

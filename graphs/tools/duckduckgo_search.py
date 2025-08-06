@@ -5,6 +5,7 @@ to perform web searches. It returns up to 10 search results and handles errors
 gracefully.
 """
 
+# Third-party imports
 from langchain_community.tools import DuckDuckGoSearchResults
 
 duckduckgo_search_tool = DuckDuckGoSearchResults(num_results=10, handle_tool_error=True)

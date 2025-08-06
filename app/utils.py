@@ -1,19 +1,22 @@
 """
 utils.py
 """
-import logging
+# Standard library imports
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from functools import wraps
+import logging
 from pathlib import Path
 from typing import Any
-from functools import wraps
 
+# Third-party imports
 import emails  # type: ignore
-import jwt
-from jinja2 import Template
-from jwt.exceptions import InvalidTokenError
 from fastapi import Request
+from jinja2 import Template
+import jwt
+from jwt.exceptions import InvalidTokenError
 
+# Local application imports
 from app.core import security
 from app.core.config import settings
 

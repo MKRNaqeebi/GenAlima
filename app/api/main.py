@@ -1,11 +1,22 @@
 """
 This file is used to include all the routers in the APIRouter.
 """
+# Third-party imports
 from fastapi import APIRouter
 
+# Local application imports
 from app.api.routes import (
-  items, login, private, users, utils, organizations, messages, chats, templates, knowledges,
-  connectors
+    chats,
+    connectors,
+    items,
+    knowledges,
+    login,
+    messages,
+    organizations,
+    private,
+    templates,
+    users,
+    utils,
 )
 from app.core.config import settings
 
@@ -23,4 +34,4 @@ api_router.include_router(knowledges.router)
 
 
 if settings.ENVIRONMENT == "local":
-  api_router.include_router(private.router)
+    api_router.include_router(private.router)

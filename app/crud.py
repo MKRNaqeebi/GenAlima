@@ -1,11 +1,14 @@
 """
 This module contains the CRUD (Create, Read, Update, Delete) operations for the database.
 """
-import uuid
+# Standard library imports
 from typing import Any
+import uuid
 
+# Third-party imports
 from sqlmodel import Session, select
 
+# Local application imports
 from app.core.security import get_password_hash, verify_password
 from app.models import Item, ItemBase, User, UserCreate, UserUpdate
 

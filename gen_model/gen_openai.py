@@ -1,10 +1,13 @@
 """
 Call openai APIs
 """
-from typing import List, Dict, Any, Generator
+# Standard library imports
+from typing import Any, Dict, Generator, List
 
+# Third-party imports
 from openai import OpenAI
 
+# Local application imports
 from app.core.config import settings
 
 

@@ -1,8 +1,10 @@
 """This file contains the prompts for the agent."""
 
-import os
+# Standard library imports
 from datetime import datetime
+import os
 
+# Local application imports
 from app.core.config import settings
 
 

@@ -1,12 +1,15 @@
 """
 Items routes
 """
-import uuid
+# Standard library imports
 from typing import Any
+import uuid
 
+# Third-party imports
 from fastapi import APIRouter, HTTPException
 from sqlmodel import func, select
 
+# Local application imports
 from app.api.deps import CurrentUser, SessionDep
 from app.models import Item, ItemBase, ItemPublic, ItemsPublic, ItemUpdate, Message
 
@@ -21,13 +24,13 @@ def read_items(
     Retrieve items.
     """
     if current_user.is_superuser:
-        count_statement = select(func.count()).select_from(Item)
+        count_statement = select(func.count()).select_from(Item)  # pylint: disable=not-callable
         count = session.exec(count_statement).one()
         statement = select(Item).offset(skip).limit(limit)
         items = session.exec(statement).all()
     else:
         count_statement = (
-            select(func.count())
+            select(func.count())  # pylint: disable=not-callable
             .select_from(Item)
             .where(Item.owner_id == current_user.id)
         )
@@ -43,7 +46,7 @@ def read_items(
 
 
 @router.get("/{id}", response_model=ItemPublic)
-def read_item(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:
+def read_item(session: SessionDep, current_user: CurrentUser, id: uuid.UUID) -> Any:  # pylint: disable=redefined-builtin
     """
     Get item by ID.
     """
@@ -74,7 +77,7 @@ def update_item(
     *,
     session: SessionDep,
     current_user: CurrentUser,
-    id: uuid.UUID,
+    id: uuid.UUID,  # pylint: disable=redefined-builtin
     item_in: ItemUpdate,
 ) -> Any:
     """
@@ -95,7 +98,7 @@ def update_item(
 
 @router.delete("/{id}")
 def delete_item(
-    session: SessionDep, current_user: CurrentUser, id: uuid.UUID
+    session: SessionDep, current_user: CurrentUser, id: uuid.UUID  # pylint: disable=redefined-builtin
 ) -> Message:
     """
     Delete an item.

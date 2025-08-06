@@ -5,18 +5,21 @@ with environment-specific formatters and handlers. It supports both
 console-friendly development logging and JSON-formatted production logging.
 """
 
+# Standard library imports
+from datetime import datetime
 import json
 import logging
-import sys
-from datetime import datetime
 from pathlib import Path
+import sys
 from typing import (
     Any,
     List,
 )
 
+# Third-party imports
 import structlog
 
+# Local application imports
 from app.core.config import (
     Environment,
     settings,
@@ -66,12 +69,9 @@ class JsonlFileHandler(logging.Handler):
 
             with open(self.file_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(log_entry) + "\n")
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             self.handleError(record)
 
-    def close(self) -> None:
-        """Close the handler."""
-        super().close()
 
 
 def get_structlog_processors(include_file_info: bool = True) -> List[Any]:
@@ -110,7 +110,9 @@ def get_structlog_processors(include_file_info: bool = True) -> List[Any]:
         )
 
     # Add environment info
-    processors.append(lambda _, __, event_dict: {**event_dict, "environment": settings.ENVIRONMENT.value})
+    processors.append(
+        lambda _, __, event_dict: {**event_dict, "environment": settings.ENVIRONMENT.value}
+    )
 
     return processors
 

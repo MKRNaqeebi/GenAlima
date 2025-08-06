@@ -2,14 +2,16 @@
 This file contains the schema for the different models in the application.
 The schema is used to validate the data that is sent to the application.
 """
+# Standard library imports
 from datetime import datetime
-import uuid
 from typing import List
+import uuid
 
-from pydantic import EmailStr
+# Third-party imports
 from pgvector.sqlalchemy import Vector
+from pydantic import EmailStr
 from sqlalchemy import Column
-from sqlmodel import Field, Relationship, SQLModel, JSON
+from sqlmodel import JSON, Field, Relationship, SQLModel
 
 
 # Shared properties

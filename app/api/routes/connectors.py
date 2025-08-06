@@ -1,15 +1,24 @@
 """
 Connectors routes
 """
-import uuid
+# Standard library imports
 from typing import Any
+import uuid
 
+# Third-party imports
 from fastapi import APIRouter, HTTPException
 from sqlmodel import func, select
 
+# Local application imports
 from app.api.deps import CurrentUser, SessionDep
 from app.models import (
-    Connector, ConnectorBase, ConnectorPublic, ConnectorsPublic, ConnectorUpdate, Message)
+    Connector,
+    ConnectorBase,
+    ConnectorPublic,
+    ConnectorsPublic,
+    ConnectorUpdate,
+    Message,
+)
 
 router = APIRouter(prefix="/connectors", tags=["connectors"])
 

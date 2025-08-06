@@ -1,13 +1,18 @@
 """This file contains the LangGraph Agent/workflow and interactions with the LLM."""
 
+# Standard library imports
+import re
 from typing import (
+    Annotated,
     Any,
     AsyncGenerator,
     Dict,
     Literal,
     Optional,
 )
+import uuid
 
+# Third-party imports
 from asgiref.sync import sync_to_async
 from langchain_core.messages import (
     BaseMessage,
@@ -20,31 +25,27 @@ from langgraph.graph import (
     END,
     StateGraph,
 )
+from langgraph.graph.message import add_messages
 from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import StateSnapshot
 from openai import OpenAIError
 from psycopg_pool import AsyncConnectionPool
+from pydantic import BaseModel, Field, field_validator
 
+# Local application imports
 from app.core.config import (
     Environment,
     settings,
 )
-from graphs.tools import tools
 from app.core.logging import logger
 from app.core.metrics import llm_inference_duration_seconds
-from graphs.prompts import SYSTEM_PROMPT
 from app.models import Message
+from graphs.prompts import SYSTEM_PROMPT
+from graphs.tools import tools
 from graphs.utils import (
     dump_messages,
     prepare_messages,
 )
-
-import re
-import uuid
-from typing import Annotated
-
-from langgraph.graph.message import add_messages
-from pydantic import (BaseModel, Field, field_validator)
 
 
 class GraphState(BaseModel):

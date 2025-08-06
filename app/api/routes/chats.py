@@ -1,12 +1,15 @@
 """
 Chats API routes.
 """
-import uuid
+# Standard library imports
 from typing import Any
+import uuid
 
+# Third-party imports
 from fastapi import APIRouter, HTTPException
 from sqlmodel import func, select
 
+# Local application imports
 from app.api.deps import CurrentUser, SessionDep
 from app.models import Chat, ChatBase, ChatPublic, ChatsPublic, ChatUpdate, Message
 

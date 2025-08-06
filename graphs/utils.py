@@ -1,8 +1,10 @@
 """This file contains the graph utilities for the application."""
 
+# Third-party imports
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import trim_messages as _trim_messages
 
+# Local application imports
 from app.core.config import settings
 from app.models import Message
 

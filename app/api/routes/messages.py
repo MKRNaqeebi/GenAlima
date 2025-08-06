@@ -1,15 +1,25 @@
 """
 Messages API routes.
 """
-import uuid
+# Standard library imports
 from typing import Any
+import uuid
 
+# Third-party imports
 from fastapi import APIRouter, HTTPException
 from sqlmodel import func, select
 
+# Local application imports
 from app.api.deps import CurrentUser, SessionDep
 from app.models import (
-    Message, MessageBase, MessagePublic, MessagesPublic, MessageUpdate, Chat, Knowledge)
+    Chat,
+    Knowledge,
+    Message,
+    MessageBase,
+    MessagePublic,
+    MessagesPublic,
+    MessageUpdate,
+)
 from gen_model import call_gen_model, gen_openai_model
 
 router = APIRouter(prefix="/messages", tags=["messages"])
