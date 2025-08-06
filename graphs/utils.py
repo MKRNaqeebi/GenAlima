@@ -1,10 +1,15 @@
 """This file contains the graph utilities for the application."""
+from typing import Any, Dict
 
 # Third-party imports
 from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import trim_messages as _trim_messages
+from sqlalchemy.orm.attributes import flag_modified
+from sqlmodel import Session, select
 
 # Local application imports
+from app.core.db import engine as db_engine
+from app.core.logging import logger
 from app.core.config import settings
 from app.models import Message
 
@@ -51,3 +56,47 @@ def prepare_messages(messages: list[Message], llm: BaseChatModel, system_prompt:
         allow_partial=False,
     )
     return [Message(role="system", content=system_prompt)] + trimmed_messages
+
+def store_tool_result_metadata(
+    message_id: str,
+    tool_name: str,
+    tool_result: Dict[str, Any],
+    display_name: str = None,
+) -> None:
+    """
+    Store tool results in message metadata.
+
+    Args:
+        message_id: The ID of the message to store metadata for
+        tool_name: The name of the tool that generated the result
+        tool_result: The result data to store
+        display_name: Optional display name for frontend presentation
+    """
+    with Session(db_engine) as session:
+        statement = select(Message).where(Message.id == message_id)
+        message = session.exec(statement).first()
+        if not message:
+            logger.warning("Message with ID %s not found", message_id)
+            return
+        # Update the metadata with tool results
+        meta_data = message.meta_data or {}
+        # Add tool results to metadata
+        if "debug" not in meta_data:
+            meta_data["debug"] = {}
+
+        # Create the debug entry with display name if provided
+        debug_entry = (
+            tool_result.copy()
+            if isinstance(tool_result, dict)
+            else {"data": tool_result}
+        )
+        if display_name:
+            debug_entry["name"] = display_name
+
+        meta_data["debug"][tool_name] = debug_entry
+        message.meta_data = meta_data
+        flag_modified(message, "meta_data")
+        session.add(message)
+        session.commit()
+        session.refresh(message)
+        logger.info("Stored tool metadata for message %s", message_id)

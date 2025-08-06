@@ -163,4 +163,9 @@ class Settings(BaseSettings):
     # LangGraph checkpoint tables
     CHECKPOINT_TABLES: list[str] = ["checkpoints", "checkpoint_blobs", "checkpoint_writes"]
 
+    # Knowledge search configuration
+    KNOWLEDGE_SEARCH_SIMILARITY_THRESHOLD: float = float(os.getenv("KNOWLEDGE_SEARCH_SIMILARITY_THRESHOLD", "1.2"))
+    KNOWLEDGE_SEARCH_MAX_RESULTS: int = int(os.getenv("KNOWLEDGE_SEARCH_MAX_RESULTS", "3"))
+    KNOWLEDGE_SEARCH_ORGANIZATION_ID: str = os.getenv("KNOWLEDGE_SEARCH_ORGANIZATION_ID", "default_org")
+
 settings = Settings()
