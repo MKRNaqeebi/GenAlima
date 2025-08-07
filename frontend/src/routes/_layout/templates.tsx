@@ -1,23 +1,36 @@
 import {
+  Box,
   Container,
-  Heading,
+  Flex,
+  Text,
+  VStack,
+  HStack,
+  Card,
+  CardBody,
   SkeletonText,
-  Table,
-  TableContainer,
-  Tbody,
-  Td,
-  Th,
-  Thead,
-  Tr,
+  useColorModeValue,
+  Icon,
+  Badge,
+  Button,
+  Grid,
+  Input,
+  InputGroup,
+  InputLeftElement,
 } from "@chakra-ui/react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { z } from "zod"
+import { 
+  FiSearch, 
+  FiFileText, 
+  FiTemplate,
+  FiLayers
+} from "react-icons/fi"
+import { PiSparkle } from "react-icons/pi"
 
 import { TemplatesService } from "../../client"
 import ActionsMenu from "../../components/Common/ActionsMenu"
-import Navbar from "../../components/Common/Navbar"
 import AddTemplate from "../../components/Templates/AddTemplate"
 import { PaginationFooter } from "../../components/Common/PaginationFooter.tsx"
 
@@ -30,7 +43,7 @@ export const Route = createFileRoute("/_layout/templates")({
   validateSearch: (search) => templatesSearchSchema.parse(search),
 })
 
-const PER_PAGE = 5
+const PER_PAGE = 12
 
 function getTemplatesQueryOptions({ page }: { page: number }) {
   return {
@@ -40,8 +53,73 @@ function getTemplatesQueryOptions({ page }: { page: number }) {
   }
 }
 
-function TemplatesTable() {
+function TemplateCard({ template }: { template: any }) {
+  const isDark = useColorModeValue(false, true)
+  const bgColor = isDark ? "#2b2b2b" : "#ffffff"
+  const textColor = isDark ? "#e3e3e3" : "#2e2e2e"
+  const borderColor = isDark ? "rgba(255,255,255,0.1)" : "#e5e5e5"
+  const hoverBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.02)"
+  const metaColor = isDark ? "#8e8e8e" : "#6b7280"
+
+  return (
+    <Card
+      bg={bgColor}
+      borderColor={borderColor}
+      borderWidth="1px"
+      _hover={{ 
+        bg: hoverBg,
+        transform: "translateY(-2px)",
+        boxShadow: isDark ? "0 4px 20px rgba(0,0,0,0.3)" : "0 4px 20px rgba(0,0,0,0.1)" 
+      }}
+      transition="all 0.2s"
+      cursor="pointer"
+    >
+      <CardBody p={6}>
+        <VStack align="start" spacing={4}>
+          <HStack justify="space-between" w="100%">
+            <HStack spacing={3}>
+              <Icon as={PiSparkle} boxSize={5} color="#10a37f" />
+              <Text fontSize="lg" fontWeight="semibold" color={textColor} noOfLines={1}>
+                {template.title || `Template #${template.id?.slice(0, 8)}`}
+              </Text>
+            </HStack>
+            <ActionsMenu type="Template" value={template} />
+          </HStack>
+
+          <Text 
+            color={textColor} 
+            fontSize="sm" 
+            lineHeight="1.6"
+            noOfLines={3}
+            minH="60px"
+          >
+            {template.description || "No description available"}
+          </Text>
+
+          <HStack justify="space-between" w="100%">
+            <Badge 
+              colorScheme="purple" 
+              variant="subtle" 
+              fontSize="xs"
+              px={2}
+              py={1}
+              borderRadius="md"
+            >
+              Template
+            </Badge>
+            <Text fontSize="xs" color={metaColor}>
+              ID: {template.id?.slice(0, 8)}
+            </Text>
+          </HStack>
+        </VStack>
+      </CardBody>
+    </Card>
+  )
+}
+
+function TemplatesGrid() {
   const queryClient = useQueryClient()
+  const [searchQuery, setSearchQuery] = useState("")
   const { page } = Route.useSearch()
   const navigate = useNavigate({ from: Route.fullPath })
   const setPage = (page: number) =>
@@ -65,52 +143,60 @@ function TemplatesTable() {
     }
   }, [page, queryClient, hasNextPage])
 
+  const filteredTemplates = templates?.data.filter(template =>
+    template.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    template.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || []
+
+  const isDark = useColorModeValue(false, true)
+  const bgColor = isDark ? "#212121" : "#ffffff"
+  const textColor = isDark ? "#e3e3e3" : "#2e2e2e"
+  const borderColor = isDark ? "rgba(255,255,255,0.1)" : "#e5e5e5"
+  const placeholderColor = isDark ? "#8e8e8e" : "#9ca3af"
+
+  if (isPending) {
+    return (
+      <Grid templateColumns="repeat(auto-fill, minmax(300px, 1fr))" gap={6} mt={6}>
+        {Array.from({ length: 6 }).map((_, index) => (
+          <Card key={index} bg={bgColor} borderColor={borderColor} borderWidth="1px">
+            <CardBody p={6}>
+              <VStack align="start" spacing={4}>
+                <SkeletonText noOfLines={1} w="70%" />
+                <SkeletonText noOfLines={3} w="100%" />
+                <SkeletonText noOfLines={1} w="40%" />
+              </VStack>
+            </CardBody>
+          </Card>
+        ))}
+      </Grid>
+    )
+  }
+
   return (
     <>
-      <TableContainer>
-        <Table size={{ base: "sm", md: "md" }}>
-          <Thead>
-            <Tr>
-              <Th>ID</Th>
-              <Th>Title</Th>
-              <Th>Description</Th>
-              <Th>Actions</Th>
-            </Tr>
-          </Thead>
-          {isPending ? (
-            <Tbody>
-              <Tr>
-                {new Array(4).fill(null).map((_, index) => (
-                  <Td key={index}>
-                    <SkeletonText noOfLines={1} paddingBlock="16px" />
-                  </Td>
-                ))}
-              </Tr>
-            </Tbody>
-          ) : (
-            <Tbody>
-              {templates?.data.map((template) => (
-                <Tr key={template.id} opacity={isPlaceholderData ? 0.5 : 1}>
-                  <Td>{template.id}</Td>
-                  <Td isTruncated maxWidth="150px">
-                    {template.title}
-                  </Td>
-                  <Td
-                    color={!template.description ? "ui.dim" : "inherit"}
-                    isTruncated
-                    maxWidth="150px"
-                  >
-                    {template.description || "N/A"}
-                  </Td>
-                  <Td>
-                    <ActionsMenu type={"Template"} value={template} />
-                  </Td>
-                </Tr>
-              ))}
-            </Tbody>
-          )}
-        </Table>
-      </TableContainer>
+      <Grid templateColumns="repeat(auto-fill, minmax(350px, 1fr))" gap={6} mt={6}>
+        {filteredTemplates.map((template) => (
+          <TemplateCard key={template.id} template={template} />
+        ))}
+      </Grid>
+      
+      {filteredTemplates.length === 0 && !isPending && (
+        <Flex justify="center" align="center" py={16}>
+          <VStack spacing={4}>
+            <Icon as={FiLayers} boxSize={16} color={placeholderColor} />
+            <Text fontSize="xl" color={textColor}>
+              {searchQuery ? "No templates found" : "No templates yet"}
+            </Text>
+            <Text color={placeholderColor} textAlign="center">
+              {searchQuery 
+                ? "Try adjusting your search terms"
+                : "Create your first template to get started"
+              }
+            </Text>
+          </VStack>
+        </Flex>
+      )}
+
       <PaginationFooter
         page={page}
         onChangePage={setPage}
@@ -122,14 +208,60 @@ function TemplatesTable() {
 }
 
 function Templates() {
-  return (
-    <Container maxW="full">
-      <Heading size="lg" textAlign={{ base: "center", md: "left" }} pt={12}>
-        Templates Management
-      </Heading>
+  const [searchQuery, setSearchQuery] = useState("")
+  const isDark = useColorModeValue(false, true)
+  const bgColor = isDark ? "#171717" : "#f9fafb"
+  const cardBg = isDark ? "#212121" : "#ffffff"
+  const textColor = isDark ? "#e3e3e3" : "#2e2e2e"
+  const borderColor = isDark ? "rgba(255,255,255,0.1)" : "#e5e5e5"
+  const placeholderColor = isDark ? "#8e8e8e" : "#9ca3af"
 
-      <Navbar type={"Template"} addModalAs={AddTemplate} />
-      <TemplatesTable />
-    </Container>
+  return (
+    <Box bg={bgColor} minH="100vh" pb={8} w="100%">
+      <Box px={8} pt={8} w="100%">
+        {/* Header Section */}
+        <Box mb={8}>
+          <VStack align="start" spacing={6}>
+            <HStack justify="space-between" w="100%">
+              <VStack align="start" spacing={2}>
+                <HStack spacing={3}>
+                  <Icon as={PiSparkle} boxSize={8} color="#10a37f" />
+                  <Text fontSize="3xl" fontWeight="bold" color={textColor}>
+                    Templates
+                  </Text>
+                </HStack>
+                <Text color={placeholderColor} fontSize="lg">
+                  Manage your chat templates and prompts
+                </Text>
+              </VStack>
+              <AddTemplate />
+            </HStack>
+
+            {/* Search Bar */}
+            <Card w="100%" bg={cardBg} borderColor={borderColor} borderWidth="1px">
+              <CardBody p={4}>
+                <InputGroup>
+                  <InputLeftElement pointerEvents="none">
+                    <FiSearch color={placeholderColor} />
+                  </InputLeftElement>
+                  <Input
+                    placeholder="Search templates..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    border="none"
+                    _focus={{ boxShadow: "none", outline: "none" }}
+                    _placeholder={{ color: placeholderColor }}
+                    color={textColor}
+                    fontSize="15px"
+                  />
+                </InputGroup>
+              </CardBody>
+            </Card>
+          </VStack>
+        </Box>
+
+        <TemplatesGrid />
+      </Box>
+    </Box>
   )
 }
