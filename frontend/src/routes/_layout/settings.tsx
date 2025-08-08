@@ -1,6 +1,5 @@
 import {
   Box,
-  Heading,
   Tab,
   TabList,
   TabPanel,

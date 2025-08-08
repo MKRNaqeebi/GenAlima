@@ -1,6 +1,5 @@
 import {
   Box,
-  Container,
   Flex,
   Text,
   VStack,
@@ -16,7 +15,7 @@ import {
   Input,
   InputGroup,
   InputLeftElement,
-  Switch,
+  useDisclosure,
 } from "@chakra-ui/react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
@@ -28,7 +27,7 @@ import {
   FiZap,
   FiPlay,
   FiPause,
-  FiSettings
+  FiPlus
 } from "react-icons/fi"
 
 import { ConnectorsService } from "../../client"
@@ -145,7 +144,7 @@ function ConnectorCard({ connector }: { connector: any }) {
 
 function ConnectorsGrid() {
   const queryClient = useQueryClient()
-  const [searchQuery, setSearchQuery] = useState("")
+  const [searchQuery] = useState("")
   const [filterActive, setFilterActive] = useState<boolean | null>(null)
   const { page } = Route.useSearch()
   const navigate = useNavigate({ from: Route.fullPath })
@@ -271,6 +270,7 @@ function ConnectorsGrid() {
 
 function Connectors() {
   const [searchQuery, setSearchQuery] = useState("")
+  const { isOpen, onOpen, onClose } = useDisclosure()
   const isDark = useColorModeValue(false, true)
   const bgColor = isDark ? "#171717" : "#f9fafb"
   const cardBg = isDark ? "#212121" : "#ffffff"
@@ -296,7 +296,14 @@ function Connectors() {
                   Manage your API connectors and integrations
                 </Text>
               </VStack>
-              <AddConnector />
+              <Button
+                leftIcon={<FiPlus />}
+                colorScheme="blue"
+                size="md"
+                onClick={onOpen}
+              >
+                Add Connector
+              </Button>
             </HStack>
 
             {/* Search Bar */}
@@ -323,6 +330,7 @@ function Connectors() {
         </Box>
 
         <ConnectorsGrid />
+        <AddConnector isOpen={isOpen} onClose={onClose} />
       </Box>
     </Box>
   )

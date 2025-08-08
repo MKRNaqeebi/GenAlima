@@ -1,6 +1,5 @@
 import {
   Box,
-  Container,
   Flex,
   Text,
   VStack,
@@ -16,6 +15,7 @@ import {
   Input,
   InputGroup,
   InputLeftElement,
+  useDisclosure,
 } from "@chakra-ui/react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
@@ -23,9 +23,8 @@ import { useEffect, useState } from "react"
 import { z } from "zod"
 import { 
   FiSearch, 
-  FiFileText, 
-  FiTemplate,
-  FiLayers
+  FiLayers,
+  FiPlus
 } from "react-icons/fi"
 import { PiSparkle } from "react-icons/pi"
 
@@ -119,7 +118,7 @@ function TemplateCard({ template }: { template: any }) {
 
 function TemplatesGrid() {
   const queryClient = useQueryClient()
-  const [searchQuery, setSearchQuery] = useState("")
+  const [searchQuery] = useState("")
   const { page } = Route.useSearch()
   const navigate = useNavigate({ from: Route.fullPath })
   const setPage = (page: number) =>
@@ -209,6 +208,7 @@ function TemplatesGrid() {
 
 function Templates() {
   const [searchQuery, setSearchQuery] = useState("")
+  const { isOpen, onOpen, onClose } = useDisclosure()
   const isDark = useColorModeValue(false, true)
   const bgColor = isDark ? "#171717" : "#f9fafb"
   const cardBg = isDark ? "#212121" : "#ffffff"
@@ -234,7 +234,14 @@ function Templates() {
                   Manage your chat templates and prompts
                 </Text>
               </VStack>
-              <AddTemplate />
+              <Button
+                leftIcon={<FiPlus />}
+                colorScheme="blue"
+                size="md"
+                onClick={onOpen}
+              >
+                Add Template
+              </Button>
             </HStack>
 
             {/* Search Bar */}
@@ -261,6 +268,7 @@ function Templates() {
         </Box>
 
         <TemplatesGrid />
+        <AddTemplate isOpen={isOpen} onClose={onClose} />
       </Box>
     </Box>
   )

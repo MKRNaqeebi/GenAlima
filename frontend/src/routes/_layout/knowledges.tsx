@@ -107,10 +107,12 @@ function KnowledgeCard({ knowledge }: { knowledge: KnowledgePublic }) {
                 py={1}
                 borderRadius="md"
               >
-                {typeof knowledge.meta === 'string' 
-                  ? knowledge.meta.slice(0, 50) + (knowledge.meta.length > 50 ? '...' : '')
-                  : JSON.stringify(knowledge.meta || {}).slice(0, 50) + '...'
-                }
+                {(() => {
+                  const metaStr = typeof knowledge.meta === 'string' 
+                    ? knowledge.meta 
+                    : JSON.stringify(knowledge.meta || {})
+                  return metaStr.slice(0, 50) + (metaStr.length > 50 ? '...' : '')
+                })()}
               </Badge>
             </Box>
           )}
