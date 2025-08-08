@@ -5,29 +5,24 @@ import {
   Text,
   VStack,
   HStack,
-  Avatar,
   SkeletonText,
   IconButton,
-  useColorModeValue,
   Textarea,
-  Tooltip,
-  Icon,
 } from "@chakra-ui/react"
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { useState, useRef, useEffect } from "react"
 import { z } from "zod"
 import { 
-  FiSend, 
   FiCopy, 
   FiEdit2, 
   FiRefreshCw,
   FiThumbsUp,
   FiThumbsDown,
-  FiMic,
-  FiPaperclip
+  FiDownload,
+  FiVolume2,
+  FiChevronDown,
 } from "react-icons/fi"
-import { PiSparkle } from "react-icons/pi"
 
 import { MessagesService, type MessageCreate } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
@@ -62,106 +57,124 @@ interface MessageBubbleProps {
 
 function MessageBubble({ content, role, onEdit, onCopy }: MessageBubbleProps) {
   const isUser = role === 'user'
-  const [showActions, setShowActions] = useState(false)
-  const isDark = useColorModeValue(false, true)
-  
-  const bgColor = isDark ? "#212121" : "#ffffff"
-  const userBgColor = isDark ? "#2b2b2b" : "#f7f7f8"
-  const textColor = isDark ? "#e3e3e3" : "#2e2e2e"
-  const borderColor = isDark ? "rgba(255,255,255,0.1)" : "#e5e5e5"
-  const hoverBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.02)"
+  const textColor = "#ffffff"
+  const iconBg = "rgba(255,255,255,0.1)"
+  const iconHoverBg = "rgba(255,255,255,0.15)"
   
   return (
-    <Box
-      bg={isUser ? userBgColor : bgColor}
-      borderBottom="1px"
-      borderColor={borderColor}
-      onMouseEnter={() => setShowActions(true)}
-      onMouseLeave={() => setShowActions(false)}
-      position="relative"
-    >
-      <Container maxW="3xl" py={6}>
-        <HStack spacing={4} align="start">
-          {/* Avatar */}
-          <Avatar
-            size="sm"
-            name={isUser ? 'User' : 'AI'}
-            bg={isUser ? "purple.500" : isDark ? "#10a37f" : "#10a37f"}
-            icon={!isUser ? <PiSparkle /> : undefined}
-          />
-          
+    <Box py={4}>
+      <Container maxW="3xl">
+        <VStack align={isUser ? "flex-end" : "flex-start"} spacing={3}>
           {/* Message Content */}
-          <VStack align="start" flex="1" spacing={2}>
-            <Text fontWeight="semibold" fontSize="sm" color={textColor}>
-              {isUser ? 'You' : 'ChatGPT'}
-            </Text>
+          <Box
+            bg={isUser ? "rgba(255,255,255,0.05)" : "transparent"}
+            px={isUser ? 4 : 0}
+            py={isUser ? 2 : 0}
+            borderRadius={isUser ? "18px" : "0"}
+            maxW={isUser ? "70%" : "100%"}
+          >
             <Text 
               color={textColor} 
               fontSize="15px" 
-              lineHeight="1.7"
+              lineHeight="1.6"
               whiteSpace="pre-wrap"
             >
               {content}
             </Text>
-            
-            {/* Action buttons for assistant messages */}
-            {!isUser && showActions && (
-              <HStack spacing={1} mt={2}>
-                <Tooltip label="Copy">
-                  <IconButton
-                    aria-label="Copy"
-                    icon={<FiCopy />}
-                    size="sm"
-                    variant="ghost"
-                    onClick={onCopy}
-                    _hover={{ bg: hoverBg }}
-                  />
-                </Tooltip>
-                <Tooltip label="Regenerate">
-                  <IconButton
-                    aria-label="Regenerate"
-                    icon={<FiRefreshCw />}
-                    size="sm"
-                    variant="ghost"
-                    _hover={{ bg: hoverBg }}
-                  />
-                </Tooltip>
-                <Tooltip label="Good response">
-                  <IconButton
-                    aria-label="Good"
-                    icon={<FiThumbsUp />}
-                    size="sm"
-                    variant="ghost"
-                    _hover={{ bg: hoverBg }}
-                  />
-                </Tooltip>
-                <Tooltip label="Bad response">
-                  <IconButton
-                    aria-label="Bad"
-                    icon={<FiThumbsDown />}
-                    size="sm"
-                    variant="ghost"
-                    _hover={{ bg: hoverBg }}
-                  />
-                </Tooltip>
-              </HStack>
-            )}
-            
-            {/* Edit button for user messages */}
-            {isUser && showActions && (
-              <Tooltip label="Edit">
-                <IconButton
-                  aria-label="Edit"
-                  icon={<FiEdit2 />}
-                  size="sm"
-                  variant="ghost"
-                  onClick={onEdit}
-                  _hover={{ bg: hoverBg }}
-                />
-              </Tooltip>
-            )}
-          </VStack>
-        </HStack>
+          </Box>
+          
+          {/* Action buttons row - only for assistant messages */}
+          {!isUser && (
+            <HStack spacing={1.5}>
+              <IconButton
+                aria-label="Copy"
+                icon={<FiCopy size={14} />}
+                size="xs"
+                variant="ghost"
+                onClick={onCopy}
+                bg={iconBg}
+                _hover={{ bg: iconHoverBg }}
+                borderRadius="6px"
+                minW="28px"
+                h="28px"
+                color="white"
+              />
+              <IconButton
+                aria-label="Like"
+                icon={<FiThumbsUp size={14} />}
+                size="xs"
+                variant="ghost"
+                bg={iconBg}
+                _hover={{ bg: iconHoverBg }}
+                borderRadius="6px"
+                minW="28px"
+                h="28px"
+                color="white"
+              />
+              <IconButton
+                aria-label="Dislike"
+                icon={<FiThumbsDown size={14} />}
+                size="xs"
+                variant="ghost"
+                bg={iconBg}
+                _hover={{ bg: iconHoverBg }}
+                borderRadius="6px"
+                minW="28px"
+                h="28px"
+                color="white"
+              />
+              <IconButton
+                aria-label="Volume"
+                icon={<FiVolume2 size={14} />}
+                size="xs"
+                variant="ghost"
+                bg={iconBg}
+                _hover={{ bg: iconHoverBg }}
+                borderRadius="6px"
+                minW="28px"
+                h="28px"
+                color="white"
+              />
+              <IconButton
+                aria-label="Edit"
+                icon={<FiEdit2 size={14} />}
+                size="xs"
+                variant="ghost"
+                onClick={onEdit}
+                bg={iconBg}
+                _hover={{ bg: iconHoverBg }}
+                borderRadius="6px"
+                minW="28px"
+                h="28px"
+                color="white"
+              />
+              <IconButton
+                aria-label="Download"
+                icon={<FiDownload size={14} />}
+                size="xs"
+                variant="ghost"
+                bg={iconBg}
+                _hover={{ bg: iconHoverBg }}
+                borderRadius="6px"
+                minW="28px"
+                h="28px"
+                color="white"
+              />
+              <IconButton
+                aria-label="Regenerate"
+                icon={<FiRefreshCw size={14} />}
+                size="xs"
+                variant="ghost"
+                bg={iconBg}
+                _hover={{ bg: iconHoverBg }}
+                borderRadius="6px"
+                minW="28px"
+                h="28px"
+                color="white"
+              />
+            </HStack>
+          )}
+        </VStack>
       </Container>
     </Box>
   )
@@ -174,12 +187,11 @@ function ChatInterface() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   
-  const isDark = useColorModeValue(false, true)
-  const bgColor = isDark ? "#212121" : "#ffffff"
-  const inputBgColor = isDark ? "#2b2b2b" : "#ffffff"
-  const textColor = isDark ? "#e3e3e3" : "#2e2e2e"
-  const borderColor = isDark ? "rgba(255,255,255,0.2)" : "#d9d9e3"
-  const placeholderColor = isDark ? "#8e8e8e" : "#8e8e93"
+  const bgColor = "#212121"
+  const inputBgColor = "#2b2b2b"
+  const textColor = "#ffffff"
+  const borderColor = "rgba(255,255,255,0.1)"
+  const placeholderColor = "#8e8e8e"
   
   const { page } = Route.useSearch()
   const { chatId } = Route.useParams()
@@ -195,9 +207,6 @@ function ChatInterface() {
   const chatMessages = messages?.data
     .filter(message => message.chat_id === chatId)
     .reverse() || []
-
-  const lastMessage = chatMessages[chatMessages.length - 1]
-  const isWaitingForResponse = lastMessage?.role === 'user'
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -229,7 +238,7 @@ function ChatInterface() {
   })
 
   const handleSendMessage = () => {
-    if (!newMessage.trim() || isWaitingForResponse || sendMessageMutation.isPending) return
+    if (!newMessage.trim() || sendMessageMutation.isPending) return
     
     sendMessageMutation.mutate({
       content: newMessage,
@@ -265,18 +274,17 @@ function ChatInterface() {
   return (
     <Flex h="100vh" w="100vw" flexDirection="column" bg={bgColor}>
       {/* Chat Messages Area */}
-      <Box flex="1" overflowY="auto">
+      <Box flex="1" overflowY="auto" pb="100px">
         {chatMessages.length === 0 ? (
           <Flex h="100%" align="center" justify="center">
             <VStack spacing={4}>
-              <Icon as={PiSparkle} boxSize={12} color={isDark ? "#10a37f" : "#10a37f"} />
-              <Text fontSize="2xl" fontWeight="semibold" color={textColor}>
+              <Text fontSize="xl" fontWeight="normal" color={textColor}>
                 How can I help you today?
               </Text>
             </VStack>
           </Flex>
         ) : (
-          <VStack spacing={0} align="stretch">
+          <VStack spacing={6} align="stretch" pt={8}>
             {chatMessages.map((message) => (
               <MessageBubble
                 key={message.id}
@@ -285,112 +293,68 @@ function ChatInterface() {
                 onCopy={() => handleCopy(message.content || '')}
               />
             ))}
-            {isWaitingForResponse && (
-              <Box bg={bgColor} borderBottom="1px" borderColor={borderColor}>
-                <Container maxW="3xl" py={6}>
-                  <HStack spacing={4} align="start">
-                    <Avatar
-                      size="sm"
-                      bg="#10a37f"
-                      icon={<PiSparkle />}
-                    />
-                    <VStack align="start" flex="1" spacing={2}>
-                      <Text fontWeight="semibold" fontSize="sm" color={textColor}>
-                        ChatGPT
-                      </Text>
-                      <HStack spacing={1}>
-                        <Box w={2} h={2} bg="gray.400" borderRadius="full" animation="pulse 1.5s infinite" />
-                        <Box w={2} h={2} bg="gray.400" borderRadius="full" animation="pulse 1.5s infinite 0.5s" />
-                        <Box w={2} h={2} bg="gray.400" borderRadius="full" animation="pulse 1.5s infinite 1s" />
-                      </HStack>
-                    </VStack>
-                  </HStack>
-                </Container>
-              </Box>
-            )}
             <div ref={messagesEndRef} />
           </VStack>
         )}
       </Box>
 
+      {/* Scroll Down Button */}
+      <Box position="absolute" bottom="120px" left="50%" transform="translateX(-50%)">
+        <IconButton
+          aria-label="Scroll to bottom"
+          icon={<FiChevronDown />}
+          size="sm"
+          borderRadius="full"
+          bg="#2b2b2b"
+          color="white"
+          border="1px solid"
+          borderColor="rgba(255,255,255,0.1)"
+          _hover={{ bg: "#3b3b3b" }}
+          onClick={scrollToBottom}
+        />
+      </Box>
       {/* Message Input Area */}
-      <Box borderTop="1px" borderColor={borderColor} bg={bgColor}>
-        <Container maxW="3xl" py={4}>
-          <Flex
-            bg={inputBgColor}
-            border="1px solid"
-            borderColor={borderColor}
-            borderRadius="12px"
-            p={3}
-            align="end"
-            boxShadow={isDark ? "0 0 15px rgba(0,0,0,0.1)" : "0 0 15px rgba(0,0,0,0.05)"}
-          >
-            <IconButton
-              aria-label="Attach file"
-              icon={<FiPaperclip />}
-              variant="ghost"
-              size="sm"
-              mr={2}
-              isDisabled={isWaitingForResponse}
-              _hover={{ bg: isDark ? "rgba(255,255,255,0.1)" : "gray.100" }}
-            />
-            
-            <Textarea
-              ref={textareaRef}
-              placeholder={
-                isWaitingForResponse 
-                  ? "ChatGPT is thinking..." 
-                  : "Message ChatGPT..."
-              }
-              value={newMessage}
-              onChange={(e) => setNewMessage(e.target.value)}
-              onKeyDown={handleKeyPress}
+      <Box
+        bg={bgColor}
+        borderColor={borderColor}
+      >
+        <Container maxW="3xl" py={3}>
+          <HStack spacing={2} align="end">
+            <Flex
               flex="1"
-              minH="24px"
-              maxH="200px"
-              overflow="auto"
-              resize="none"
-              border="none"
-              _focus={{ boxShadow: "none", outline: "none" }}
-              _placeholder={{ color: placeholderColor }}
-              color={textColor}
-              fontSize="15px"
-              lineHeight="24px"
-              isDisabled={isWaitingForResponse || sendMessageMutation.isPending}
-              rows={1}
-            />
-            
-            <HStack spacing={1} ml={2}>
-              <IconButton
-                aria-label="Voice input"
-                icon={<FiMic />}
-                variant="ghost"
-                size="sm"
-                isDisabled={isWaitingForResponse}
-                _hover={{ bg: isDark ? "rgba(255,255,255,0.1)" : "gray.100" }}
+              bg={inputBgColor}
+              borderRadius="24px"
+              border="1px solid"
+              borderColor={borderColor}
+              align="center"
+              px={4}
+              py={2}
+            >
+              <Textarea
+                ref={textareaRef}
+                placeholder="Ask anything"
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                onKeyDown={handleKeyPress}
+                flex="1"
+                minH="20px"
+                maxH="120px"
+                overflow="auto"
+                resize="none"
+                border="none"
+                bg="transparent"
+                _focus={{ boxShadow: "none", outline: "none" }}
+                _placeholder={{ color: placeholderColor }}
+                color={textColor}
+                fontSize="14px"
+                lineHeight="20px"
+                isDisabled={sendMessageMutation.isPending}
+                rows={1}
               />
-              
-              <IconButton
-                aria-label="Send message"
-                icon={<FiSend />}
-                onClick={handleSendMessage}
-                isLoading={sendMessageMutation.isPending}
-                isDisabled={!newMessage.trim() || isWaitingForResponse || sendMessageMutation.isPending}
-                size="sm"
-                bg={newMessage.trim() && !isWaitingForResponse ? (isDark ? "white" : "black") : "transparent"}
-                color={newMessage.trim() && !isWaitingForResponse ? (isDark ? "black" : "white") : "gray.400"}
-                _hover={{
-                  bg: newMessage.trim() && !isWaitingForResponse 
-                    ? (isDark ? "gray.200" : "gray.800")
-                    : "transparent"
-                }}
-                borderRadius="8px"
-              />
-            </HStack>
-          </Flex>
-          
+            </Flex>
+          </HStack>
           <Text 
-            fontSize="xs" 
+            fontSize="11px" 
             color={placeholderColor} 
             textAlign="center"
             mt={2}
