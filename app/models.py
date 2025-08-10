@@ -83,7 +83,7 @@ class User(UserBase, table=True):
         back_populates="owner", cascade_delete=True)
     chats: list["Chat"] = Relationship(
         back_populates="owner", cascade_delete=True)
-    knowledges: list["Knowledge"] = Relationship(
+    knowledge_files: list["KnowledgeFile"] = Relationship(
         back_populates="owner", cascade_delete=True)
 
 
@@ -468,6 +468,42 @@ class NewPassword(SQLModel):
     new_password: str = Field(min_length=8, max_length=40)
 
 
+class KnowledgeFileBase(SQLModel):
+    """
+    Model for knowledge files.
+    """
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    file_path: str = Field(max_length=255)
+    chunk_count: int = Field(default=0)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class KnowledgeFile(KnowledgeFileBase, table=True):
+    """
+    Database model for knowledge files.
+    """
+    owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False, ondelete="CASCADE")
+    owner: User | None = Relationship(back_populates="knowledge_files")
+    knowledges: list["Knowledge"] = Relationship(back_populates="knowledge_file")
+
+
+class KnowledgeFilePublic(KnowledgeFileBase):
+    """
+    Properties to return via API, id is always required
+    """
+    id: uuid.UUID | None = None
+    owner_id: uuid.UUID | None = None
+    created_at: datetime | None = None
+
+
+class KnowledgeFilesPublic(SQLModel):
+    """
+    Properties to return via API for file listing
+    """
+    data: list[KnowledgeFilePublic]
+    count: int
+
+
 class KnowledgeBase(SQLModel):
     """
     Base model for knowledge-related data.
@@ -493,9 +529,10 @@ class Knowledge(KnowledgeBase, table=True):
     """
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     content_vector: List[float] = Field(default=None, sa_column=Column(Vector(1536)))
-    owner_id: uuid.UUID = Field(
-        foreign_key="user.id", nullable=False, ondelete="CASCADE")
-    owner: User | None = Relationship(back_populates="knowledges")
+    knowledge_file_id: uuid.UUID = Field(
+        foreign_key="knowledgefile.id", nullable=False, ondelete="CASCADE"
+    )
+    knowledge_file: KnowledgeFile | None = Relationship(back_populates="knowledges")
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 
@@ -504,7 +541,7 @@ class KnowledgePublic(KnowledgeBase):
     Properties to return via API, id is always required
     """
     id: uuid.UUID | None = None
-    owner_id: uuid.UUID | None = None
+    knowledge_file_id: uuid.UUID | None = None
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
 

@@ -89,6 +89,10 @@ import type {
   UtilsTestEmailData,
   UtilsTestEmailResponse,
   UtilsHealthCheckResponse,
+  KnowledgeFilesReadKnowledgeFileData,
+  KnowledgeFilesDeleteKnowledgeFileResponse,
+  KnowledgeFilesDeleteKnowledgeFileData,
+  KnowledgeFilesReadKnowledgeFilesResponse,
 } from "./types.gen"
 
 export class ItemsService {
@@ -603,14 +607,15 @@ export class KnowledgesService {
     })
   }
 
-  public static createKnowledgeWithFiles(
-    data: KnowledgesCreateKnowledgeData,
-  ): CancelablePromise<KnowledgesCreateKnowledgeResponse> {
+  public static readKnowledgeFile(
+    data: KnowledgeFilesReadKnowledgeFileData,
+  ): CancelablePromise<KnowledgesReadKnowledgeResponse> {
     return __request(OpenAPI, {
-      method: "POST",
-      url: "/api/v1/knowledges/files/",
-      mediaType: "multipart/form-data",
-      formData: data.requestBody,
+      method: "GET",
+      url: "/api/v1/knowledges/files/{id}",
+      path: {
+        id: data.id,
+      },
       errors: {
         422: "Validation Error",
       },
@@ -655,6 +660,54 @@ export class KnowledgesService {
     return __request(OpenAPI, {
       method: "DELETE",
       url: "/api/v1/knowledges/{id}",
+      path: {
+        id: data.id,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+}
+
+
+export class KnowledgeFilesService {
+  public static readKnowledgeFiles(
+    data: ItemsReadItemsData = {},
+  ): CancelablePromise<KnowledgeFilesReadKnowledgeFilesResponse> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/knowledges/files/",
+      query: {
+        skip: data.skip,
+        limit: data.limit,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  public static createKnowledgeFiles(
+    data: KnowledgesCreateKnowledgeData,
+  ): CancelablePromise<KnowledgesCreateKnowledgeResponse> {
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/api/v1/knowledges/files/",
+      mediaType: "multipart/form-data",
+      formData: data.requestBody,
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  public static deleteKnowledgeFile(
+    data: KnowledgeFilesDeleteKnowledgeFileData,
+  ): CancelablePromise<KnowledgeFilesDeleteKnowledgeFileResponse> {
+    return __request(OpenAPI, {
+      method: "DELETE",
+      url: "/api/v1/knowledges/files/{id}",
       path: {
         id: data.id,
       },

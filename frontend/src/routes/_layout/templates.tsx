@@ -116,9 +116,12 @@ function TemplateCard({ template }: { template: any }) {
   )
 }
 
-function TemplatesGrid() {
+interface TemplatesGridProps {
+  searchQuery: string
+}
+
+function TemplatesGrid({ searchQuery }: TemplatesGridProps) {
   const queryClient = useQueryClient()
-  const [searchQuery] = useState("")
   const { page } = Route.useSearch()
   const navigate = useNavigate({ from: Route.fullPath })
   const setPage = (page: number) =>
@@ -142,10 +145,15 @@ function TemplatesGrid() {
     }
   }, [page, queryClient, hasNextPage])
 
-  const filteredTemplates = templates?.data.filter(template =>
-    template.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    template.description?.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || []
+  const filteredTemplates = (templates?.data || []).filter(template => {
+    if (!searchQuery.trim()) return true
+    const query = searchQuery.toLowerCase()
+    const title = (template.title || "").toLowerCase()
+    const description = (template.description || "").toLowerCase()
+    const id = (template.id || "").toLowerCase()
+    
+    return title.includes(query) || description.includes(query) || id.includes(query)
+  })
 
   const isDark = useColorModeValue(false, true)
   const bgColor = isDark ? "#212121" : "#ffffff"
@@ -184,11 +192,11 @@ function TemplatesGrid() {
           <VStack spacing={4}>
             <Icon as={FiLayers} boxSize={16} color={placeholderColor} />
             <Text fontSize="xl" color={textColor}>
-              {searchQuery ? "No templates found" : "No templates yet"}
+              {searchQuery.trim() ? "No matching templates found" : "No templates yet"}
             </Text>
             <Text color={placeholderColor} textAlign="center">
-              {searchQuery 
-                ? "Try adjusting your search terms"
+              {searchQuery.trim() 
+                ? "Try adjusting your search query"
                 : "Create your first template to get started"
               }
             </Text>
@@ -267,7 +275,7 @@ function Templates() {
           </VStack>
         </Box>
 
-        <TemplatesGrid />
+        <TemplatesGrid searchQuery={searchQuery} />
         <AddTemplate isOpen={isOpen} onClose={onClose} />
       </Box>
     </Box>

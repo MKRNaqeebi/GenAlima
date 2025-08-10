@@ -14,10 +14,28 @@ from sqlmodel import func, select
 
 # Local application imports
 from app.api.deps import CurrentUser, SessionDep
-from app.models import Chat, Knowledge, KnowledgeBase, KnowledgePublic, KnowledgesPublic
+from app.models import (
+    Chat, Knowledge, KnowledgeBase, KnowledgePublic,
+    KnowledgesPublic, KnowledgeFilesPublic, KnowledgeFile
+)
 from gen_model.gen_openai import gen_openai_model
 
 router = APIRouter(prefix="/knowledges", tags=["knowledges"])
+
+
+@router.get("/files/", response_model=KnowledgeFilesPublic)
+def read_knowledge_files(
+    session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100
+) -> Any:
+    """
+    Retrieve knowledge files.
+    """
+    if current_user.is_superuser:
+        statement = select(KnowledgeFile).offset(skip).limit(limit)
+    else:
+        statement = select(KnowledgeFile).where(KnowledgeFile.owner_id == current_user.id).offset(skip).limit(limit)
+    knowledge_files = session.exec(statement).all()
+    return KnowledgeFilesPublic(data=knowledge_files, count=len(knowledge_files))
 
 
 @router.get("/", response_model=KnowledgesPublic)
@@ -25,7 +43,7 @@ def read_knowledges(
     session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100
 ) -> Any:
     """
-    Retrieve knowledges.
+    Retrieve knowledges (legacy endpoint - returns full content).
     """
     if current_user.is_superuser:
         # pylint: disable=not-callable
@@ -38,14 +56,34 @@ def read_knowledges(
         return KnowledgesPublic(data=knowledges, count=count)
     count_statement = (
         # pylint: disable=not-callable
-        select(func.count()).select_from(Knowledge).where(Knowledge.owner_id == current_user.id))
+        select(func.count()).select_from(Knowledge).where(Knowledge.knowledge_file.owner_id == current_user.id))
     count = session.exec(count_statement).one()
     statement = (
-        select(Knowledge).where(Knowledge.owner_id == current_user.id).offset(skip).limit(
+        select(Knowledge).where(Knowledge.knowledge_file.owner_id == current_user.id).offset(skip).limit(
             # pylint: disable=no-member
             limit)).order_by(Knowledge.updated_at.desc())
     knowledges = session.exec(statement).all()
     return KnowledgesPublic(data=knowledges, count=count)
+
+
+@router.get("/file/{filename_id}", response_model=KnowledgesPublic)
+def read_knowledge_by_filename(
+    session: SessionDep, current_user: CurrentUser, filename_id: uuid.UUID
+) -> Any:
+    """
+    Get all knowledge content for a specific filename.
+    """
+    if current_user.is_superuser:
+        statement = select(Knowledge).where(Knowledge.knowledge_file.id == filename_id)
+    else:
+        statement = select(Knowledge).where(
+            Knowledge.knowledge_file.owner_id == current_user.id,
+            Knowledge.knowledge_file.id == filename_id
+        )
+    knowledges = session.exec(statement).all()
+    if not knowledges:
+        raise HTTPException(status_code=404, detail="Knowledge file not found")
+    return KnowledgesPublic(data=knowledges, count=len(knowledges))
 
 
 @router.get("/{id}", response_model=KnowledgePublic)
@@ -104,12 +142,18 @@ def create_knowledge_by_files(
     for my_file in files:
         pdf_content = pymupdf.open(stream=my_file.file.read(), filetype="pdf")
         page_number = 0
+        # save KnowledgeFile
+        knowledge_file = KnowledgeFile(
+            id=str(uuid4()), owner_id=current_user.id, file_path=my_file.filename, chunk_count=len(pdf_content))
+        session.add(knowledge_file)
+        session.commit()
+        session.refresh(knowledge_file)
         for page in pdf_content:
             page_text = page.get_text()
             content_vector = gen_openai_model.get_text_to_embedding(page_text)
             knowledge = Knowledge(
                 id=str(uuid4()), content=page_text, content_vector=content_vector,
-                owner_id=current_user.id, meta={
+                owner_id=current_user.id, knowledge_file_id=knowledge_file.id, meta={
                     "filename": my_file.filename, "page_number": page_number,
                     "chunk_number": page_number, "category": "General"
                 }, source_type="pdf", updated_at=datetime.utcnow())

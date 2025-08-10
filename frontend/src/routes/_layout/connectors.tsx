@@ -142,9 +142,12 @@ function ConnectorCard({ connector }: { connector: any }) {
   )
 }
 
-function ConnectorsGrid() {
+interface ConnectorsGridProps {
+  searchQuery: string
+}
+
+function ConnectorsGrid({ searchQuery }: ConnectorsGridProps) {
   const queryClient = useQueryClient()
-  const [searchQuery] = useState("")
   const [filterActive, setFilterActive] = useState<boolean | null>(null)
   const { page } = Route.useSearch()
   const navigate = useNavigate({ from: Route.fullPath })
@@ -169,15 +172,24 @@ function ConnectorsGrid() {
     }
   }, [page, queryClient, hasNextPage])
 
-  const filteredConnectors = connectors?.data.filter(connector => {
-    const matchesSearch = connector.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      connector.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      connector.function?.toLowerCase().includes(searchQuery.toLowerCase())
-    
+  const filteredConnectors = (connectors?.data || []).filter(connector => {
     const matchesFilter = filterActive === null || connector.active === filterActive
     
+    if (!searchQuery.trim()) return matchesFilter
+    
+    const query = searchQuery.toLowerCase()
+    const name = (connector.name || "").toLowerCase()
+    const description = (connector.description || "").toLowerCase()
+    const func = (connector.function || "").toLowerCase()
+    const id = (connector.id || "").toLowerCase()
+    
+    const matchesSearch = name.includes(query) || 
+      description.includes(query) || 
+      func.includes(query) || 
+      id.includes(query)
+    
     return matchesSearch && matchesFilter
-  }) || []
+  })
 
   const isDark = useColorModeValue(false, true)
   const bgColor = isDark ? "#212121" : "#ffffff"
@@ -246,10 +258,10 @@ function ConnectorsGrid() {
           <VStack spacing={4}>
             <Icon as={FiGrid} boxSize={16} color={placeholderColor} />
             <Text fontSize="xl" color={textColor}>
-              {searchQuery || filterActive !== null ? "No connectors found" : "No connectors yet"}
+              {searchQuery.trim() || filterActive !== null ? "No matching connectors found" : "No connectors yet"}
             </Text>
             <Text color={placeholderColor} textAlign="center">
-              {searchQuery || filterActive !== null
+              {searchQuery.trim() || filterActive !== null
                 ? "Try adjusting your search or filter"
                 : "Create your first connector to get started"
               }
@@ -329,7 +341,7 @@ function Connectors() {
           </VStack>
         </Box>
 
-        <ConnectorsGrid />
+        <ConnectorsGrid searchQuery={searchQuery} />
         <AddConnector isOpen={isOpen} onClose={onClose} />
       </Box>
     </Box>

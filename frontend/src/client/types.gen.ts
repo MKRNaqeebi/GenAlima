@@ -100,6 +100,14 @@ export type KnowledgePublic = {
   owner_id: string
 }
 
+export type KnowledgeFilePublic = {
+  id: string
+  owner_id: string
+  file_path: string
+  chunk_count: number
+  created_at: string
+}
+
 export type ItemsPublic = {
   data: Array<ItemPublic>
   count: number
@@ -127,6 +135,11 @@ export type MessagesPublic = {
 
 export type KnowledgesPublic = {
   data: Array<KnowledgePublic>
+  count: number
+}
+
+export type KnowledgeFilesPublic = {
+  data: Array<KnowledgeFilePublic>
   count: number
 }
 
@@ -266,6 +279,11 @@ export type KnowledgesReadKnowledgesData = {
   skip?: number
 }
 
+export type KnowledgeFilesReadKnowledgeFilesData = {
+  limit?: number
+  skip?: number
+}
+
 export type ItemsReadItemsResponse = ItemsPublic
 
 export type ConnectorsReadConnectorsResponse = ConnectorsPublic
@@ -277,6 +295,8 @@ export type ChatsReadChatsResponse = ChatsPublic
 export type MessagesReadMessagesResponse = MessagesPublic
 
 export type KnowledgesReadKnowledgesResponse = KnowledgesPublic
+
+export type KnowledgeFilesReadKnowledgeFilesResponse = KnowledgeFilesPublic
 
 export type ItemsCreateItemData = {
   requestBody: ItemCreate
@@ -338,6 +358,10 @@ export type KnowledgesReadKnowledgeData = {
   id: string
 }
 
+export type KnowledgeFilesReadKnowledgeFileData = {
+  id: string
+}
+
 export type ItemsReadItemResponse = ItemPublic
 
 export type ConnectorsReadConnectorResponse = ConnectorPublic
@@ -349,6 +373,8 @@ export type ChatsReadChatResponse = ChatPublic
 export type MessagesReadMessageResponse = MessagePublic
 
 export type KnowledgesReadKnowledgeResponse = KnowledgePublic
+
+export type KnowledgeFilesReadKnowledgeFileResponse = KnowledgeFilePublic
 
 export type ItemsUpdateItemData = {
   id: string
@@ -392,6 +418,8 @@ export type MessagesUpdateMessageResponse = MessagePublic
 
 export type KnowledgesUpdateKnowledgeResponse = KnowledgePublic
 
+export type KnowledgeFilesUpdateKnowledgeFileResponse = KnowledgeFilePublic
+
 export type ItemsDeleteItemData = {
   id: string
 }
@@ -416,6 +444,10 @@ export type KnowledgesDeleteKnowledgeData = {
   id: string
 }
 
+export type KnowledgeFilesDeleteKnowledgeFileData = {
+  id: string
+}
+
 export type ItemsDeleteItemResponse = Message
 
 export type ConnectorsDeleteConnectorResponse = Message
@@ -427,6 +459,8 @@ export type ChatsDeleteChatResponse = Message
 export type MessagesDeleteMessageResponse = Message
 
 export type KnowledgesDeleteKnowledgeResponse = Message
+
+export type KnowledgeFilesDeleteKnowledgeFileResponse = Message
 
 export type LoginLoginAccessTokenData = {
   formData: Body_login_login_access_token

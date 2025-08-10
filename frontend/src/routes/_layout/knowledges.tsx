@@ -27,7 +27,12 @@ import {
   FiPlus
 } from "react-icons/fi"
 
-import { KnowledgePublic, KnowledgesService } from "../../client"
+import { 
+  KnowledgePublic, 
+  KnowledgeFilesService, 
+  KnowledgeFilePublic, 
+  KnowledgeFilesPublic 
+} from "../../client"
 import AddKnowledge from "../../components/Knowledges/AddKnowledge"
 import ActionsMenu from "../../components/Common/ActionsMenu"
 import { PaginationFooter } from "../../components/Common/PaginationFooter.tsx"
@@ -43,21 +48,51 @@ export const Route = createFileRoute("/_layout/knowledges")({
 
 const PER_PAGE = 12
 
-function getKnowledgesQueryOptions({ page }: { page: number }) {
+function getKnowledgeFilesQueryOptions({ page }: { page: number }) {
   return {
     queryFn: () =>
-      KnowledgesService.readKnowledges({ skip: (page - 1) * PER_PAGE, limit: PER_PAGE }),
-    queryKey: ["knowledges", { page }],
+      KnowledgeFilesService.readKnowledgeFiles({ skip: (page - 1) * PER_PAGE, limit: PER_PAGE }) as Promise<KnowledgeFilesPublic>,
+    queryKey: ["knowledgeFiles", { page }],
   }
 }
 
-function KnowledgeCard({ knowledge }: { knowledge: KnowledgePublic }) {
+// Legacy function - kept for potential future use
+// function getKnowledgesQueryOptions({ page }: { page: number }) {
+//   return {
+//     queryFn: () =>
+//       KnowledgesService.readKnowledges({ skip: (page - 1) * PER_PAGE, limit: PER_PAGE }),
+//     queryKey: ["knowledges", { page }],
+//   }
+// }
+
+function KnowledgeFileCard({ file, onClick }: { file: KnowledgeFilePublic; onClick: () => void }) {
   const isDark = useColorModeValue(false, true)
   const bgColor = isDark ? "#2b2b2b" : "#ffffff"
   const textColor = isDark ? "#e3e3e3" : "#2e2e2e"
   const borderColor = isDark ? "rgba(255,255,255,0.1)" : "#e5e5e5"
   const hoverBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.02)"
   const metaColor = isDark ? "#8e8e8e" : "#6b7280"
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    })
+  }
+
+  const getFilename = (filePath: string) => {
+    return filePath.split('/').pop() || filePath
+  }
+
+  const handleFileClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+    onClick()
+  }
+
+  const handleMenuClick = (e: React.MouseEvent) => {
+    e.stopPropagation()
+  }
 
   return (
     <Card
@@ -70,35 +105,31 @@ function KnowledgeCard({ knowledge }: { knowledge: KnowledgePublic }) {
         boxShadow: isDark ? "0 4px 20px rgba(0,0,0,0.3)" : "0 4px 20px rgba(0,0,0,0.1)" 
       }}
       transition="all 0.2s"
-      cursor="pointer"
     >
       <CardBody p={6}>
         <VStack align="start" spacing={4}>
           <HStack justify="space-between" w="100%">
             <HStack spacing={3}>
               <Icon as={FiFileText} boxSize={5} color="#10a37f" />
-              <Text fontSize="lg" fontWeight="semibold" color={textColor}>
-                Knowledge #{knowledge.id?.slice(0, 8)}
+              <Text 
+                fontSize="lg" 
+                fontWeight="semibold" 
+                color={textColor} 
+                noOfLines={1}
+                cursor="pointer"
+                _hover={{ textDecoration: "underline" }}
+                onClick={handleFileClick}
+              >
+                {getFilename(file.file_path)}
               </Text>
             </HStack>
-            <ActionsMenu type="Knowledge" value={knowledge} />
+            <Box onClick={handleMenuClick}>
+              <ActionsMenu type="Knowledge" value={{ id: file.id || "", content: getFilename(file.file_path) } as any} />
+            </Box>
           </HStack>
 
-          <Text 
-            color={textColor} 
-            fontSize="sm" 
-            lineHeight="1.6"
-            noOfLines={4}
-            minH="80px"
-          >
-            {knowledge.content || "No content available"}
-          </Text>
-
-          {knowledge.meta && (
-            <Box w="100%">
-              <Text fontSize="xs" color={metaColor} mb={2}>
-                Metadata:
-              </Text>
+          <VStack align="start" spacing={2} w="100%">
+            <HStack spacing={4} w="100%">
               <Badge 
                 colorScheme="blue" 
                 variant="subtle" 
@@ -107,47 +138,77 @@ function KnowledgeCard({ knowledge }: { knowledge: KnowledgePublic }) {
                 py={1}
                 borderRadius="md"
               >
-                {(() => {
-                  const metaStr = typeof knowledge.meta === 'string' 
-                    ? knowledge.meta 
-                    : JSON.stringify(knowledge.meta || {})
-                  return metaStr.slice(0, 50) + (metaStr.length > 50 ? '...' : '')
-                })()}
+                {file.chunk_count} chunk{file.chunk_count !== 1 ? 's' : ''}
               </Badge>
-            </Box>
-          )}
+            </HStack>
+            
+            <Text fontSize="xs" color={metaColor}>
+              Created {file.created_at ? formatDate(file.created_at) : "Unknown"}
+            </Text>
+          </VStack>
         </VStack>
       </CardBody>
     </Card>
   )
 }
 
-function KnowledgesGrid() {
+interface KnowledgesGridProps {
+  searchQuery: string
+}
+
+function KnowledgesGrid({ searchQuery }: KnowledgesGridProps) {
   const queryClient = useQueryClient()
+  const [selectedFile, setSelectedFile] = useState<string | null>(null)
+  const [fileContent, setFileContent] = useState<KnowledgePublic[] | null>(null)
+  const [isLoadingContent, setIsLoadingContent] = useState(false)
+  
   const { page } = Route.useSearch()
   const navigate = useNavigate({ from: Route.fullPath })
   const setPage = (page: number) =>
     navigate({ search: (prev: {[key: string]: string}) => ({ ...prev, page }) })
 
   const {
-    data: knowledges,
+    data: knowledgeFiles,
     isPending,
     isPlaceholderData,
   } = useQuery({
-    ...getKnowledgesQueryOptions({ page }),
+    ...getKnowledgeFilesQueryOptions({ page }),
     placeholderData: (prevData) => prevData,
   })
 
-  const hasNextPage = !isPlaceholderData && knowledges?.data.length === PER_PAGE
+  const hasNextPage = !isPlaceholderData && knowledgeFiles?.data.length === PER_PAGE
   const hasPreviousPage = page > 1
 
   useEffect(() => {
     if (hasNextPage) {
-      queryClient.prefetchQuery(getKnowledgesQueryOptions({ page: page + 1 }))
+      queryClient.prefetchQuery(getKnowledgeFilesQueryOptions({ page: page + 1 }))
     }
   }, [page, queryClient, hasNextPage])
 
-  const filteredKnowledges = knowledges?.data || []
+  const filteredFiles = ((knowledgeFiles as any)?.data || []).filter((file: KnowledgeFilePublic) => {
+    if (!searchQuery.trim()) return true
+    const query = searchQuery.toLowerCase()
+    const filename = file.file_path.toLowerCase()
+    const id = (file.id || "").toLowerCase()
+    
+    return filename.includes(query) || id.includes(query)
+  })
+
+  const handleFileClick = async (file: KnowledgeFilePublic) => {
+    const filename = file.file_path.split('/').pop() || file.file_path
+    setSelectedFile(filename)
+    setIsLoadingContent(true)
+    
+    try {
+      const response = await KnowledgeFilesService.readKnowledgeFiles()
+      setFileContent((response as any).data)
+    } catch (error) {
+      console.error('Error fetching file content:', error)
+      setFileContent([])
+    } finally {
+      setIsLoadingContent(false)
+    }
+  }
 
   const isDark = useColorModeValue(false, true)
   const bgColor = isDark ? "#212121" : "#ffffff"
@@ -173,23 +234,100 @@ function KnowledgesGrid() {
     )
   }
 
+  // Show file content if a file is selected
+  if (selectedFile && fileContent) {
+    return (
+      <VStack spacing={4} align="stretch" mt={6}>
+        <HStack spacing={4}>
+          <Button 
+            leftIcon={<FiBookOpen />} 
+            variant="ghost" 
+            onClick={() => setSelectedFile(null)}
+            color={textColor}
+          >
+            ← Back to Files
+          </Button>
+          <Text fontSize="lg" fontWeight="semibold" color={textColor}>
+            {selectedFile}
+          </Text>
+        </HStack>
+        
+        <VStack spacing={4} align="stretch">
+          {fileContent.map((knowledge, index) => (
+            <Card key={knowledge.id} bg={bgColor} borderColor={borderColor} borderWidth="1px">
+              <CardBody p={6}>
+                <VStack align="start" spacing={3}>
+                  <HStack justify="space-between" w="100%">
+                    <Text fontSize="sm" fontWeight="medium" color={textColor}>
+                      Page {index + 1}
+                    </Text>
+                    <Text fontSize="xs" color={placeholderColor}>
+                      {knowledge.id?.slice(0, 8)}
+                    </Text>
+                  </HStack>
+                  <Text color={textColor} fontSize="sm" lineHeight="1.6">
+                    {knowledge.content}
+                  </Text>
+                </VStack>
+              </CardBody>
+            </Card>
+          ))}
+        </VStack>
+      </VStack>
+    )
+  }
+
+  // Show loading state when fetching content
+  if (selectedFile && isLoadingContent) {
+    return (
+      <VStack spacing={4} align="stretch" mt={6}>
+        <HStack spacing={4}>
+          <Button 
+            leftIcon={<FiBookOpen />} 
+            variant="ghost" 
+            onClick={() => setSelectedFile(null)}
+            color={textColor}
+          >
+            ← Back to Files
+          </Button>
+          <Text fontSize="lg" fontWeight="semibold" color={textColor}>
+            {selectedFile}
+          </Text>
+        </HStack>
+        
+        <Flex justify="center" py={16}>
+          <VStack spacing={4}>
+            <Icon as={FiBookOpen} boxSize={16} color={placeholderColor} />
+            <Text fontSize="lg" color={textColor}>Loading content...</Text>
+          </VStack>
+        </Flex>
+      </VStack>
+    )
+  }
+
   return (
     <>
       <Grid templateColumns="repeat(auto-fill, minmax(350px, 1fr))" gap={6} mt={6}>
-        {filteredKnowledges.map((knowledge: KnowledgePublic) => (
-          <KnowledgeCard key={knowledge.id} knowledge={knowledge} />
+        {filteredFiles.map((file: KnowledgeFilePublic) => (
+          <KnowledgeFileCard 
+            key={file.id} 
+            file={file} 
+            onClick={() => handleFileClick(file)}
+          />
         ))}
       </Grid>
       
-      {filteredKnowledges.length === 0 && !isPending && (
+      {filteredFiles.length === 0 && !isPending && (
         <Flex justify="center" align="center" py={16}>
           <VStack spacing={4}>
             <Icon as={FiBookOpen} boxSize={16} color={placeholderColor} />
             <Text fontSize="xl" color={textColor}>
-              No knowledges yet
+              {searchQuery.trim() ? "No matching files found" : "No knowledge files yet"}
             </Text>
             <Text color={placeholderColor} textAlign="center">
-              Create your first knowledge item to get started
+              {searchQuery.trim() 
+                ? "Try adjusting your search query" 
+                : "Upload your first PDF to get started"}
             </Text>
           </VStack>
         </Flex>
@@ -235,7 +373,8 @@ function Knowledges() {
               </VStack>
               <Button
                 leftIcon={<FiPlus />}
-                colorScheme="green"
+                colorScheme="blue"
+                size="md"
                 onClick={() => setIsAddOpen(true)}
               >
                 Add Knowledge
@@ -265,7 +404,7 @@ function Knowledges() {
           </VStack>
         </Box>
 
-        <KnowledgesGrid />
+        <KnowledgesGrid searchQuery={searchQuery} />
         
         <AddKnowledge 
           isOpen={isAddOpen} 
