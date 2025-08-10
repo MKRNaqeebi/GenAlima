@@ -21,8 +21,9 @@ import {
   MenuDivider,
   Button,
 } from "@chakra-ui/react"
+import { useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
-import { FiLogOut, FiMenu, FiUser } from "react-icons/fi"
+import { FiLogOut, FiMenu, FiUser, FiChevronLeft } from "react-icons/fi"
 
 import type { UserPublic } from "../../client"
 import useAuth from "../../hooks/useAuth"
@@ -38,6 +39,7 @@ const Sidebar = () => {
   const currentUser = queryClient.getQueryData<UserPublic>(["currentUser"])
   const { isOpen, onOpen, onClose } = useDisclosure()
   const { logout } = useAuth()
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
   const handleLogout = async () => {
     logout()
@@ -137,32 +139,35 @@ const Sidebar = () => {
         bg={sidebarBg}
         borderRight="1px"
         borderColor={borderColor}
-        w="260px"
+        w={isCollapsed ? "60px" : "260px"}
         h="100vh"
         position="sticky"
         top="0"
         display={{ base: "none", md: "flex" }}
         flexDir="column"
+        transition="width 0.2s ease"
       >
         <Flex
           flexDir="column"
           h="100%"
         >
           {/* Logo Section */}
-          <HStack px={3} py={3} spacing={2}>
-            <Box
-              w={6}
-              h={6}
-              borderRadius="full"
-              bg={isDark ? "white" : "black"}
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-            >
-              <Text fontSize="xs" fontWeight="bold" color={isDark ? "black" : "white"}>
-                G
-              </Text>
-            </Box>
+          <HStack px={3} py={3} justify={isCollapsed ? "center" : "space-between"}>
+            {!isCollapsed && (
+              <Box
+                w={6}
+                h={6}
+                borderRadius="full"
+                bg={isDark ? "white" : "black"}
+                display="flex"
+                alignItems="center"
+                justifyContent="center"
+              >
+                <Text fontSize="xs" fontWeight="bold" color={isDark ? "black" : "white"}>
+                  G
+                </Text>
+              </Box>
+            )}
             <Box 
               w={8}
               h={8}
@@ -175,14 +180,15 @@ const Sidebar = () => {
               cursor="pointer"
               _hover={{ bg: hoverBg }}
               transition="all 0.15s"
+              onClick={() => setIsCollapsed(!isCollapsed)}
             >
-              <Icon as={FiMenu} boxSize={4} color={textColor} />
+              <Icon as={isCollapsed ? FiMenu : FiChevronLeft} boxSize={4} color={textColor} />
             </Box>
           </HStack>
 
           {/* Main Content */}
           <Box flex="1" overflowY="auto">
-            <SidebarItems />
+            <SidebarItems isCollapsed={isCollapsed} />
           </Box>
           
           {/* User Profile Section */}
@@ -193,33 +199,35 @@ const Sidebar = () => {
                   as={Button}
                   variant="ghost"
                   w="100%"
-                  px={2}
+                  px={isCollapsed ? 1 : 2}
                   py={2}
                   h="auto"
                   borderRadius="6px"
                   _hover={{ bg: hoverBg }}
                   transition="all 0.15s"
                 >
-                  <HStack spacing={2} justify="flex-start">
+                  <HStack spacing={2} justify={isCollapsed ? "center" : "flex-start"}>
                     <Avatar size="xs" name={currentUser.email} bg={isDark ? "gray.600" : "gray.300"} />
-                    <VStack align="start" spacing={0}>
-                      <Text
-                        fontSize="13px"
-                        fontWeight="medium"
-                        color={textColor}
-                        noOfLines={1}
-                        textAlign="left"
-                      >
-                        {currentUser.email.split('@')[0]}
-                      </Text>
-                      <Text
-                        fontSize="11px"
-                        color={isDark ? "#8e8e8e" : "gray.500"}
-                        noOfLines={1}
-                      >
-                        Free
-                      </Text>
-                    </VStack>
+                    {!isCollapsed && (
+                      <VStack align="start" spacing={0}>
+                        <Text
+                          fontSize="13px"
+                          fontWeight="medium"
+                          color={textColor}
+                          noOfLines={1}
+                          textAlign="left"
+                        >
+                          {currentUser.email.split('@')[0]}
+                        </Text>
+                        <Text
+                          fontSize="11px"
+                          color={isDark ? "#8e8e8e" : "gray.500"}
+                          noOfLines={1}
+                        >
+                          Free
+                        </Text>
+                      </VStack>
+                    )}
                   </HStack>
                 </MenuButton>
                 <MenuList bg={sidebarBg} borderColor={borderColor}>

@@ -31,7 +31,9 @@ import {
   KnowledgePublic, 
   KnowledgeFilesService, 
   KnowledgeFilePublic, 
-  KnowledgeFilesPublic 
+  KnowledgeFilesPublic,
+  KnowledgesService,
+  KnowledgesPublic
 } from "../../client"
 import AddKnowledge from "../../components/Knowledges/AddKnowledge"
 import ActionsMenu from "../../components/Common/ActionsMenu"
@@ -191,8 +193,26 @@ function KnowledgesGrid({ searchQuery }: KnowledgesGridProps) {
     setIsLoadingContent(true)
     
     try {
-      const response = await KnowledgeFilesService.readKnowledgeFiles()
-      setFileContent((response as any).data)
+      // Fetch all knowledge chunks - you may need to filter by file_id if the API supports it
+      // For now, fetching all and filtering client-side based on file metadata
+      const response = await KnowledgesService.readKnowledges({ skip: 0, limit: 1000 }) as KnowledgesPublic
+      
+      // Filter knowledge chunks that belong to this file
+      // This assumes the metadata contains a reference to the file
+      const fileKnowledge = response.data.filter((knowledge: KnowledgePublic) => {
+        // Check if metadata contains file reference
+        // You may need to adjust this based on your actual metadata structure
+        if (knowledge.meta && typeof knowledge.meta === 'object') {
+          const meta = knowledge.meta as any
+          return meta.file_path === file.file_path || 
+                 meta.file_id === file.id ||
+                 meta.filename === filename
+        }
+        return false
+      })
+      
+      // If no filtered results, show all for now (you can adjust this logic)
+      setFileContent(fileKnowledge.length > 0 ? fileKnowledge : response.data)
     } catch (error) {
       console.error('Error fetching file content:', error)
       setFileContent([])
@@ -247,18 +267,64 @@ function KnowledgesGrid({ searchQuery }: KnowledgesGridProps) {
           {fileContent.map((knowledge, index) => (
             <Card key={knowledge.id} bg={bgColor} borderColor={borderColor} borderWidth="1px">
               <CardBody p={6}>
-                <VStack align="start" spacing={3}>
+                <VStack align="start" spacing={4}>
                   <HStack justify="space-between" w="100%">
-                    <Text fontSize="sm" fontWeight="medium" color={textColor}>
-                      Page {index + 1}
-                    </Text>
-                    <Text fontSize="xs" color={placeholderColor}>
-                      {knowledge.id?.slice(0, 8)}
-                    </Text>
+                    <HStack spacing={3}>
+                      <Badge colorScheme="green" variant="subtle">
+                        Page {index + 1}
+                      </Badge>
+                      <Text fontSize="xs" color={placeholderColor}>
+                        ID: {knowledge.id?.slice(0, 8)}...
+                      </Text>
+                    </HStack>
                   </HStack>
-                  <Text color={textColor} fontSize="sm" lineHeight="1.6">
-                    {knowledge.content}
-                  </Text>
+                  
+                  {/* Content Section */}
+                  <Box w="100%">
+                    <Text fontSize="xs" fontWeight="semibold" color={placeholderColor} mb={2}>
+                      CONTENT
+                    </Text>
+                    <Box 
+                      p={4} 
+                      bg={isDark ? "rgba(255,255,255,0.02)" : "gray.50"} 
+                      borderRadius="md"
+                      borderWidth="1px"
+                      borderColor={borderColor}
+                    >
+                      <Text color={textColor} fontSize="sm" lineHeight="1.6" whiteSpace="pre-wrap">
+                        {knowledge.content}
+                      </Text>
+                    </Box>
+                  </Box>
+                  
+                  {/* Metadata Section */}
+                  {knowledge.meta && Object.keys(knowledge.meta).length > 0 && (
+                    <Box w="100%">
+                      <Text fontSize="xs" fontWeight="semibold" color={placeholderColor} mb={2}>
+                        METADATA
+                      </Text>
+                      <Box 
+                        p={4} 
+                        bg={isDark ? "rgba(255,255,255,0.02)" : "gray.50"} 
+                        borderRadius="md"
+                        borderWidth="1px"
+                        borderColor={borderColor}
+                      >
+                        <VStack align="start" spacing={2}>
+                          {Object.entries(knowledge.meta as any).map(([key, value]) => (
+                            <HStack key={key} spacing={2} w="100%">
+                              <Text fontSize="sm" fontWeight="medium" color={placeholderColor}>
+                                {key}:
+                              </Text>
+                              <Text fontSize="sm" color={textColor} wordBreak="break-all">
+                                {typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
+                              </Text>
+                            </HStack>
+                          ))}
+                        </VStack>
+                      </Box>
+                    </Box>
+                  )}
                 </VStack>
               </CardBody>
             </Card>

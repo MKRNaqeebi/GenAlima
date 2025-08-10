@@ -10,6 +10,7 @@ import { ChatsService } from "../../client"
 
 interface SidebarItemsProps {
   onClose?: () => void
+  isCollapsed?: boolean
 }
 
 const topMenuItems = [
@@ -20,7 +21,7 @@ const topMenuItems = [
   { icon: FiGrid, label: "Connectors", path: "/connectors" },
 ]
 
-const SidebarItems = ({ onClose }: SidebarItemsProps) => {
+const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   
@@ -54,14 +55,14 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
   return (
     <VStack spacing={0} align="stretch" h="100%">
       {/* Top Menu Items */}
-      <VStack spacing={0.5} align="stretch" px={2} py={2}>
+      <VStack spacing={0.5} align="stretch" px={isCollapsed ? 1 : 2} py={2}>
         {topMenuItems.map((item) => (
           item.path ? (
             <Flex
               key={item.label}
               as={Link}
               to={item.path}
-              px={3}
+              px={isCollapsed ? 2 : 3}
               py={2.5}
               borderRadius="6px"
               color={textColor}
@@ -74,16 +75,18 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
               }}
               onClick={onClose}
               alignItems="center"
+              justifyContent={isCollapsed ? "center" : "flex-start"}
               gap={3}
+              title={isCollapsed ? item.label : undefined}
             >
               <Icon as={item.icon} boxSize={4} color={iconColor} />
-              <Text>{item.label}</Text>
+              {!isCollapsed && <Text>{item.label}</Text>}
             </Flex>
           ) : (
             <Flex
               key={item.label}
               as="button"
-              px={3}
+              px={isCollapsed ? 2 : 3}
               py={2.5}
               borderRadius="6px"
               color={textColor}
@@ -95,19 +98,21 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
               }}
               onClick={() => handleTopMenuClick(item.action!)}
               alignItems="center"
+              justifyContent={isCollapsed ? "center" : "flex-start"}
               gap={3}
               w="100%"
               textAlign="left"
+              title={isCollapsed ? item.label : undefined}
             >
               <Icon as={item.icon} boxSize={4} color={iconColor} />
-              <Text>{item.label}</Text>
+              {!isCollapsed && <Text>{item.label}</Text>}
             </Flex>
           )
         ))}
       </VStack>
 
       {/* Search Input (appears when search is clicked) */}
-      {searchOpen && (
+      {searchOpen && !isCollapsed && (
         <Box px={2} pb={2}>
           <InputGroup size="sm">
             <InputLeftElement pointerEvents="none">
@@ -128,19 +133,20 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
         </Box>
       )}
 
-      <Divider borderColor={dividerColor} />
+      {!isCollapsed && <Divider borderColor={dividerColor} />}
 
       {/* Chats Section */}
-      <Box flex="1" overflowY="auto" px={2} py={3}>
-        <Text 
-          fontSize="12px" 
-          fontWeight="semibold" 
-          color={sectionLabelColor}
-          px={3}
-          pb={2}
-        >
-          Chats
-        </Text>
+      {!isCollapsed && (
+        <Box flex="1" overflowY="auto" px={2} py={3}>
+          <Text 
+            fontSize="12px" 
+            fontWeight="semibold" 
+            color={sectionLabelColor}
+            px={3}
+            pb={2}
+          >
+            Chats
+          </Text>
         <VStack spacing={0.5} align="stretch">
           {isLoading ? (
             <Flex justify="center" py={4}>
@@ -181,6 +187,7 @@ const SidebarItems = ({ onClose }: SidebarItemsProps) => {
           )}
         </VStack>
       </Box>
+      )}
     </VStack>
   )
 }
