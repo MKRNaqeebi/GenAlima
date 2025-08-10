@@ -12,6 +12,9 @@ import {
   Link,
   Text,
   useBoolean,
+  useColorModeValue,
+  Box,
+  VStack,
 } from "@chakra-ui/react"
 import {
   Link as RouterLink,
@@ -39,10 +42,19 @@ export const Route = createFileRoute("/login")({
 function Login() {
   const [show, setShow] = useBoolean()
   const { loginMutation, error, resetError } = useAuth()
+  
+  const isDark = useColorModeValue(false, true)
+  const bgColor = isDark ? "#1a1a1a" : "#ffffff"
+  const textColor = isDark ? "#e3e3e3" : "#2e2e2e"
+  const borderColor = isDark ? "rgba(255,255,255,0.1)" : "#e5e5e5"
+  const inputBg = isDark ? "#2b2b2b" : "#f7f7f7"
+  const placeholderColor = isDark ? "#8e8e8e" : "#9ca3af"
+  const cardBg = isDark ? "#2b2b2b" : "#ffffff"
+  const cardShadow = isDark ? "0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.1)" : "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)"
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<AccessToken>({
     mode: "onBlur",
     criteriaMode: "all",
@@ -53,7 +65,7 @@ function Login() {
   })
 
   const onSubmit: SubmitHandler<AccessToken> = async (data) => {
-    if (isSubmitting) return
+    if (loginMutation.isPending) return
 
     resetError()
 
@@ -65,80 +77,121 @@ function Login() {
   }
 
   return (
-    <>
-      <Container
-        as="form"
-        onSubmit={handleSubmit(onSubmit)}
-        h="100vh"
-        maxW="sm"
-        alignItems="stretch"
-        justifyContent="center"
-        gap={4}
-        centerContent
-      >
-        <Image
-          src={Logo}
-          alt="FastAPI logo"
-          height="auto"
-          maxW="2xs"
-          alignSelf="center"
-          mb={4}
-        />
-        <FormControl id="username" isInvalid={!!errors.username || !!error}>
-          <Input
-            id="username"
-            {...register("username", {
-              required: "Username is required",
-              pattern: emailPattern,
-            })}
-            placeholder="Email"
-            type="email"
-            required
-          />
-          {errors.username && (
-            <FormErrorMessage>{errors.username.message}</FormErrorMessage>
-          )}
-        </FormControl>
-        <FormControl id="password" isInvalid={!!error}>
-          <InputGroup>
-            <Input
-              {...register("password", {
-                required: "Password is required",
-              })}
-              type={show ? "text" : "password"}
-              placeholder="Password"
-              required
+    <Box minH="100vh" bg={bgColor} display="flex" alignItems="center" justifyContent="center" px={4}>
+      <Container maxW="sm" p={0}>
+        <Box
+          as="form"
+          onSubmit={handleSubmit(onSubmit)}
+          bg={cardBg}
+          p={8}
+          borderRadius="xl"
+          boxShadow={cardShadow}
+          borderWidth="1px"
+          borderColor={borderColor}
+        >
+          <VStack spacing={6}>
+            <Image
+              src={Logo}
+              alt="GenAlima logo"
+              height="auto"
+              maxW="2xs"
+              alignSelf="center"
             />
-            <InputRightElement
-              color="ui.dim"
-              _hover={{
-                cursor: "pointer",
-              }}
+            <FormControl id="username" isInvalid={!!errors.username || !!error}>
+              <Input
+                id="username"
+                {...register("username", {
+                  required: "Username is required",
+                  pattern: emailPattern,
+                })}
+                placeholder="Email"
+                type="email"
+                required
+                size="lg"
+                bg={inputBg}
+                borderColor={borderColor}
+                color={textColor}
+                _placeholder={{ color: placeholderColor }}
+                _hover={{ borderColor: "#10a37f" }}
+                _focus={{ borderColor: "#10a37f", boxShadow: "0 0 0 1px #10a37f" }}
+                isDisabled={loginMutation.isPending}
+              />
+              {errors.username && (
+                <FormErrorMessage>{errors.username.message}</FormErrorMessage>
+              )}
+            </FormControl>
+            <FormControl id="password" isInvalid={!!error}>
+              <InputGroup size="lg">
+                <Input
+                  {...register("password", {
+                    required: "Password is required",
+                  })}
+                  type={show ? "text" : "password"}
+                  placeholder="Password"
+                  required
+                  bg={inputBg}
+                  borderColor={borderColor}
+                  color={textColor}
+                  _placeholder={{ color: placeholderColor }}
+                  _hover={{ borderColor: "#10a37f" }}
+                  _focus={{ borderColor: "#10a37f", boxShadow: "0 0 0 1px #10a37f" }}
+                  isDisabled={loginMutation.isPending}
+                />
+                <InputRightElement
+                  color={placeholderColor}
+                  _hover={{
+                    cursor: "pointer",
+                    color: textColor,
+                  }}
+                >
+                  <Icon
+                    as={show ? ViewOffIcon : ViewIcon}
+                    onClick={setShow.toggle}
+                    aria-label={show ? "Hide password" : "Show password"}
+                  />
+                </InputRightElement>
+              </InputGroup>
+              {error && <FormErrorMessage>{error}</FormErrorMessage>}
+            </FormControl>
+            <Link 
+              as={RouterLink} 
+              to="/recover-password" 
+              color="#10a37f"
+              fontSize="sm"
+              _hover={{ color: "#0d8265" }}
+              alignSelf="flex-start"
             >
-              <Icon
-                as={show ? ViewOffIcon : ViewIcon}
-                onClick={setShow.toggle}
-                aria-label={show ? "Hide password" : "Show password"}
+              Forgot password?
+            </Link>
+            <Button 
+              type="submit" 
+              size="lg"
+              width="full"
+              bg="#10a37f"
+              color="white"
+              _hover={{ bg: "#0d8265" }}
+              _active={{ bg: "#0a6b4f" }}
+              isLoading={loginMutation.isPending}
+              loadingText="Signing in..."
+              isDisabled={loginMutation.isPending}
+            >
+              Sign In
+            </Button>
+            <Text color={textColor} textAlign="center">
+              Don't have an account?{" "}
+              <Link 
+                as={RouterLink} 
+                to="/signup" 
+                color="#10a37f"
+                fontWeight="medium"
+                _hover={{ color: "#0d8265" }}
               >
-                {show ? <ViewOffIcon /> : <ViewIcon />}
-              </Icon>
-            </InputRightElement>
-          </InputGroup>
-          {error && <FormErrorMessage>{error}</FormErrorMessage>}
-        </FormControl>
-        <Link as={RouterLink} to="/recover-password" color="blue.500">
-          Forgot password?
-        </Link>
-        <Button variant="primary" type="submit" isLoading={isSubmitting}>
-          Log In
-        </Button>
-        <Text>
-          Don't have an account?{" "}
-          <Link as={RouterLink} to="/signup" color="blue.500">
-            Sign up
-          </Link>
-        </Text>
+                Sign up
+              </Link>
+            </Text>
+          </VStack>
+        </Box>
       </Container>
-    </>
+    </Box>
   )
 }

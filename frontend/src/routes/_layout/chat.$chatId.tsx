@@ -299,7 +299,7 @@ function ChatInterface() {
       </Box>
 
       {/* Scroll Down Button */}
-      <Box position="absolute" bottom="120px" left="50%" transform="translateX(-50%)">
+      <Box margin="auto">
         <IconButton
           aria-label="Scroll to bottom"
           icon={<FiChevronDown />}

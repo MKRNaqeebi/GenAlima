@@ -56,15 +56,6 @@ function getKnowledgeFilesQueryOptions({ page }: { page: number }) {
   }
 }
 
-// Legacy function - kept for potential future use
-// function getKnowledgesQueryOptions({ page }: { page: number }) {
-//   return {
-//     queryFn: () =>
-//       KnowledgesService.readKnowledges({ skip: (page - 1) * PER_PAGE, limit: PER_PAGE }),
-//     queryKey: ["knowledges", { page }],
-//   }
-// }
-
 function KnowledgeFileCard({ file, onClick }: { file: KnowledgeFilePublic; onClick: () => void }) {
   const isDark = useColorModeValue(false, true)
   const bgColor = isDark ? "#2b2b2b" : "#ffffff"

@@ -115,7 +115,7 @@ class KnowledgeSearchTool(BaseTool):
 
     def _generate_embedding(self, query_content: str) -> Optional[List[float]]:
         """Generate embedding for the query text."""
-        embedding = gen_openai_model.get_large_embedding(query_content)
+        embedding = gen_openai_model.get_text_to_embedding(query_content)
         return embedding
 
     def _search_knowledge(  # pylint: disable=too-many-arguments
