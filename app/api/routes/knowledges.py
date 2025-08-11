@@ -184,6 +184,29 @@ def delete_knowledge(
     session.commit()
     return Knowledge(knowledge="Knowledge deleted successfully")
 
+@router.delete("/files/{id}/")
+def delete_knowledge_file(
+    session: SessionDep, current_user: CurrentUser,
+    # pylint: disable=redefined-builtin
+    id: uuid.UUID
+) -> Knowledge:
+    """
+    Delete a knowledge file.
+    """
+    knowledge_file = session.get(KnowledgeFile, id)
+    if not knowledge_file:
+        raise HTTPException(status_code=404, detail="Knowledge file not found")
+    if not current_user.is_superuser and (knowledge_file.owner_id != current_user.id):
+        raise HTTPException(status_code=400, detail="Not enough permissions")
+    # delete associated knowledge entries
+    all_knowledges = session.exec(select(Knowledge).where(Knowledge.knowledge_file_id == id)).all()
+    for knowledge in all_knowledges:
+        session.delete(knowledge)
+    session.delete(knowledge_file)
+    session.commit()
+    return Knowledge(knowledge="Knowledge file deleted successfully")
+
+
 @router.get("/search/{text}", response_model=KnowledgePublic)
 def search_knowledge(
     session: SessionDep, current_user: CurrentUser,

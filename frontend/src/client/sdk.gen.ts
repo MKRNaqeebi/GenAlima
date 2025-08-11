@@ -707,7 +707,7 @@ export class KnowledgeFilesService {
   ): CancelablePromise<KnowledgeFilesDeleteKnowledgeFileResponse> {
     return __request(OpenAPI, {
       method: "DELETE",
-      url: "/api/v1/knowledges/files/{id}",
+      url: "/api/v1/knowledges/files/{id}/",
       path: {
         id: data.id,
       },

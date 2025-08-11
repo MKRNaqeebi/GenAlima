@@ -12,7 +12,7 @@ import React from "react"
 import { useForm } from "react-hook-form"
 
 import {
-  ItemsService, UsersService, MessagesService, ChatsService, ConnectorsService, TemplatesService,
+  ItemsService, UsersService, MessagesService, ChatsService, ConnectorsService, TemplatesService, KnowledgeFilesService,
 } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
 
@@ -45,6 +45,8 @@ const Delete = ({ type, id, isOpen, onClose }: DeleteProps) => {
       await ChatsService.deleteChat({ id: id })
     } else if (type === "User") {
       await UsersService.deleteUser({ userId: id })
+    } else if (type === "Knowledge") {
+      await KnowledgeFilesService.deleteKnowledgeFile({ id: id })
     } else {
       throw new Error(`Unexpected type: ${type}`)
     }
@@ -68,8 +70,18 @@ const Delete = ({ type, id, isOpen, onClose }: DeleteProps) => {
       )
     },
     onSettled: () => {
+      const queryKey = 
+        type === "Item" ? ["items"] :
+        type === "User" ? ["users"] :
+        type === "Knowledge" ? ["knowledgeFiles"] :
+        type === "Connector" ? ["connectors"] :
+        type === "Template" ? ["templates"] :
+        type === "Chat" ? ["chats"] :
+        type === "Message" ? ["messages"] :
+        ["items"]
+      
       queryClient.invalidateQueries({
-        queryKey: [type === "Item" ? "items" : "users"],
+        queryKey: queryKey,
       })
     },
   })
