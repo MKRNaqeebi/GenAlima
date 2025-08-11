@@ -199,7 +199,7 @@ class LangGraphAgent:
 
                 # In production, we might want to fall back to a more reliable model
                 if settings.ENVIRONMENT == Environment.PRODUCTION and attempt == max_retries - 2:
-                    fallback_model = "gpt-4o"
+                    fallback_model = "gpt-4.1-mini"
                     logger.warning(
                         "using_fallback_model", model=fallback_model, environment=settings.ENVIRONMENT
                     )

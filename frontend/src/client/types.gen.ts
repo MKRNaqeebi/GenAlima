@@ -88,6 +88,7 @@ export type ChatPublic = {
 export type MessagePublic = {
   role: string
   content: string
+  meta_data: JSON
   chat_id?: string | null
   id: string
   owner_id: string

@@ -18,12 +18,14 @@ from sqlmodel import text
 from app.core.config import settings
 from app.core.db import engine as db_engine
 from gen_model import gen_openai_model
+from graphs.utils import store_tool_result_metadata
 
 
 class KnowledgeSearchInput(BaseModel):
     """Input schema for the knowledge search tool."""
 
     query: str = Field(description="The search query to find relevant knowledge")
+    message_id: str = Field(description="The ID of the message being processed")
 
 
 class KnowledgeSearchResult(BaseModel):
@@ -55,6 +57,7 @@ class KnowledgeSearchTool(BaseTool):
     def _run(  # pylint: disable=arguments-differ
         self,
         query: str,
+        message_id: str,
         run_manager: Optional[
             CallbackManagerForToolRun
         ] = None,
@@ -64,17 +67,15 @@ class KnowledgeSearchTool(BaseTool):
         # Get config values
         max_results = settings.KNOWLEDGE_SEARCH_MAX_RESULTS
         similarity_threshold = settings.KNOWLEDGE_SEARCH_SIMILARITY_THRESHOLD
-        organization_id = settings.KNOWLEDGE_SEARCH_ORGANIZATION_ID
         with db_engine.connect() as connection:
             # Generate embedding for the query
             embedding = self._generate_embedding(query)
             if not embedding:
                 return "Failed to generate query embedding"
             # Search knowledge base
-            results = self._search_knowledge(  # pylint: disable=too-many-function-args
+            results = self._search_knowledge(
                 connection=connection,
                 embedding=embedding,
-                organization_id=organization_id,
                 max_results=max_results,
                 similarity_threshold=similarity_threshold,
             )
@@ -97,12 +98,19 @@ class KnowledgeSearchTool(BaseTool):
                 formatted_results += (
                     f"""- Content: {result["content"]}\n- Confidence Score: {result["confidence_score"]}\n"""
                 )
-
+            store_tool_result_metadata(
+                message_id, self.name,
+                {
+                    "input": {"query": query},
+                    "output": formatted_results
+                }
+            )
             return formatted_results
 
     async def _arun(  # pylint: disable=arguments-differ
         self,
         query: str,
+        message_id: str,
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> Union[List[Dict[str, Any]], str]:
         """Async version of the knowledge search."""
@@ -110,6 +118,7 @@ class KnowledgeSearchTool(BaseTool):
         # In a production environment, this should be properly async
         return self._run(
             query=query,
+            message_id=message_id,
             run_manager=run_manager,
         )
 
@@ -118,11 +127,10 @@ class KnowledgeSearchTool(BaseTool):
         embedding = gen_openai_model.get_text_to_embedding(query_content)
         return embedding
 
-    def _search_knowledge(  # pylint: disable=too-many-arguments
+    def _search_knowledge(
         self,
         connection: Connection,
         embedding: List[float],
-        organization_id: str,
         max_results: int,
         similarity_threshold: float,
     ) -> List[Dict[str, Any]]:
@@ -136,16 +144,14 @@ class KnowledgeSearchTool(BaseTool):
             SELECT
                 k.id,
                 k.content,
-                k.source_id,
-                k.content_id,
-                k.chunk_number,
-                k.meta_data,
-                k.created,
-                k.embedding <-> CAST(:embedding AS vector) as distance
+                k.source_type,
+                k.knowledge_file_id,
+                k.meta,
+                k.updated_at,
+                k.content_vector <-> CAST(:embedding AS vector) as distance
             FROM knowledge k
-            WHERE k.organization_id = :org_id
-                AND k.embedding <-> CAST(:embedding AS vector) < :threshold
-            ORDER BY k.embedding <-> CAST(:embedding AS vector)
+            WHERE k.content_vector <-> CAST(:embedding AS vector) < :threshold
+            ORDER BY k.content_vector <-> CAST(:embedding AS vector)
             LIMIT :max_results
         """
         )
@@ -153,7 +159,6 @@ class KnowledgeSearchTool(BaseTool):
             query,
             {
                 "embedding": embedding_str,
-                "org_id": organization_id,
                 "threshold": similarity_threshold,
                 "max_results": max_results,
             },
@@ -163,39 +168,29 @@ class KnowledgeSearchTool(BaseTool):
         # Process results
         processed_results = []
         for result in results:
-            processed_result = self._process_single_result(
-                result, connection, organization_id
-            )
+            processed_result = self._process_single_result(result)
             processed_results.append(processed_result)
         return processed_results
 
-    def _process_single_result(  # pylint: disable=too-many-arguments
-        self, result: Any, connection: Connection, organization_id: str
+    def _process_single_result(
+        self, result: Any
     ) -> Dict[str, Any]:
-        """Process a single search result and enrich with adjacent chunks."""
+        """Process a single search result."""
         distance = float(result.distance)
         confidence_score = self._calculate_confidence_score(distance)
 
-        # Get adjacent chunks if content_id and chunk_number are available
+        # For now, we'll use the content as-is since we don't have chunk_number
         full_content = result.content
-        if result.content_id and result.chunk_number is not None:
-            full_content = self._get_full_content_with_context(  # pylint: disable=too-many-function-args
-                connection=connection,
-                content_id=result.content_id,
-                chunk_number=result.chunk_number,
-                current_content=result.content,
-                organization_id=organization_id,
-            )
 
         return {
             "id": str(result.id),
             "content": full_content,
-            "source_id": str(result.source_id),
-            "content_id": result.content_id,
-            "chunk_number": result.chunk_number,
-            "metadata": result.meta_data if result.meta_data else {},
+            "source_type": result.source_type,
+            "knowledge_file_id": str(result.knowledge_file_id) if result.knowledge_file_id else None,
+            "metadata": result.meta if result.meta else {},
             "confidence_score": confidence_score,
             "distance": distance,
+            "updated_at": str(result.updated_at) if result.updated_at else None,
         }
 
     def _get_full_content_with_context(

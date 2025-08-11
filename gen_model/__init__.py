@@ -18,6 +18,6 @@ def call_gen_model(
     Returns:
         dict[str, str]: The response from the OpenAI API.
     """
-    if model in ["gpt-4o", "gpt-4o-32k", "gpt-4o-mini"]:
+    if model in ["gpt-4.1", "gpt-4.1-mini", "gpt-5", "gpt-5-mini"]:
         return gen_openai_model.call_openai_model(model=model, messages=messages)
     return gen_openai_model.call_openai_model(model=model, messages=messages)

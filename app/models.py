@@ -4,7 +4,7 @@ The schema is used to validate the data that is sent to the application.
 """
 # Standard library imports
 from datetime import datetime
-from typing import List
+from typing import Any, Dict, List
 import uuid
 
 # Third-party imports
@@ -343,6 +343,7 @@ class MessageBase(SQLModel):
     """
     role: str = Field(max_length=255)
     content: str = Field(max_length=4096)
+    meta_data: Dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=True))
     chat_id: uuid.UUID = Field(
         foreign_key="chat.id", nullable=False, ondelete="CASCADE"
     )
@@ -376,6 +377,7 @@ class MessagePublic(MessageBase):
     Properties to return via API, id is always required
     """
     id: uuid.UUID | None = None
+    meta_data: Dict[str, Any] | None = None
 
 
 class MessagesPublic(SQLModel):

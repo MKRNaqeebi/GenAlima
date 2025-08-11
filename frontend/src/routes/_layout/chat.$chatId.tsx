@@ -8,6 +8,13 @@ import {
   SkeletonText,
   IconButton,
   Textarea,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverBody,
+  PopoverArrow,
+  PopoverCloseButton,
+  Code,
 } from "@chakra-ui/react"
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
@@ -22,6 +29,7 @@ import {
   FiDownload,
   FiVolume2,
   FiChevronDown,
+  FiInfo,
 } from "react-icons/fi"
 
 import { MessagesService, type MessageCreate } from "../../client"
@@ -51,11 +59,12 @@ interface MessageBubbleProps {
   content: string
   role: 'user' | 'assistant'
   timestamp?: string
+  metaData?: any
   onEdit?: () => void
   onCopy?: () => void
 }
 
-function MessageBubble({ content, role, onEdit, onCopy }: MessageBubbleProps) {
+function MessageBubble({ content, role, metaData, onEdit, onCopy }: MessageBubbleProps) {
   const isUser = role === 'user'
   const textColor = "#ffffff"
   const iconBg = "rgba(255,255,255,0.1)"
@@ -99,6 +108,42 @@ function MessageBubble({ content, role, onEdit, onCopy }: MessageBubbleProps) {
                 h="28px"
                 color="white"
               />
+              {metaData && Object.keys(metaData).length > 0 && (
+                <Popover placement="top">
+                  <PopoverTrigger>
+                    <IconButton
+                      aria-label="Info"
+                      icon={<FiInfo size={14} />}
+                      size="xs"
+                      variant="ghost"
+                      bg={iconBg}
+                      _hover={{ bg: iconHoverBg }}
+                      borderRadius="6px"
+                      minW="28px"
+                      h="28px"
+                      color="white"
+                    />
+                  </PopoverTrigger>
+                  <PopoverContent bg="#2b2b2b" borderColor="rgba(255,255,255,0.1)" maxW="400px">
+                    <PopoverArrow bg="#2b2b2b" />
+                    <PopoverCloseButton color="white" />
+                    <PopoverBody>
+                      <Text color="white" fontSize="sm" mb={2}>Message Metadata:</Text>
+                      <Code 
+                        display="block" 
+                        whiteSpace="pre-wrap" 
+                        bg="rgba(0,0,0,0.3)" 
+                        p={3} 
+                        borderRadius="md"
+                        color="white"
+                        fontSize="xs"
+                      >
+                        {JSON.stringify(metaData, null, 2)}
+                      </Code>
+                    </PopoverBody>
+                  </PopoverContent>
+                </Popover>
+              )}
               <IconButton
                 aria-label="Like"
                 icon={<FiThumbsUp size={14} />}
@@ -290,6 +335,7 @@ function ChatInterface() {
                 key={message.id}
                 content={message.content || 'No content'}
                 role={message.role as 'user' | 'assistant'}
+                metaData={message.meta_data}
                 onCopy={() => handleCopy(message.content || '')}
               />
             ))}
