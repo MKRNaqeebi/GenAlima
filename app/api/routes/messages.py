@@ -69,6 +69,24 @@ def read_message(
         raise HTTPException(status_code=400, detail="Not enough permissions")
     return message
 
+
+@router.get("/chat/{id}/", response_model=MessagesPublic)
+def read_messages_by_chat(
+    session: SessionDep, current_user: CurrentUser,
+    # pylint: disable=redefined-builtin
+    id: uuid.UUID) -> Any:
+    """
+    Get messages by chat ID.
+    """
+    chat = session.get(Chat, id)
+    if not chat:
+        raise HTTPException(status_code=404, detail="Chat not found")
+    if not current_user.is_superuser and (chat.owner_id != current_user.id):
+        raise HTTPException(status_code=400, detail="Not enough permissions")
+    messages = chat.messages
+    return MessagesPublic(data=messages, count=len(messages))
+
+
 @router.post("/", response_model=MessagePublic)
 async def create_message(
     *, session: SessionDep, current_user: CurrentUser, message_in: MessageBase

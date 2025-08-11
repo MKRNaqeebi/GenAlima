@@ -513,6 +513,21 @@ export class MessagesService {
     })
   }
 
+  public static readMessagesByChat(
+    data: MessagesReadMessageData,
+  ): CancelablePromise<MessagesReadMessagesResponse> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/messages/chat/{id}/",
+      path: {
+        id: data.id,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
   public static createMessage(
     data: MessagesCreateMessageData,
   ): CancelablePromise<MessagesCreateMessageResponse> {

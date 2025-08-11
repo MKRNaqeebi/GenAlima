@@ -1,5 +1,5 @@
 import { Box, Flex, Icon, Text, useColorModeValue, VStack, Input, InputGroup, InputLeftElement, Divider, Spinner } from "@chakra-ui/react"
-import { Link } from "@tanstack/react-router"
+import { Link, useRouterState } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 import {
   FiEdit, FiSearch, FiArchive, FiGrid
@@ -14,7 +14,7 @@ interface SidebarItemsProps {
 }
 
 const topMenuItems = [
-  { icon: FiEdit, label: "New chat", action: "new" },
+  { icon: FiEdit, label: "New chat", action: "new", activePath: "/chats" },
   { icon: FiSearch, label: "Search chats", action: "search" },
   { icon: FiArchive, label: "Knowledges", path: "/knowledges" },
   { icon: PiSparkle, label: "Templates", path: "/templates" },
@@ -24,12 +24,17 @@ const topMenuItems = [
 const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
+  const routerState = useRouterState()
+  const currentPath = routerState.location.pathname
   
   const isDark = useColorModeValue(false, true)
   const textColor = isDark ? "#e3e3e3" : "gray.700"
   const hoverBg = isDark ? "rgba(255,255,255,0.1)" : "gray.50"
+  const activeBg = isDark ? "rgba(255,255,255,0.15)" : "gray.100"
+  const activeTextColor = isDark ? "#ffffff" : "gray.900"
   const dividerColor = isDark ? "rgba(255,255,255,0.1)" : "gray.200"
   const iconColor = isDark ? "#b4b4b4" : "gray.600"
+  const activeIconColor = isDark ? "#ffffff" : "gray.700"
   const sectionLabelColor = isDark ? "#8e8e8e" : "gray.500"
 
   // Fetch all chats from API
@@ -56,8 +61,11 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
     <VStack spacing={0} align="stretch" h="100%">
       {/* Top Menu Items */}
       <VStack spacing={0.5} align="stretch" px={isCollapsed ? 1 : 2} py={2}>
-        {topMenuItems.map((item) => (
-          item.path ? (
+        {topMenuItems.map((item) => {
+          const isActive = item.path ? currentPath === item.path : 
+                          item.activePath ? currentPath === item.activePath : false
+          
+          return item.path ? (
             <Flex
               key={item.label}
               as={Link}
@@ -65,12 +73,13 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
               px={isCollapsed ? 2 : 3}
               py={2.5}
               borderRadius="6px"
-              color={textColor}
+              bg={isActive ? activeBg : "transparent"}
+              color={isActive ? activeTextColor : textColor}
               fontSize="14px"
-              fontWeight="normal"
+              fontWeight={isActive ? "medium" : "normal"}
               transition="all 0.15s"
               _hover={{
-                bg: hoverBg,
+                bg: isActive ? activeBg : hoverBg,
                 textDecoration: "none",
               }}
               onClick={onClose}
@@ -79,7 +88,7 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
               gap={3}
               title={isCollapsed ? item.label : undefined}
             >
-              <Icon as={item.icon} boxSize={4} color={iconColor} />
+              <Icon as={item.icon} boxSize={4} color={isActive ? activeIconColor : iconColor} />
               {!isCollapsed && <Text>{item.label}</Text>}
             </Flex>
           ) : (
@@ -89,12 +98,13 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
               px={isCollapsed ? 2 : 3}
               py={2.5}
               borderRadius="6px"
-              color={textColor}
+              bg={isActive ? activeBg : "transparent"}
+              color={isActive ? activeTextColor : textColor}
               fontSize="14px"
-              fontWeight="normal"
+              fontWeight={isActive ? "medium" : "normal"}
               transition="all 0.15s"
               _hover={{
-                bg: hoverBg,
+                bg: isActive ? activeBg : hoverBg,
               }}
               onClick={() => handleTopMenuClick(item.action!)}
               alignItems="center"
@@ -104,11 +114,11 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
               textAlign="left"
               title={isCollapsed ? item.label : undefined}
             >
-              <Icon as={item.icon} boxSize={4} color={iconColor} />
+              <Icon as={item.icon} boxSize={4} color={isActive ? activeIconColor : iconColor} />
               {!isCollapsed && <Text>{item.label}</Text>}
             </Flex>
           )
-        ))}
+        })}
       </VStack>
 
       {/* Search Input (appears when search is clicked) */}
@@ -161,29 +171,33 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
               {searchQuery ? "No chats found" : "No chats yet"}
             </Text>
           ) : (
-            filteredChats.map((chat) => (
-              <Flex
-                key={chat.id}
-                as={Link}
-                to={`/chat/${chat.id}`}
-                px={3}
-                py={2}
-                borderRadius="6px"
-                color={textColor}
-                fontSize="13px"
-                fontWeight="normal"
-                transition="all 0.15s"
-                _hover={{
-                  bg: hoverBg,
-                  textDecoration: "none",
-                }}
-                onClick={onClose}
-                alignItems="center"
-                noOfLines={1}
-              >
-                <Text noOfLines={1} w="100%">{chat.title}</Text>
-              </Flex>
-            ))
+            filteredChats.map((chat) => {
+              const isChatActive = currentPath === `/chat/${chat.id}`
+              return (
+                <Flex
+                  key={chat.id}
+                  as={Link}
+                  to={`/chat/${chat.id}`}
+                  px={3}
+                  py={2}
+                  borderRadius="6px"
+                  bg={isChatActive ? activeBg : "transparent"}
+                  color={isChatActive ? activeTextColor : textColor}
+                  fontSize="13px"
+                  fontWeight={isChatActive ? "medium" : "normal"}
+                  transition="all 0.15s"
+                  _hover={{
+                    bg: isChatActive ? activeBg : hoverBg,
+                    textDecoration: "none",
+                  }}
+                  onClick={onClose}
+                  alignItems="center"
+                  noOfLines={1}
+                >
+                  <Text noOfLines={1} w="100%">{chat.title}</Text>
+                </Flex>
+              )
+            })
           )}
         </VStack>
       </Box>

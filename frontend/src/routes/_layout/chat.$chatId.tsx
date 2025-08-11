@@ -15,11 +15,11 @@ import {
   PopoverArrow,
   PopoverCloseButton,
   Code,
+  useColorModeValue,
 } from "@chakra-ui/react"
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { useState, useRef, useEffect } from "react"
-import { z } from "zod"
 import { 
   FiCopy, 
   FiEdit2, 
@@ -36,22 +36,15 @@ import { MessagesService, type MessageCreate } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
 import { handleError } from "../../utils"
 
-const chatSearchSchema = z.object({
-  page: z.number().catch(1),
-})
-
 export const Route = createFileRoute("/_layout/chat/$chatId")({
   component: Chat,
-  validateSearch: (search) => chatSearchSchema.parse(search),
 })
 
-const PER_PAGE = 50
-
-function getMessagesQueryOptions({ page, chatId }: { page: number; chatId: string }) {
+function getMessagesQueryOptions({ chatId }: { chatId: string }) {
   return {
     queryFn: () =>
-      MessagesService.readMessages({ skip: (page - 1) * PER_PAGE, limit: PER_PAGE }),
-    queryKey: ["messages", { page, chatId }],
+      MessagesService.readMessagesByChat({ id: chatId }),
+    queryKey: ["messages", { chatId }],
   }
 }
 
@@ -66,9 +59,14 @@ interface MessageBubbleProps {
 
 function MessageBubble({ content, role, metaData, onEdit, onCopy }: MessageBubbleProps) {
   const isUser = role === 'user'
-  const textColor = "#ffffff"
-  const iconBg = "rgba(255,255,255,0.1)"
-  const iconHoverBg = "rgba(255,255,255,0.15)"
+  const textColor = useColorModeValue("gray.800", "#ffffff")
+  const userBubbleBg = useColorModeValue("gray.100", "rgba(255,255,255,0.05)")
+  const iconBg = useColorModeValue("gray.100", "rgba(255,255,255,0.1)")
+  const iconHoverBg = useColorModeValue("gray.200", "rgba(255,255,255,0.15)")
+  const iconColor = useColorModeValue("gray.600", "white")
+  const popoverBg = useColorModeValue("white", "#2b2b2b")
+  const popoverBorderColor = useColorModeValue("gray.200", "rgba(255,255,255,0.1)")
+  const codeBg = useColorModeValue("gray.100", "rgba(0,0,0,0.3)")
   
   return (
     <Box py={4}>
@@ -76,7 +74,7 @@ function MessageBubble({ content, role, metaData, onEdit, onCopy }: MessageBubbl
         <VStack align={isUser ? "flex-end" : "flex-start"} spacing={3}>
           {/* Message Content */}
           <Box
-            bg={isUser ? "rgba(255,255,255,0.05)" : "transparent"}
+            bg={isUser ? userBubbleBg : "transparent"}
             px={isUser ? 4 : 0}
             py={isUser ? 2 : 0}
             borderRadius={isUser ? "18px" : "0"}
@@ -106,7 +104,7 @@ function MessageBubble({ content, role, metaData, onEdit, onCopy }: MessageBubbl
                 borderRadius="6px"
                 minW="28px"
                 h="28px"
-                color="white"
+                color={iconColor}
               />
               {metaData && Object.keys(metaData).length > 0 && (
                 <Popover placement="top">
@@ -121,21 +119,21 @@ function MessageBubble({ content, role, metaData, onEdit, onCopy }: MessageBubbl
                       borderRadius="6px"
                       minW="28px"
                       h="28px"
-                      color="white"
+                      color={iconColor}
                     />
                   </PopoverTrigger>
-                  <PopoverContent bg="#2b2b2b" borderColor="rgba(255,255,255,0.1)" maxW="400px">
-                    <PopoverArrow bg="#2b2b2b" />
-                    <PopoverCloseButton color="white" />
+                  <PopoverContent bg={popoverBg} borderColor={popoverBorderColor} maxW="400px">
+                    <PopoverArrow bg={popoverBg} />
+                    <PopoverCloseButton color={iconColor} />
                     <PopoverBody>
-                      <Text color="white" fontSize="sm" mb={2}>Message Metadata:</Text>
+                      <Text color={textColor} fontSize="sm" mb={2}>Message Metadata:</Text>
                       <Code 
                         display="block" 
                         whiteSpace="pre-wrap" 
-                        bg="rgba(0,0,0,0.3)" 
+                        bg={codeBg} 
                         p={3} 
                         borderRadius="md"
-                        color="white"
+                        color={textColor}
                         fontSize="xs"
                       >
                         {JSON.stringify(metaData, null, 2)}
@@ -154,7 +152,7 @@ function MessageBubble({ content, role, metaData, onEdit, onCopy }: MessageBubbl
                 borderRadius="6px"
                 minW="28px"
                 h="28px"
-                color="white"
+                color={iconColor}
               />
               <IconButton
                 aria-label="Dislike"
@@ -166,7 +164,7 @@ function MessageBubble({ content, role, metaData, onEdit, onCopy }: MessageBubbl
                 borderRadius="6px"
                 minW="28px"
                 h="28px"
-                color="white"
+                color={iconColor}
               />
               <IconButton
                 aria-label="Volume"
@@ -178,7 +176,7 @@ function MessageBubble({ content, role, metaData, onEdit, onCopy }: MessageBubbl
                 borderRadius="6px"
                 minW="28px"
                 h="28px"
-                color="white"
+                color={iconColor}
               />
               <IconButton
                 aria-label="Edit"
@@ -191,7 +189,7 @@ function MessageBubble({ content, role, metaData, onEdit, onCopy }: MessageBubbl
                 borderRadius="6px"
                 minW="28px"
                 h="28px"
-                color="white"
+                color={iconColor}
               />
               <IconButton
                 aria-label="Download"
@@ -203,7 +201,7 @@ function MessageBubble({ content, role, metaData, onEdit, onCopy }: MessageBubbl
                 borderRadius="6px"
                 minW="28px"
                 h="28px"
-                color="white"
+                color={iconColor}
               />
               <IconButton
                 aria-label="Regenerate"
@@ -215,7 +213,7 @@ function MessageBubble({ content, role, metaData, onEdit, onCopy }: MessageBubbl
                 borderRadius="6px"
                 minW="28px"
                 h="28px"
-                color="white"
+                color={iconColor}
               />
             </HStack>
           )}
@@ -232,30 +230,34 @@ function ChatInterface() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   
-  const bgColor = "#212121"
-  const inputBgColor = "#2b2b2b"
-  const textColor = "#ffffff"
-  const borderColor = "rgba(255,255,255,0.1)"
-  const placeholderColor = "#8e8e8e"
+  const bgColor = useColorModeValue("#f7f7f7", "#212121")
+  const inputBgColor = useColorModeValue("white", "#2b2b2b")
+  const textColor = useColorModeValue("gray.800", "#ffffff")
+  const borderColor = useColorModeValue("gray.200", "rgba(255,255,255,0.1)")
+  const placeholderColor = useColorModeValue("gray.500", "#8e8e8e")
+  const iconColor = useColorModeValue("gray.600", "rgba(255,255,255,0.7)")
+  const scrollButtonBg = useColorModeValue("white", "#2b2b2b")
   
-  const { page } = Route.useSearch()
   const { chatId } = Route.useParams()
   
   const {
     data: messages,
     isPending,
   } = useQuery({
-    ...getMessagesQueryOptions({ page, chatId }),
-    placeholderData: (prevData) => prevData,
+    ...getMessagesQueryOptions({ chatId }),
   })
 
-  const chatMessages = messages?.data
-    .filter(message => message.chat_id === chatId)
-    .reverse() || []
+  const chatMessages = messages?.data?.reverse() || []
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
+
+  // Clear messages when switching to a different chat
+  useEffect(() => {
+    // Invalidate and refetch messages for the new chat
+    queryClient.invalidateQueries({ queryKey: ['messages', { chatId }] })
+  }, [chatId, queryClient])
 
   useEffect(() => {
     scrollToBottom()
@@ -275,7 +277,7 @@ function ChatInterface() {
     onSuccess: () => {
       showToast('Success!', 'Message sent successfully.', 'success')
       setNewMessage('')
-      queryClient.invalidateQueries({ queryKey: ['messages'] })
+      queryClient.invalidateQueries({ queryKey: ['messages', { chatId }] })
     },
     onError: (err: any) => {
       handleError(err, showToast)
@@ -351,11 +353,11 @@ function ChatInterface() {
           icon={<FiChevronDown />}
           size="sm"
           borderRadius="full"
-          bg="#2b2b2b"
-          color="white"
+          bg={scrollButtonBg}
+          color={iconColor}
           border="1px solid"
-          borderColor="rgba(255,255,255,0.1)"
-          _hover={{ bg: "#3b3b3b" }}
+          borderColor={borderColor}
+          _hover={{ bg: useColorModeValue("gray.100", "#3b3b3b") }}
           onClick={scrollToBottom}
         />
       </Box>
