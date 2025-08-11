@@ -20,8 +20,7 @@ from app.models import (
     MessagesPublic,
     MessageUpdate,
 )
-from app.model_utils import save_chat_message, update_chat_message
-# from gen_model import call_gen_model, gen_openai_model
+from app.model_utils import save_chat_message, update_chat_message, save_chat
 from graphs.main import lang_graph_agent
 
 router = APIRouter(prefix="/messages", tags=["messages"])
@@ -80,7 +79,7 @@ def read_messages_by_chat(
     """
     chat = session.get(Chat, id)
     if not chat:
-        raise HTTPException(status_code=404, detail="Chat not found")
+        return MessagesPublic(data=[], count=0)
     if not current_user.is_superuser and (chat.owner_id != current_user.id):
         raise HTTPException(status_code=400, detail="Not enough permissions")
     messages = chat.messages
@@ -96,7 +95,7 @@ async def create_message(
     """
     chat = session.get(Chat, message_in.chat_id)
     if not chat:
-        raise HTTPException(status_code=404, detail="Chat not found")
+        chat = save_chat(session, message_in.chat_id, "New Chat", current_user.id)
     if not current_user.is_superuser and chat.owner_id != current_user.id:
         raise HTTPException(status_code=400, detail="Not enough permissions")
     _ = save_chat_message(session=session, role=message_in.role, chat_id=chat.id, content=message_in.content)
