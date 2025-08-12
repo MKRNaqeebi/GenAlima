@@ -65,6 +65,7 @@ def get_completions(user_input: CompletionInput) -> list[Message]:
 @app.get("/settings")
 @app.get("/items")
 @app.get("/templates")
+@app.get("/chats")
 @app.get("/chat/{chat_id}")
 @app.get("/messages")
 @app.get("/admin")
