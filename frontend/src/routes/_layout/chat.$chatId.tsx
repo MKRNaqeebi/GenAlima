@@ -247,7 +247,7 @@ function ChatInterface() {
     ...getMessagesQueryOptions({ chatId }),
   })
 
-  const chatMessages = messages?.data?.reverse() || []
+  const chatMessages = messages?.data || []
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
