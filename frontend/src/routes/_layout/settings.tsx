@@ -1,5 +1,4 @@
 import { useState } from "react"
-import { useQueryClient } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import {
   FiUser,
@@ -7,8 +6,6 @@ import {
   FiMoon,
   FiSun,
 } from "react-icons/fi"
-
-import type { UserPublic } from "../../client"
 import UserInformation from "../../components/UserSettings/UserInformation"
 import ChangePassword from "../../components/UserSettings/ChangePassword"
 import { useTheme } from "../../contexts/ThemeContext"
@@ -18,8 +15,6 @@ export const Route = createFileRoute("/_layout/settings")({
 })
 
 function UserSettings() {
-  const queryClient = useQueryClient()
-  const currentUser = queryClient.getQueryData<UserPublic>(["currentUser"])
   const [activeTab, setActiveTab] = useState("profile")
   const { isDark, toggleTheme } = useTheme()
 

@@ -53,8 +53,7 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
       {/* Top Menu Items */}
       <div className={`flex flex-col space-y-0.5 ${isCollapsed ? 'px-1' : 'px-2'} py-2`}>
         {topMenuItems.map((item) => {
-          const isActive = item.path ? currentPath === item.path : 
-                          item.activePath ? currentPath === item.activePath : false
+          const isActive = item.path ? currentPath === item.path : false
           
           return item.path ? (
             <Link

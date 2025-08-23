@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
-import { FiLogOut, FiMenu, FiUser, FiChevronLeft, FiX, FiSettings, FiHelpCircle, FiZap, FiEdit3, FiMail } from "react-icons/fi"
+import { FiLogOut, FiMenu, FiChevronLeft, FiSettings, FiHelpCircle, FiZap, FiEdit3, FiMail } from "react-icons/fi"
 
 import type { UserPublic } from "../../client"
 import useAuth from "../../hooks/useAuth"
