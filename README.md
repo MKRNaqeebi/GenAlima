@@ -1,4 +1,4 @@
-# GenAlina
+# GenAlima
 
 AI-Powered QA Pipeline
 
@@ -7,6 +7,11 @@ AI-Powered QA Pipeline
 Tasks are divided into the integration of data sources, core pipeline, and the frontend.
 
 ### Integration Tasks
+
+- [ ] Integrate with RAG data source (File, Database, API)
+  - [x] Allow file upload and search from with vector search
+  - [ ] Allow user to add database and query from it (text to SQL)
+  - [ ] Allow user to add API data source and configure it
 
 - [ ] MCP
   - [ ] Allow to add new mcp server from UI

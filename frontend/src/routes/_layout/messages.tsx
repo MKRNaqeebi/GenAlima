@@ -1,23 +1,9 @@
-import {
-  Box,
-  Container,
-  Flex,
-  Heading,
-  Text,
-  VStack,
-  HStack,
-  Avatar,
-  Card,
-  CardBody,
-  SkeletonText,
-  Input,
-  IconButton,
-} from "@chakra-ui/react"
+import React from "react"
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { useState } from "react"
 import { z } from "zod"
-import { ArrowForwardIcon } from "@chakra-ui/icons"
+import { FiArrowRight } from "react-icons/fi"
 
 import { MessagesService, type MessageCreate } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
@@ -57,33 +43,34 @@ function MessageBubble({ content, role, timestamp }: MessageBubbleProps) {
   const isUser = role === 'user'
   
   return (
-    <Flex justify={isUser ? 'flex-end' : 'flex-start'} mb={4}>
-      <HStack
-        spacing={3}
-        flexDirection={isUser ? 'row-reverse' : 'row'}
-        maxW="70%"
+    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
+      <div
+        className={`flex ${isUser ? 'flex-row-reverse' : 'flex-row'} items-start space-x-3 max-w-md`}
+        style={{ maxWidth: '70%' }}
       >
-        <Avatar
-          size="sm"
-          name={isUser ? 'User' : 'Assistant'}
-          bg={isUser ? 'blue.500' : 'green.500'}
-        />
-        <Card
-          bg={isUser ? 'blue.500' : 'gray.100'}
-          color={isUser ? 'white' : 'black'}
-          borderRadius="lg"
+        <div 
+          className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-medium ${
+            isUser ? 'bg-blue-500' : 'bg-green-500'
+          }`}
         >
-          <CardBody py={3} px={4}>
-            <Text fontSize="sm" mb={1}>
-              {content}
-            </Text>
-            <Text fontSize="xs" opacity={0.7}>
-              {new Date(timestamp).toLocaleTimeString()}
-            </Text>
-          </CardBody>
-        </Card>
-      </HStack>
-    </Flex>
+          {isUser ? 'U' : 'A'}
+        </div>
+        <div
+          className={`rounded-lg p-3 ${
+            isUser 
+              ? 'bg-blue-500 text-white' 
+              : 'bg-gray-100 text-black'
+          }`}
+        >
+          <p className="text-sm mb-1">
+            {content}
+          </p>
+          <p className="text-xs opacity-70">
+            {new Date(timestamp).toLocaleTimeString()}
+          </p>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -140,32 +127,28 @@ function ChatInterface() {
 
   if (isPending) {
     return (
-      <VStack spacing={4} align="stretch">
+      <div className="flex flex-col space-y-4">
         {Array.from({ length: 3 }).map((_, index) => (
-          <Box key={index}>
-            <SkeletonText noOfLines={2} spacing={2} />
-          </Box>
+          <div key={index} className="animate-pulse">
+            <div className="h-4 bg-gray-200 rounded mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+          </div>
         ))}
-      </VStack>
+      </div>
     )
   }
 
   return (
-    <Box h="600px" display="flex" flexDirection="column">
+    <div className="h-96 flex flex-col">
       {/* Chat Messages Area */}
-      <Box
-        flex="1"
-        overflowY="auto"
-        p={4}
-        bg="gray.50"
-        borderRadius="md"
-        mb={4}
+      <div
+        className="flex-1 overflow-y-auto p-4 bg-gray-50 rounded-md mb-4"
       >
-        <VStack spacing={0} align="stretch">
+        <div className="flex flex-col space-y-0">
           {userMessages.length === 0 ? (
-            <Text textAlign="center" color="gray.500" py={8}>
+            <p className="text-center text-gray-500 py-8">
               No user messages found. Start a conversation!
-            </Text>
+            </p>
           ) : (
             userMessages.map((message) => (
               <MessageBubble
@@ -176,32 +159,36 @@ function ChatInterface() {
               />
             ))
           )}
-        </VStack>
-      </Box>
+        </div>
+      </div>
 
       {/* Message Input Area */}
-      <Card>
-        <CardBody>
-          <HStack spacing={2} w="full">
-            <Input
+      <div className="bg-white border border-gray-200 rounded-lg">
+        <div className="p-4">
+          <div className="flex items-center space-x-2 w-full">
+            <input
+              type="text"
               placeholder="Type your message..."
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
               onKeyDown={handleKeyPress}
-              flex="1"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <IconButton
-              aria-label="Send message"
-              icon={<ArrowForwardIcon />}
+            <button
               onClick={handleSendMessage}
-              isLoading={sendMessageMutation.isPending}
-              isDisabled={!newMessage.trim()}
-              colorScheme="blue"
-            />
-          </HStack>
-        </CardBody>
-      </Card>
-    </Box>
+              disabled={sendMessageMutation.isPending || !newMessage.trim()}
+              className="p-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {sendMessageMutation.isPending ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+              ) : (
+                <FiArrowRight className="w-5 h-5" />
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -209,14 +196,14 @@ function Messages() {
   const { chatId } = Route.useParams()
   
   return (
-    <Container maxW="4xl">
-      <Heading size="lg" textAlign={{ base: "center", md: "left" }} pt={12} mb={2}>
+    <div className="max-w-4xl mx-auto px-4">
+      <h1 className="text-2xl font-bold text-center md:text-left pt-12 mb-2">
         Chat Messages
-      </Heading>
-      <Text color="gray.600" mb={6}>
+      </h1>
+      <p className="text-gray-600 mb-6">
         Chat ID: {chatId}
-      </Text>
+      </p>
       <ChatInterface />
-    </Container>
+    </div>
   )
 }

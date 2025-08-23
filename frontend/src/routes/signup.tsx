@@ -1,18 +1,4 @@
 import {
-  Button,
-  Container,
-  FormControl,
-  FormErrorMessage,
-  FormLabel,
-  Image,
-  Input,
-  Link,
-  Text,
-  useColorModeValue,
-  Box,
-  VStack,
-} from "@chakra-ui/react"
-import {
   Link as RouterLink,
   createFileRoute,
   redirect,
@@ -41,15 +27,6 @@ interface UserRegisterForm extends UserRegister {
 
 function SignUp() {
   const { signUpMutation } = useAuth()
-  
-  const isDark = useColorModeValue(false, true)
-  const bgColor = isDark ? "#1a1a1a" : "#ffffff"
-  const textColor = isDark ? "#e3e3e3" : "#2e2e2e"
-  const borderColor = isDark ? "rgba(255,255,255,0.1)" : "#e5e5e5"
-  const inputBg = isDark ? "#2b2b2b" : "#f7f7f7"
-  const placeholderColor = isDark ? "#8e8e8e" : "#9ca3af"
-  const cardBg = isDark ? "#2b2b2b" : "#ffffff"
-  const cardShadow = isDark ? "0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.1)" : "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)"
   const {
     register,
     handleSubmit,
@@ -71,54 +48,42 @@ function SignUp() {
   }
 
   return (
-    <Box minH="100vh" bg={bgColor} display="flex" alignItems="center" justifyContent="center" px={4}>
-      <Container maxW="sm" p={0}>
-        <Box
-          as="form"
+    <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center px-4">
+      <div className="max-w-sm w-full p-0">
+        <form
           onSubmit={handleSubmit(onSubmit)}
-          bg={cardBg}
-          p={8}
-          borderRadius="xl"
-          boxShadow={cardShadow}
-          borderWidth="1px"
-          borderColor={borderColor}
+          className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700"
         >
-          <VStack spacing={5}>
-            <Image
+          <div className="space-y-5">
+            <img
               src={Logo}
               alt="GenAlima logo"
-              height="auto"
-              maxW="2xs"
-              alignSelf="center"
+              className="h-auto max-w-xs mx-auto"
             />
-            <FormControl id="full_name" isInvalid={!!errors.full_name}>
-              <FormLabel htmlFor="full_name" srOnly>
+            <div className="space-y-2">
+              <label htmlFor="full_name" className="sr-only">
                 Full Name
-              </FormLabel>
-              <Input
+              </label>
+              <input
                 id="full_name"
                 minLength={3}
                 {...register("full_name", { required: "Full Name is required" })}
                 placeholder="Full Name"
                 type="text"
-                size="lg"
-                bg={inputBg}
-                borderColor={borderColor}
-                color={textColor}
-                _placeholder={{ color: placeholderColor }}
-                _hover={{ borderColor: "#10a37f" }}
-                _focus={{ borderColor: "#10a37f", boxShadow: "0 0 0 1px #10a37f" }}
-                isDisabled={signUpMutation.isPending}
+                disabled={signUpMutation.isPending}
+                className={`w-full px-4 py-3 text-lg rounded-lg border bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 hover:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  errors.full_name ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'
+                }`}
               />
               {errors.full_name && (
-                <FormErrorMessage>{errors.full_name.message}</FormErrorMessage>
+                <p className="text-red-500 text-sm mt-1">{errors.full_name.message}</p>
               )}
-            </FormControl>
-            <FormControl id="email" isInvalid={!!errors.email}>
-              <FormLabel htmlFor="email" srOnly>
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="email" className="sr-only">
                 Email
-              </FormLabel>
-              <Input
+              </label>
+              <input
                 id="email"
                 {...register("email", {
                   required: "Email is required",
@@ -126,98 +91,73 @@ function SignUp() {
                 })}
                 placeholder="Email"
                 type="email"
-                size="lg"
-                bg={inputBg}
-                borderColor={borderColor}
-                color={textColor}
-                _placeholder={{ color: placeholderColor }}
-                _hover={{ borderColor: "#10a37f" }}
-                _focus={{ borderColor: "#10a37f", boxShadow: "0 0 0 1px #10a37f" }}
-                isDisabled={signUpMutation.isPending}
+                disabled={signUpMutation.isPending}
+                className={`w-full px-4 py-3 text-lg rounded-lg border bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 hover:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  errors.email ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'
+                }`}
               />
               {errors.email && (
-                <FormErrorMessage>{errors.email.message}</FormErrorMessage>
+                <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
               )}
-            </FormControl>
-            <FormControl id="password" isInvalid={!!errors.password}>
-              <FormLabel htmlFor="password" srOnly>
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="password" className="sr-only">
                 Password
-              </FormLabel>
-              <Input
+              </label>
+              <input
                 id="password"
                 {...register("password", passwordRules())}
                 placeholder="Password"
                 type="password"
-                size="lg"
-                bg={inputBg}
-                borderColor={borderColor}
-                color={textColor}
-                _placeholder={{ color: placeholderColor }}
-                _hover={{ borderColor: "#10a37f" }}
-                _focus={{ borderColor: "#10a37f", boxShadow: "0 0 0 1px #10a37f" }}
-                isDisabled={signUpMutation.isPending}
+                disabled={signUpMutation.isPending}
+                className={`w-full px-4 py-3 text-lg rounded-lg border bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 hover:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  errors.password ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'
+                }`}
               />
               {errors.password && (
-                <FormErrorMessage>{errors.password.message}</FormErrorMessage>
+                <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>
               )}
-            </FormControl>
-            <FormControl
-              id="confirm_password"
-              isInvalid={!!errors.confirm_password}
-            >
-              <FormLabel htmlFor="confirm_password" srOnly>
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="confirm_password" className="sr-only">
                 Confirm Password
-              </FormLabel>
-              <Input
+              </label>
+              <input
                 id="confirm_password"
                 {...register("confirm_password", confirmPasswordRules(getValues))}
                 placeholder="Repeat Password"
                 type="password"
-                size="lg"
-                bg={inputBg}
-                borderColor={borderColor}
-                color={textColor}
-                _placeholder={{ color: placeholderColor }}
-                _hover={{ borderColor: "#10a37f" }}
-                _focus={{ borderColor: "#10a37f", boxShadow: "0 0 0 1px #10a37f" }}
-                isDisabled={signUpMutation.isPending}
+                disabled={signUpMutation.isPending}
+                className={`w-full px-4 py-3 text-lg rounded-lg border bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 hover:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  errors.confirm_password ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'
+                }`}
               />
               {errors.confirm_password && (
-                <FormErrorMessage>
+                <p className="text-red-500 text-sm mt-1">
                   {errors.confirm_password.message}
-                </FormErrorMessage>
+                </p>
               )}
-            </FormControl>
-            <Button 
+            </div>
+            <button 
               type="submit" 
-              size="lg"
-              width="full"
-              bg="#10a37f"
-              color="white"
-              _hover={{ bg: "#0d8265" }}
-              _active={{ bg: "#0a6b4f" }}
-              isLoading={signUpMutation.isPending}
-              loadingText="Creating account..."
-              isDisabled={signUpMutation.isPending}
+              disabled={signUpMutation.isPending}
+              className="w-full py-3 px-4 text-lg font-medium text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Create Account
-            </Button>
-            <Text color={textColor} textAlign="center">
+              {signUpMutation.isPending ? "Creating account..." : "Create Account"}
+            </button>
+            <p className="text-gray-900 dark:text-gray-100 text-center">
               Already have an account?{" "}
-              <Link 
-                as={RouterLink} 
+              <RouterLink 
                 to="/login" 
-                color="#10a37f"
-                fontWeight="medium"
-                _hover={{ color: "#0d8265" }}
+                className="text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 font-medium transition-colors"
               >
                 Sign in
-              </Link>
-            </Text>
-          </VStack>
-        </Box>
-      </Container>
-    </Box>
+              </RouterLink>
+            </p>
+          </div>
+        </form>
+      </div>
+    </div>
   )
 }
 

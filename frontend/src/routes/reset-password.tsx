@@ -1,13 +1,3 @@
-import {
-  Button,
-  Container,
-  FormControl,
-  FormErrorMessage,
-  FormLabel,
-  Heading,
-  Input,
-  Text,
-} from "@chakra-ui/react"
 import { useMutation } from "@tanstack/react-query"
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
 import { type SubmitHandler, useForm } from "react-hook-form"
@@ -74,49 +64,63 @@ function ResetPassword() {
   }
 
   return (
-    <Container
-      as="form"
-      onSubmit={handleSubmit(onSubmit)}
-      h="100vh"
-      maxW="sm"
-      alignItems="stretch"
-      justifyContent="center"
-      gap={4}
-      centerContent
-    >
-      <Heading size="xl" color="ui.main" textAlign="center" mb={2}>
-        Reset Password
-      </Heading>
-      <Text textAlign="center">
-        Please enter your new password and confirm it to reset your password.
-      </Text>
-      <FormControl mt={4} isInvalid={!!errors.new_password}>
-        <FormLabel htmlFor="password">Set Password</FormLabel>
-        <Input
-          id="password"
-          {...register("new_password", passwordRules())}
-          placeholder="Password"
-          type="password"
-        />
-        {errors.new_password && (
-          <FormErrorMessage>{errors.new_password.message}</FormErrorMessage>
-        )}
-      </FormControl>
-      <FormControl mt={4} isInvalid={!!errors.confirm_password}>
-        <FormLabel htmlFor="confirm_password">Confirm Password</FormLabel>
-        <Input
-          id="confirm_password"
-          {...register("confirm_password", confirmPasswordRules(getValues))}
-          placeholder="Password"
-          type="password"
-        />
-        {errors.confirm_password && (
-          <FormErrorMessage>{errors.confirm_password.message}</FormErrorMessage>
-        )}
-      </FormControl>
-      <Button variant="primary" type="submit">
-        Reset Password
-      </Button>
-    </Container>
+    <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center px-4">
+      <div className="max-w-sm w-full p-0">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 space-y-6"
+        >
+          <h1 className="text-2xl font-bold text-emerald-600 dark:text-emerald-400 text-center mb-2">
+            Reset Password
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 text-center">
+            Please enter your new password and confirm it to reset your password.
+          </p>
+          <div className="space-y-2">
+            <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Set Password
+            </label>
+            <input
+              id="password"
+              {...register("new_password", passwordRules())}
+              placeholder="Password"
+              type="password"
+              disabled={mutation.isPending}
+              className={`w-full px-4 py-3 rounded-lg border bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 hover:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed ${
+                errors.new_password ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'
+              }`}
+            />
+            {errors.new_password && (
+              <p className="text-red-500 text-sm mt-1">{errors.new_password.message}</p>
+            )}
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="confirm_password" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Confirm Password
+            </label>
+            <input
+              id="confirm_password"
+              {...register("confirm_password", confirmPasswordRules(getValues))}
+              placeholder="Password"
+              type="password"
+              disabled={mutation.isPending}
+              className={`w-full px-4 py-3 rounded-lg border bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 hover:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed ${
+                errors.confirm_password ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'
+              }`}
+            />
+            {errors.confirm_password && (
+              <p className="text-red-500 text-sm mt-1">{errors.confirm_password.message}</p>
+            )}
+          </div>
+          <button
+            type="submit"
+            disabled={mutation.isPending}
+            className="w-full py-3 px-4 font-medium text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {mutation.isPending ? "Resetting..." : "Reset Password"}
+          </button>
+        </form>
+      </div>
+    </div>
   )
 }

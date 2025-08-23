@@ -1,123 +1,28 @@
-import {
-  Button,
-  FormControl,
-  FormErrorMessage,
-  FormLabel,
-  Input,
-  Modal,
-  ModalBody,
-  ModalCloseButton,
-  ModalContent,
-  ModalFooter,
-  ModalHeader,
-  ModalOverlay,
-} from "@chakra-ui/react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { type SubmitHandler, useForm } from "react-hook-form"
-
-import {
-  type ApiError,
-  type ChatPublic,
-  type ChatUpdate,
-  ChatsService,
-} from "../../client"
-import useCustomToast from "../../hooks/useCustomToast"
-import { handleError } from "../../utils"
-
+// TODO: Convert this component from Chakra UI to Tailwind CSS
 interface EditChatProps {
-  chat: ChatPublic
   isOpen: boolean
   onClose: () => void
+  chat: any
 }
 
-const EditChat = ({ chat, isOpen, onClose }: EditChatProps) => {
-  const queryClient = useQueryClient()
-  const showToast = useCustomToast()
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { isSubmitting, errors, isDirty },
-  } = useForm<ChatUpdate>({
-    mode: "onBlur",
-    criteriaMode: "all",
-    defaultValues: chat,
-  })
-
-  const mutation = useMutation({
-    mutationFn: (data: ChatUpdate) =>
-      ChatsService.updateChat({ id: chat.id, requestBody: data }),
-    onSuccess: () => {
-      showToast("Success!", "Chat updated successfully.", "success")
-      onClose()
-    },
-    onError: (err: ApiError) => {
-      handleError(err, showToast)
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["chats"] })
-    },
-  })
-
-  const onSubmit: SubmitHandler<ChatUpdate> = async (data) => {
-    mutation.mutate(data)
-  }
-
-  const onCancel = () => {
-    reset()
-    onClose()
-  }
+const EditChat = ({ isOpen, onClose, chat }: EditChatProps) => {
+  if (!isOpen) return null
 
   return (
-    <>
-      <Modal
-        isOpen={isOpen}
-        onClose={onClose}
-        size={{ base: "sm", md: "md" }}
-        isCentered
-      >
-        <ModalOverlay />
-        <ModalContent as="form" onSubmit={handleSubmit(onSubmit)}>
-          <ModalHeader>Edit Chat</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={6}>
-            <FormControl isInvalid={!!errors.title}>
-              <FormLabel htmlFor="title">Title</FormLabel>
-              <Input
-                id="title"
-                {...register("title", {
-                  required: "Title is required",
-                })}
-                type="text"
-              />
-              {errors.title && (
-                <FormErrorMessage>{errors.title.message}</FormErrorMessage>
-              )}
-            </FormControl>
-            <FormControl mt={4}>
-              <FormLabel htmlFor="template_id">Template ID</FormLabel>
-              <Input
-                id="template_id"
-                {...register("template_id")}
-                type="text"
-                placeholder="Optional"
-              />
-            </FormControl>
-          </ModalBody>
-          <ModalFooter gap={3}>
-            <Button
-              variant="primary"
-              type="submit"
-              isLoading={isSubmitting}
-              isDisabled={!isDirty}
-            >
-              Save
-            </Button>
-            <Button onClick={onCancel}>Cancel</Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-    </>
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="fixed inset-0 bg-black bg-opacity-50" onClick={onClose}></div>
+      <div className="relative bg-white rounded-lg shadow-lg max-w-md mx-4 w-full p-6">
+        <h3 className="text-lg font-medium text-gray-900 mb-4">Edit Chat</h3>
+        <p className="text-gray-600 mb-4">This component needs to be converted from Chakra UI to Tailwind CSS.</p>
+        <p className="text-sm text-gray-500 mb-4">Chat: {chat?.id || 'N/A'}</p>
+        <button
+          onClick={onClose}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+        >
+          Close
+        </button>
+      </div>
+    </div>
   )
 }
 

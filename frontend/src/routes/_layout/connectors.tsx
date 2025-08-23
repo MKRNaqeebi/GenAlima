@@ -1,22 +1,3 @@
-import {
-  Box,
-  Flex,
-  Text,
-  VStack,
-  HStack,
-  Card,
-  CardBody,
-  SkeletonText,
-  useColorModeValue,
-  Icon,
-  Badge,
-  Button,
-  Grid,
-  Input,
-  InputGroup,
-  InputLeftElement,
-  useDisclosure,
-} from "@chakra-ui/react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useEffect, useState } from "react"
@@ -25,15 +6,13 @@ import {
   FiSearch, 
   FiGrid, 
   FiZap,
-  FiPlay,
-  FiPause,
   FiPlus
 } from "react-icons/fi"
 
 import { ConnectorsService } from "../../client"
 import ActionsMenu from "../../components/Common/ActionsMenu"
-import AddConnector from "../../components/Connectors/AddConnector"
 import { PaginationFooter } from "../../components/Common/PaginationFooter.tsx"
+import AddConnector from "../../components/Connectors/AddConnector"
 
 const connectorsSearchSchema = z.object({
   page: z.number().catch(1),
@@ -55,104 +34,36 @@ function getConnectorsQueryOptions({ page }: { page: number }) {
 }
 
 function ConnectorCard({ connector }: { connector: any }) {
-  const isDark = useColorModeValue(false, true)
-  const bgColor = isDark ? "#2b2b2b" : "#ffffff"
-  const textColor = isDark ? "#e3e3e3" : "#2e2e2e"
-  const borderColor = isDark ? "rgba(255,255,255,0.1)" : "#e5e5e5"
-  const hoverBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.02)"
-  const metaColor = isDark ? "#8e8e8e" : "#6b7280"
-
   return (
-    <Card
-      bg={bgColor}
-      borderColor={borderColor}
-      borderWidth="1px"
-      _hover={{ 
-        bg: hoverBg,
-        transform: "translateY(-2px)",
-        boxShadow: isDark ? "0 4px 20px rgba(0,0,0,0.3)" : "0 4px 20px rgba(0,0,0,0.1)" 
-      }}
-      transition="all 0.2s"
-      cursor="pointer"
-    >
-      <CardBody p={6}>
-        <VStack align="start" spacing={4}>
-          <HStack justify="space-between" w="100%">
-            <HStack spacing={3}>
-              <Icon 
-                as={connector.active ? FiZap : FiPause} 
-                boxSize={5} 
-                color={connector.active ? "#10a37f" : metaColor} 
-              />
-              <Text fontSize="lg" fontWeight="semibold" color={textColor} noOfLines={1}>
-                {connector.name || `Connector #${connector.id?.slice(0, 8)}`}
-              </Text>
-            </HStack>
+    <div className="bg-white dark:bg-[#2f2f2f] border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-lg transition-all duration-200">
+      <div className="p-6">
+        <div className="flex flex-col items-start space-y-4">
+          <div className="flex justify-between items-start w-full">
+            <div className="flex items-center space-x-3">
+              <FiZap className="w-5 h-5 text-blue-600" />
+              <span className="text-lg font-semibold text-gray-900 dark:text-white">
+                {connector.title || 'Connector'}
+              </span>
+            </div>
             <ActionsMenu type="Connector" value={connector} />
-          </HStack>
-
-          <Text 
-            color={textColor} 
-            fontSize="sm" 
-            lineHeight="1.6"
-            noOfLines={3}
-            minH="60px"
-          >
-            {connector.description || "No description available"}
-          </Text>
-
-          {connector.function && (
-            <Box w="100%">
-              <Text fontSize="xs" color={metaColor} mb={2}>
-                Function:
-              </Text>
-              <Badge 
-                colorScheme="cyan" 
-                variant="subtle" 
-                fontSize="xs"
-                px={2}
-                py={1}
-                borderRadius="md"
-              >
-                {connector.function.slice(0, 50) + (connector.function.length > 50 ? '...' : '')}
-              </Badge>
-            </Box>
-          )}
-
-          <HStack justify="space-between" w="100%">
-            <HStack spacing={2}>
-              <Badge 
-                colorScheme={connector.active ? "green" : "gray"} 
-                variant="subtle" 
-                fontSize="xs"
-                px={2}
-                py={1}
-                borderRadius="md"
-              >
-                {connector.active ? "Active" : "Inactive"}
-              </Badge>
-            </HStack>
-            <Text fontSize="xs" color={metaColor}>
-              ID: {connector.id?.slice(0, 8)}
-            </Text>
-          </HStack>
-        </VStack>
-      </CardBody>
-    </Card>
+          </div>
+          <div className="flex flex-col items-start space-y-2 w-full">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {connector.description || 'No description'}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 
-interface ConnectorsGridProps {
-  searchQuery: string
-}
-
-function ConnectorsGrid({ searchQuery }: ConnectorsGridProps) {
+function ConnectorsGrid({ searchQuery }: { searchQuery: string }) {
   const queryClient = useQueryClient()
-  const [filterActive, setFilterActive] = useState<boolean | null>(null)
   const { page } = Route.useSearch()
   const navigate = useNavigate({ from: Route.fullPath })
   const setPage = (page: number) =>
-    navigate({ search: (prev: {[key: string]: string}) => ({ ...prev, page }) })
+    navigate({ search: (prev: any) => ({ ...prev, page }) })
 
   const {
     data: connectors,
@@ -172,102 +83,55 @@ function ConnectorsGrid({ searchQuery }: ConnectorsGridProps) {
     }
   }, [page, queryClient, hasNextPage])
 
-  const filteredConnectors = (connectors?.data || []).filter(connector => {
-    const matchesFilter = filterActive === null || connector.active === filterActive
-    
-    if (!searchQuery.trim()) return matchesFilter
-    
+  const filteredConnectors = (connectors?.data || []).filter((connector: any) => {
+    if (!searchQuery.trim()) return true
     const query = searchQuery.toLowerCase()
-    const name = (connector.name || "").toLowerCase()
-    const description = (connector.description || "").toLowerCase()
-    const func = (connector.function || "").toLowerCase()
-    const id = (connector.id || "").toLowerCase()
-    
-    const matchesSearch = name.includes(query) || 
-      description.includes(query) || 
-      func.includes(query) || 
-      id.includes(query)
-    
-    return matchesSearch && matchesFilter
+    const title = (connector.title || '').toLowerCase()
+    return title.includes(query)
   })
-
-  const isDark = useColorModeValue(false, true)
-  const bgColor = isDark ? "#212121" : "#ffffff"
-  const textColor = isDark ? "#e3e3e3" : "#2e2e2e"
-  const borderColor = isDark ? "rgba(255,255,255,0.1)" : "#e5e5e5"
-  const placeholderColor = isDark ? "#8e8e8e" : "#9ca3af"
 
   if (isPending) {
     return (
-      <Grid templateColumns="repeat(auto-fill, minmax(300px, 1fr))" gap={6} mt={6}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
         {Array.from({ length: 6 }).map((_, index) => (
-          <Card key={index} bg={bgColor} borderColor={borderColor} borderWidth="1px">
-            <CardBody p={6}>
-              <VStack align="start" spacing={4}>
-                <SkeletonText noOfLines={1} w="70%" />
-                <SkeletonText noOfLines={3} w="100%" />
-                <SkeletonText noOfLines={1} w="40%" />
-              </VStack>
-            </CardBody>
-          </Card>
+          <div key={index} className="bg-white dark:bg-[#2f2f2f] border border-gray-200 dark:border-gray-700 rounded-lg">
+            <div className="p-6">
+              <div className="flex flex-col items-start space-y-4">
+                <div className="animate-pulse h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/5"></div>
+                <div className="animate-pulse space-y-2 w-full">
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                </div>
+              </div>
+            </div>
+          </div>
         ))}
-      </Grid>
+      </div>
     )
   }
 
   return (
     <>
-      {/* Filter Bar */}
-      <HStack spacing={4} mb={6}>
-        <Button
-          size="sm"
-          variant={filterActive === null ? "solid" : "ghost"}
-          colorScheme={filterActive === null ? "blue" : "gray"}
-          onClick={() => setFilterActive(null)}
-        >
-          All
-        </Button>
-        <Button
-          size="sm"
-          variant={filterActive === true ? "solid" : "ghost"}
-          colorScheme={filterActive === true ? "green" : "gray"}
-          onClick={() => setFilterActive(true)}
-          leftIcon={<FiPlay />}
-        >
-          Active
-        </Button>
-        <Button
-          size="sm"
-          variant={filterActive === false ? "solid" : "ghost"}
-          colorScheme={filterActive === false ? "red" : "gray"}
-          onClick={() => setFilterActive(false)}
-          leftIcon={<FiPause />}
-        >
-          Inactive
-        </Button>
-      </HStack>
-
-      <Grid templateColumns="repeat(auto-fill, minmax(350px, 1fr))" gap={6}>
-        {filteredConnectors.map((connector) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
+        {filteredConnectors.map((connector: any) => (
           <ConnectorCard key={connector.id} connector={connector} />
         ))}
-      </Grid>
+      </div>
       
       {filteredConnectors.length === 0 && !isPending && (
-        <Flex justify="center" align="center" py={16}>
-          <VStack spacing={4}>
-            <Icon as={FiGrid} boxSize={16} color={placeholderColor} />
-            <Text fontSize="xl" color={textColor}>
-              {searchQuery.trim() || filterActive !== null ? "No matching connectors found" : "No connectors yet"}
-            </Text>
-            <Text color={placeholderColor} textAlign="center">
-              {searchQuery.trim() || filterActive !== null
-                ? "Try adjusting your search or filter"
-                : "Create your first connector to get started"
-              }
-            </Text>
-          </VStack>
-        </Flex>
+        <div className="flex justify-center items-center py-16">
+          <div className="flex flex-col items-center space-y-4">
+            <FiGrid className="w-16 h-16 text-gray-400 dark:text-gray-600" />
+            <h3 className="text-xl text-gray-900 dark:text-white">
+              {searchQuery.trim() ? "No matching connectors found" : "No connectors yet"}
+            </h3>
+            <p className="text-center text-gray-600 dark:text-gray-400">
+              {searchQuery.trim() 
+                ? "Try adjusting your search query" 
+                : "Create your first connector to get started"}
+            </p>
+          </div>
+        </div>
       )}
 
       <PaginationFooter
@@ -282,68 +146,62 @@ function ConnectorsGrid({ searchQuery }: ConnectorsGridProps) {
 
 function Connectors() {
   const [searchQuery, setSearchQuery] = useState("")
-  const { isOpen, onOpen, onClose } = useDisclosure()
-  const isDark = useColorModeValue(false, true)
-  const bgColor = isDark ? "#171717" : "#f9fafb"
-  const cardBg = isDark ? "#212121" : "#ffffff"
-  const textColor = isDark ? "#e3e3e3" : "#2e2e2e"
-  const borderColor = isDark ? "rgba(255,255,255,0.1)" : "#e5e5e5"
-  const placeholderColor = isDark ? "#8e8e8e" : "#9ca3af"
+  const [isAddOpen, setIsAddOpen] = useState(false)
 
   return (
-    <Box bg={bgColor} minH="100vh" pb={8} w="100%">
-      <Box px={8} pt={8} w="100%">
+    <div className="min-h-screen bg-gray-50 dark:bg-chat-bg pb-8 w-full transition-colors">
+      <div className="px-8 pt-8 w-full">
         {/* Header Section */}
-        <Box mb={8}>
-          <VStack align="start" spacing={6}>
-            <HStack justify="space-between" w="100%">
-              <VStack align="start" spacing={2}>
-                <HStack spacing={3}>
-                  <Icon as={FiGrid} boxSize={8} color="#10a37f" />
-                  <Text fontSize="3xl" fontWeight="bold" color={textColor}>
+        <div className="mb-8">
+          <div className="flex flex-col items-start space-y-6">
+            <div className="flex justify-between items-start w-full">
+              <div className="flex flex-col items-start space-y-2">
+                <div className="flex items-center space-x-3">
+                  <FiGrid className="w-8 h-8 text-blue-600" />
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
                     Connectors
-                  </Text>
-                </HStack>
-                <Text color={placeholderColor} fontSize="lg">
-                  Manage your API connectors and integrations
-                </Text>
-              </VStack>
-              <Button
-                leftIcon={<FiPlus />}
-                colorScheme="blue"
-                size="md"
-                onClick={onOpen}
+                  </h1>
+                </div>
+                <p className="text-lg text-gray-600 dark:text-gray-400">
+                  Manage your connector integrations
+                </p>
+              </div>
+              <button
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                onClick={() => setIsAddOpen(true)}
               >
-                Add Connector
-              </Button>
-            </HStack>
+                <FiPlus className="w-4 h-4" />
+                <span>Add Connector</span>
+              </button>
+            </div>
 
             {/* Search Bar */}
-            <Card w="100%" bg={cardBg} borderColor={borderColor} borderWidth="1px">
-              <CardBody p={4}>
-                <InputGroup>
-                  <InputLeftElement pointerEvents="none">
-                    <FiSearch color={placeholderColor} />
-                  </InputLeftElement>
-                  <Input
+            <div className="w-full bg-white dark:bg-[#2f2f2f] border border-gray-200 dark:border-gray-700 rounded-lg">
+              <div className="p-4">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FiSearch className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                  </div>
+                  <input
+                    type="text"
                     placeholder="Search connectors..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    border="none"
-                    _focus={{ boxShadow: "none", outline: "none" }}
-                    _placeholder={{ color: placeholderColor }}
-                    color={textColor}
-                    fontSize="15px"
+                    className="block w-full pl-10 pr-3 py-2 border-0 focus:ring-0 focus:outline-none text-base bg-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   />
-                </InputGroup>
-              </CardBody>
-            </Card>
-          </VStack>
-        </Box>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <ConnectorsGrid searchQuery={searchQuery} />
-        <AddConnector isOpen={isOpen} onClose={onClose} />
-      </Box>
-    </Box>
+        
+        <AddConnector 
+          isOpen={isAddOpen} 
+          onClose={() => setIsAddOpen(false)} 
+        />
+      </div>
+    </div>
   )
 }

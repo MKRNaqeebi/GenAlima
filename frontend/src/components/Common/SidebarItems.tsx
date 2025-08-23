@@ -1,11 +1,12 @@
-import { Box, Flex, Icon, Text, useColorModeValue, VStack, Input, InputGroup, InputLeftElement, Divider, Spinner } from "@chakra-ui/react"
 import { Link, useRouterState } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 import {
   FiEdit, FiSearch, FiArchive, FiGrid
 } from "react-icons/fi"
 import { PiSparkle } from "react-icons/pi"
+import { AiOutlineLoading3Quarters } from "react-icons/ai"
 import { useState } from "react"
+import {v4} from "uuid"
 import { ChatsService } from "../../client"
 
 interface SidebarItemsProps {
@@ -14,7 +15,7 @@ interface SidebarItemsProps {
 }
 
 const topMenuItems = [
-  { icon: FiEdit, label: "New chat", action: "new", activePath: "/chats" },
+  { icon: FiEdit, label: "New chat", action: "new" },
   { icon: FiSearch, label: "Search chats", action: "search" },
   { icon: FiArchive, label: "Knowledges", path: "/knowledges" },
   { icon: PiSparkle, label: "Templates", path: "/templates" },
@@ -26,16 +27,6 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
   const [searchQuery, setSearchQuery] = useState("")
   const routerState = useRouterState()
   const currentPath = routerState.location.pathname
-  
-  const isDark = useColorModeValue(false, true)
-  const textColor = isDark ? "#e3e3e3" : "gray.700"
-  const hoverBg = isDark ? "rgba(255,255,255,0.1)" : "gray.50"
-  const activeBg = isDark ? "rgba(255,255,255,0.15)" : "gray.100"
-  const activeTextColor = isDark ? "#ffffff" : "gray.900"
-  const dividerColor = isDark ? "rgba(255,255,255,0.1)" : "gray.200"
-  const iconColor = isDark ? "#b4b4b4" : "gray.600"
-  const activeIconColor = isDark ? "#ffffff" : "gray.700"
-  const sectionLabelColor = isDark ? "#8e8e8e" : "gray.500"
 
   // Fetch all chats from API
   const { data: chatsData, isLoading, error } = useQuery({
@@ -45,7 +36,7 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
 
   const handleTopMenuClick = (action: string) => {
     if (action === "new") {
-      window.location.href = '/chats'
+      window.location.href = `/chat/${v4()}`
       onClose?.()
     } else if (action === "search") {
       setSearchOpen(!searchOpen)
@@ -58,151 +49,114 @@ const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
   )
 
   return (
-    <VStack spacing={0} align="stretch" h="100%">
+    <div className="flex flex-col space-y-0 h-full">
       {/* Top Menu Items */}
-      <VStack spacing={0.5} align="stretch" px={isCollapsed ? 1 : 2} py={2}>
+      <div className={`flex flex-col space-y-0.5 ${isCollapsed ? 'px-1' : 'px-2'} py-2`}>
         {topMenuItems.map((item) => {
           const isActive = item.path ? currentPath === item.path : 
                           item.activePath ? currentPath === item.activePath : false
           
           return item.path ? (
-            <Flex
+            <Link
               key={item.label}
-              as={Link}
               to={item.path}
-              px={isCollapsed ? 2 : 3}
-              py={2.5}
-              borderRadius="6px"
-              bg={isActive ? activeBg : "transparent"}
-              color={isActive ? activeTextColor : textColor}
-              fontSize="14px"
-              fontWeight={isActive ? "medium" : "normal"}
-              transition="all 0.15s"
-              _hover={{
-                bg: isActive ? activeBg : hoverBg,
-                textDecoration: "none",
-              }}
+              className={`flex items-center ${isCollapsed ? 'justify-center px-2' : 'justify-start px-3'} py-2.5 rounded-md text-sm transition-all duration-150 hover:no-underline ${
+                isActive 
+                  ? 'bg-gray-200 dark:bg-chat-hover text-gray-900 dark:text-chat-text-primary font-medium' 
+                  : 'text-gray-700 dark:text-chat-text-secondary hover:bg-gray-100 dark:hover:bg-chat-hover hover:text-gray-900 dark:hover:text-chat-text-primary'
+              }`}
               onClick={onClose}
-              alignItems="center"
-              justifyContent={isCollapsed ? "center" : "flex-start"}
-              gap={3}
               title={isCollapsed ? item.label : undefined}
             >
-              <Icon as={item.icon} boxSize={4} color={isActive ? activeIconColor : iconColor} />
-              {!isCollapsed && <Text>{item.label}</Text>}
-            </Flex>
+              <item.icon className={`w-4 h-4 ${
+                isActive 
+                  ? 'text-gray-900 dark:text-chat-text-primary' 
+                  : 'text-gray-600 dark:text-chat-text-muted'
+              }`} />
+              {!isCollapsed && <span className="ml-3">{item.label}</span>}
+            </Link>
           ) : (
-            <Flex
+            <button
               key={item.label}
-              as="button"
-              px={isCollapsed ? 2 : 3}
-              py={2.5}
-              borderRadius="6px"
-              bg={isActive ? activeBg : "transparent"}
-              color={isActive ? activeTextColor : textColor}
-              fontSize="14px"
-              fontWeight={isActive ? "medium" : "normal"}
-              transition="all 0.15s"
-              _hover={{
-                bg: isActive ? activeBg : hoverBg,
-              }}
+              className={`flex items-center w-full text-left ${isCollapsed ? 'justify-center px-2' : 'justify-start px-3'} py-2.5 rounded-md text-sm transition-all duration-150 ${
+                isActive 
+                  ? 'bg-gray-200 dark:bg-chat-hover text-gray-900 dark:text-chat-text-primary font-medium' 
+                  : 'text-gray-700 dark:text-chat-text-secondary hover:bg-gray-100 dark:hover:bg-chat-hover hover:text-gray-900 dark:hover:text-chat-text-primary'
+              }`}
               onClick={() => handleTopMenuClick(item.action!)}
-              alignItems="center"
-              justifyContent={isCollapsed ? "center" : "flex-start"}
-              gap={3}
-              w="100%"
-              textAlign="left"
               title={isCollapsed ? item.label : undefined}
             >
-              <Icon as={item.icon} boxSize={4} color={isActive ? activeIconColor : iconColor} />
-              {!isCollapsed && <Text>{item.label}</Text>}
-            </Flex>
+              <item.icon className={`w-4 h-4 ${
+                isActive 
+                  ? 'text-gray-900 dark:text-chat-text-primary' 
+                  : 'text-gray-600 dark:text-chat-text-muted'
+              }`} />
+              {!isCollapsed && <span className="ml-3">{item.label}</span>}
+            </button>
           )
         })}
-      </VStack>
+      </div>
 
       {/* Search Input (appears when search is clicked) */}
       {searchOpen && !isCollapsed && (
-        <Box px={2} pb={2}>
-          <InputGroup size="sm">
-            <InputLeftElement pointerEvents="none">
-              <FiSearch color={iconColor} />
-            </InputLeftElement>
-            <Input
+        <div className="px-2 pb-2">
+          <div className="relative">
+            <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-chat-text-muted pointer-events-none" />
+            <input
+              type="text"
               placeholder="Search chats..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              bg={hoverBg}
-              border="1px solid"
-              borderColor={dividerColor}
-              _hover={{ borderColor: dividerColor }}
-              _focus={{ borderColor: "blue.400", boxShadow: "none" }}
-              color={textColor}
+              className="w-full pl-10 pr-3 py-2 text-sm bg-gray-100 dark:bg-chat-surface border border-gray-300 dark:border-chat-border rounded-md text-gray-900 dark:text-chat-text-secondary placeholder-gray-500 dark:placeholder-chat-text-muted focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
             />
-          </InputGroup>
-        </Box>
+          </div>
+        </div>
       )}
 
-      {!isCollapsed && <Divider borderColor={dividerColor} />}
+      {!isCollapsed && <hr className="border-gray-300 dark:border-chat-border" />}
 
       {/* Chats Section */}
       {!isCollapsed && (
-        <Box flex="1" overflowY="auto" px={2} py={3}>
-          <Text 
-            fontSize="12px" 
-            fontWeight="semibold" 
-            color={sectionLabelColor}
-            px={3}
-            pb={2}
-          >
+        <div className="flex-1 overflow-y-auto px-2 py-3">
+          <p className="text-xs font-semibold text-gray-600 dark:text-chat-text-muted px-3 pb-2">
             Chats
-          </Text>
-        <VStack spacing={0.5} align="stretch">
-          {isLoading ? (
-            <Flex justify="center" py={4}>
-              <Spinner size="sm" color={iconColor} />
-            </Flex>
-          ) : error ? (
-            <Text fontSize="12px" color={sectionLabelColor} px={3}>
-              Failed to load chats
-            </Text>
-          ) : filteredChats.length === 0 ? (
-            <Text fontSize="12px" color={sectionLabelColor} px={3}>
-              {searchQuery ? "No chats found" : "No chats yet"}
-            </Text>
-          ) : (
-            filteredChats.map((chat) => {
-              const isChatActive = currentPath === `/chat/${chat.id}`
-              return (
-                <Flex
-                  key={chat.id}
-                  as={Link}
-                  to={`/chat/${chat.id}`}
-                  px={3}
-                  py={2}
-                  borderRadius="6px"
-                  bg={isChatActive ? activeBg : "transparent"}
-                  color={isChatActive ? activeTextColor : textColor}
-                  fontSize="13px"
-                  fontWeight={isChatActive ? "medium" : "normal"}
-                  transition="all 0.15s"
-                  _hover={{
-                    bg: isChatActive ? activeBg : hoverBg,
-                    textDecoration: "none",
-                  }}
-                  onClick={onClose}
-                  alignItems="center"
-                  noOfLines={1}
-                >
-                  <Text noOfLines={1} w="100%">{chat.title}</Text>
-                </Flex>
-              )
-            })
-          )}
-        </VStack>
-      </Box>
+          </p>
+          <div className="flex flex-col space-y-0.5">
+            {isLoading ? (
+              <div className="flex justify-center py-4">
+                <AiOutlineLoading3Quarters className="animate-spin w-4 h-4 text-gray-500 dark:text-chat-text-muted" />
+              </div>
+            ) : error ? (
+              <p className="text-xs text-gray-600 dark:text-chat-text-muted px-3">
+                Failed to load chats
+              </p>
+            ) : filteredChats.length === 0 ? (
+              <p className="text-xs text-gray-600 dark:text-chat-text-muted px-3">
+                {searchQuery ? "No chats found" : "No chats yet"}
+              </p>
+            ) : (
+              filteredChats.map((chat) => {
+                const isChatActive = currentPath === `/chat/${chat.id}`
+                return (
+                  <Link
+                    key={chat.id}
+                    to={`/chat/${chat.id}`}
+                    className={`flex items-center px-3 py-2 rounded-md text-sm transition-all duration-150 hover:no-underline truncate ${
+                      isChatActive 
+                        ? 'bg-gray-200 dark:bg-chat-hover text-gray-900 dark:text-chat-text-primary font-medium' 
+                        : 'text-gray-700 dark:text-chat-text-secondary hover:bg-gray-100 dark:hover:bg-chat-hover hover:text-gray-900 dark:hover:text-chat-text-primary'
+                    }`}
+                    onClick={onClose}
+                  >
+                    <span className="truncate w-full">{chat.title}</span>
+                  </Link>
+                )
+              })
+            )}
+          </div>
+        </div>
       )}
-    </VStack>
+    </div>
   )
 }
 
