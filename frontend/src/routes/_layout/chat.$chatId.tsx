@@ -6,16 +6,40 @@ import {
   FiThumbsUp,
   FiThumbsDown,
   FiMic,
-  FiArrowUp
+  FiArrowUp,
+  FiActivity
 } from "react-icons/fi"
 
-import { MessagesService } from "../../client"
+import { MessagePublic, MessagesService } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
 import { handleError } from "../../utils"
 
 export const Route = createFileRoute("/_layout/chat/$chatId")({
   component: Chat,
 })
+
+function MetadataPopup({ metadata, onClose }: { metadata: any, onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={onClose}>
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl max-h-[80vh] overflow-auto m-4" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Debug Metadata</h3>
+          <button 
+            type="button"
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+            title="Close"
+          >
+            ✕
+          </button>
+        </div>
+        <pre className="bg-gray-100 dark:bg-gray-700 p-4 rounded text-sm overflow-auto text-gray-900 dark:text-gray-100">
+          {JSON.stringify(metadata, null, 2)}
+        </pre>
+      </div>
+    </div>
+  )
+}
 
 function getMessagesQueryOptions({ chatId }: { chatId: string }) {
   return {
@@ -25,8 +49,9 @@ function getMessagesQueryOptions({ chatId }: { chatId: string }) {
   }
 }
 
-function MessageBubble({ message }: { message: any }) {
+function MessageBubble({ message, onShowMetadata }: { message: MessagePublic, onShowMetadata?: (metadata: any) => void }) {
   const isUser = message.role === 'user'
+  const hasMetadata = message.meta_data && Object.keys(message.meta_data).length > 0
   
   return (
     <div className="group max-w-4xl mx-auto px-4 py-4">
@@ -39,6 +64,18 @@ function MessageBubble({ message }: { message: any }) {
                   {message.content}
                 </p>
               </div>
+              {hasMetadata && (
+                <div className="flex justify-end mt-2">
+                  <button 
+                    type="button" 
+                    onClick={() => onShowMetadata?.(message.meta_data)}
+                    className="p-1.5 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+                    title="Show debug metadata"
+                  >
+                    <FiActivity className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
             </div>
           ) : (
             <>
@@ -48,15 +85,25 @@ function MessageBubble({ message }: { message: any }) {
                 </p>
               </div>
               <div className="flex items-center gap-1 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button type="button" className="p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-chat-hover text-gray-600 dark:text-chat-text-muted hover:text-gray-900 dark:hover:text-chat-text-primary transition-colors">
+                <button type="button" title="Copy message" className="p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-chat-hover text-gray-600 dark:text-chat-text-muted hover:text-gray-900 dark:hover:text-chat-text-primary transition-colors">
                   <FiCopy className="w-4 h-4" />
                 </button>
-                <button type="button" className="p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-chat-hover text-gray-600 dark:text-chat-text-muted hover:text-gray-900 dark:hover:text-chat-text-primary transition-colors">
+                <button type="button" title="Like message" className="p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-chat-hover text-gray-600 dark:text-chat-text-muted hover:text-gray-900 dark:hover:text-chat-text-primary transition-colors">
                   <FiThumbsUp className="w-4 h-4" />
                 </button>
-                <button type="button" className="p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-chat-hover text-gray-600 dark:text-chat-text-muted hover:text-gray-900 dark:hover:text-chat-text-primary transition-colors">
+                <button type="button" title="Dislike message" className="p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-chat-hover text-gray-600 dark:text-chat-text-muted hover:text-gray-900 dark:hover:text-chat-text-primary transition-colors">
                   <FiThumbsDown className="w-4 h-4" />
                 </button>
+                {hasMetadata && (
+                  <button 
+                    type="button" 
+                    onClick={() => onShowMetadata?.(message.meta_data)}
+                    className="p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-chat-hover text-gray-600 dark:text-chat-text-muted hover:text-gray-900 dark:hover:text-chat-text-primary transition-colors"
+                    title="Show debug metadata"
+                  >
+                    <FiActivity className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </>
           )}
@@ -152,6 +199,7 @@ function Chat() {
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [showMetadataPopup, setShowMetadataPopup] = useState<any>(null)
 
   const {
     data: messagesData,
@@ -219,7 +267,11 @@ function Chat() {
         ) : (
           <div>
             {messages.map((message: any) => (
-              <MessageBubble key={message.id} message={message} />
+              <MessageBubble 
+                key={message.id} 
+                message={message} 
+                onShowMetadata={setShowMetadataPopup}
+              />
             ))}
             <div ref={messagesEndRef} />
           </div>
@@ -231,6 +283,14 @@ function Chat() {
         onSendMessage={handleSendMessage}
         isLoading={sendMessageMutation.isPending}
       />
+      
+      {/* Metadata Popup */}
+      {showMetadataPopup && (
+        <MetadataPopup 
+          metadata={showMetadataPopup} 
+          onClose={() => setShowMetadataPopup(null)} 
+        />
+      )}
     </div>
   )
 }
