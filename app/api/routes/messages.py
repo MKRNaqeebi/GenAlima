@@ -106,7 +106,7 @@ async def create_message(
     response_message = save_chat_message(
         session=session, role="assistant", chat_id=chat.id, content="message processing."
     )
-    agent_messages.append(Message(role="system", content=f"message_id={response_message.id}"))
+    agent_messages.append(Message(role="system", content=f"message_id={response_message.id} and chat_id={chat.id}"))
     # get data from connector and pass it to the system prompt
     response = await lang_graph_agent.get_response(agent_messages, str(chat.id), str(current_user.id))
     if not response:

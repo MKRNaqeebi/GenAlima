@@ -19,8 +19,8 @@ from app.models import Chat
 from graphs.utils import store_tool_result_metadata
 
 
-class UpdateChatInput(BaseModel):
-    """Input schema for the update chat tool."""
+class UpdateChatTitleInput(BaseModel):
+    """Input schema for the update chat title tool."""
 
     chat_id: str = Field(description="The UUID of the chat to update")
     title: Optional[str] = Field(
@@ -28,21 +28,20 @@ class UpdateChatInput(BaseModel):
     message_id: str = Field(description="The ID of the message being processed")
 
 
-class UpdateChatTool(BaseTool):
+class UpdateChatTitleTool(BaseTool):
     """Tool that updates a chat's title in the database."""
 
-    name: str = "update_chat"
+    name: str = "update_chat_title"
     description: str = (
         "Update a chat's title. This tool called on every call to update chat title."
-        "chat metadata such as the title. Use this when you need to rename "
-        "or update chat information based on the conversation context."
+        "or update chat title based on the conversation context."
     )
-    args_schema: Type[BaseModel] = UpdateChatInput
+    args_schema: Type[BaseModel] = UpdateChatTitleInput
     return_direct: bool = False
 
     def _run(  # pylint: disable=arguments-differ
         self,
-        chat_id: str,
+        chat_id: uuid.UUID,
         title: Optional[str] = None,
         message_id: str = "",
         run_manager: Optional[CallbackManagerForToolRun] = None,
@@ -50,20 +49,9 @@ class UpdateChatTool(BaseTool):
         """Execute the chat update."""
         _ = run_manager  # Suppress unused argument warning
 
-        try:
-            # Parse UUID
-            chat_uuid = uuid.UUID(chat_id)
-        except ValueError:
-            error_msg = f"Invalid chat ID format: {chat_id}"
-            store_tool_result_metadata(
-                message_id, self.name,
-                {"input": {"chat_id": chat_id, "title": title}, "error": error_msg}
-            )
-            return error_msg
-
         with Session(db_engine) as session:
             # Get the chat
-            chat = session.get(Chat, chat_uuid)
+            chat = session.get(Chat, chat_id)
             if not chat:
                 error_msg = f"Chat not found with ID: {chat_id}"
                 store_tool_result_metadata(
@@ -119,4 +107,4 @@ class UpdateChatTool(BaseTool):
         )
 
 
-update_chat_tool = UpdateChatTool()
+update_chat_title_tool = UpdateChatTitleTool()

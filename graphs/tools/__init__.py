@@ -9,6 +9,6 @@ and other external integrations.
 from langchain_core.tools.base import BaseTool
 
 from .knowledge_search import knowledge_search_tool
-from .update_chat import update_chat_tool
+from .update_chat_title import update_chat_title_tool
 
-tools: list[BaseTool] = [knowledge_search_tool, update_chat_tool]
+tools: list[BaseTool] = [knowledge_search_tool, update_chat_title_tool]

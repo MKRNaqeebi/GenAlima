@@ -9,6 +9,7 @@ import warnings
 
 # Third-party imports
 from dotenv import load_dotenv
+from urllib.parse import quote_plus
 from pydantic import HttpUrl, PostgresDsn, computed_field, model_validator
 from pydantic_core import Url
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -154,8 +155,12 @@ class Settings(BaseSettings):
     @property
     def POSTGRES_URL(self) -> str:
         """Build the PostgreSQL URL for async connections."""
+        # Percent-encode user & password to avoid breaking URL when they contain
+        # special characters like @, /, :, %, # etc.
+        user_enc = quote_plus(self.POSTGRES_USER)
+        pwd_enc = quote_plus(self.POSTGRES_PASSWORD)
         return (
-            f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@"
+            f"postgresql://{user_enc}:{pwd_enc}@"
             f"{self.POSTGRES_SERVER}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
         )
 
