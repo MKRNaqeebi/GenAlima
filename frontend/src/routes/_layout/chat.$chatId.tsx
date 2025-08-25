@@ -52,6 +52,37 @@ function getMessagesQueryOptions({ chatId }: { chatId: string }) {
 function MessageBubble({ message, onShowMetadata }: { message: MessagePublic, onShowMetadata?: (metadata: any) => void }) {
   const isUser = message.role === 'user'
   const hasMetadata = message.meta_data && Object.keys(message.meta_data).length > 0
+  const showToast = useCustomToast()
+  const [isCopied, setIsCopied] = useState(false)
+  const [isLiked, setIsLiked] = useState(false)
+  const [isDisliked, setIsDisliked] = useState(false)
+  
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(message.content)
+      setIsCopied(true)
+      showToast('Copied!', 'Message copied to clipboard.', 'success')
+      setTimeout(() => setIsCopied(false), 2000)
+    } catch (err) {
+      showToast('Error', 'Failed to copy message.', 'error')
+    }
+  }
+  
+  const handleLike = () => {
+    if (isDisliked) setIsDisliked(false)
+    setIsLiked(!isLiked)
+    if (!isLiked) {
+      showToast('Liked!', 'Thanks for your feedback.', 'success')
+    }
+  }
+  
+  const handleDislike = () => {
+    if (isLiked) setIsLiked(false)
+    setIsDisliked(!isDisliked)
+    if (!isDisliked) {
+      showToast('Feedback received', 'Thanks for letting us know.', 'success')
+    }
+  }
   
   return (
     <div className="group max-w-4xl mx-auto px-4 py-4">
@@ -85,13 +116,13 @@ function MessageBubble({ message, onShowMetadata }: { message: MessagePublic, on
                 </p>
               </div>
               <div className="flex items-center gap-1 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button type="button" title="Copy message" className="p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-chat-hover text-gray-600 dark:text-chat-text-muted hover:text-gray-900 dark:hover:text-chat-text-primary transition-colors">
+                <button type="button" onClick={handleCopy} title="Copy message" className="p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-chat-hover text-gray-600 dark:text-chat-text-muted hover:text-gray-900 dark:hover:text-chat-text-primary transition-colors">
                   <FiCopy className="w-4 h-4" />
                 </button>
-                <button type="button" title="Like message" className="p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-chat-hover text-gray-600 dark:text-chat-text-muted hover:text-gray-900 dark:hover:text-chat-text-primary transition-colors">
+                <button type="button" onClick={handleLike} title="Like message" className="p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-chat-hover text-gray-600 dark:text-chat-text-muted hover:text-gray-900 dark:hover:text-chat-text-primary transition-colors">
                   <FiThumbsUp className="w-4 h-4" />
                 </button>
-                <button type="button" title="Dislike message" className="p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-chat-hover text-gray-600 dark:text-chat-text-muted hover:text-gray-900 dark:hover:text-chat-text-primary transition-colors">
+                <button type="button" onClick={handleDislike} title="Dislike message" className="p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-chat-hover text-gray-600 dark:text-chat-text-muted hover:text-gray-900 dark:hover:text-chat-text-primary transition-colors">
                   <FiThumbsDown className="w-4 h-4" />
                 </button>
                 {hasMetadata && (
@@ -214,6 +245,7 @@ function Chat() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['messages', { chatId }] })
+      queryClient.invalidateQueries({ queryKey: ['all-chats'] })
       showToast('Success!', 'Message sent successfully.', 'success')
     },
     onError: (err: any) => {
