@@ -154,6 +154,14 @@ function SignUp() {
                 Sign in
               </RouterLink>
             </p>
+            <p className="text-gray-600 dark:text-gray-400 text-center text-sm mt-2">
+              <RouterLink 
+                to="/home" 
+                className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+              >
+                ← Back to homepage
+              </RouterLink>
+            </p>
           </div>
         </form>
       </div>
