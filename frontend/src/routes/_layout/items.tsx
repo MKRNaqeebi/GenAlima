@@ -1,15 +1,3 @@
-import {
-  Container,
-  Heading,
-  SkeletonText,
-  Table,
-  TableContainer,
-  Tbody,
-  Td,
-  Th,
-  Thead,
-  Tr,
-} from "@chakra-ui/react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useEffect } from "react"
@@ -67,50 +55,51 @@ function ItemsTable() {
 
   return (
     <>
-      <TableContainer>
-        <Table size={{ base: "sm", md: "md" }}>
-          <Thead>
-            <Tr>
-              <Th>ID</Th>
-              <Th>Title</Th>
-              <Th>Description</Th>
-              <Th>Actions</Th>
-            </Tr>
-          </Thead>
+      <div className="overflow-x-auto">
+        <table className="min-w-full table-auto text-sm md:text-base">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
           {isPending ? (
-            <Tbody>
-              <Tr>
+            <tbody className="bg-white divide-y divide-gray-200">
+              <tr>
                 {new Array(4).fill(null).map((_, index) => (
-                  <Td key={index}>
-                    <SkeletonText noOfLines={1} paddingBlock="16px" />
-                  </Td>
+                  <td key={index} className="px-4 py-4">
+                    <div className="animate-pulse h-4 bg-gray-200 rounded"></div>
+                  </td>
                 ))}
-              </Tr>
-            </Tbody>
+              </tr>
+            </tbody>
           ) : (
-            <Tbody>
+            <tbody className="bg-white divide-y divide-gray-200">
               {items?.data.map((item) => (
-                <Tr key={item.id} opacity={isPlaceholderData ? 0.5 : 1}>
-                  <Td>{item.id}</Td>
-                  <Td isTruncated maxWidth="150px">
+                <tr 
+                  key={item.id} 
+                  className={`hover:bg-gray-50 ${isPlaceholderData ? 'opacity-50' : 'opacity-100'}`}
+                >
+                  <td className="px-4 py-4 whitespace-nowrap text-gray-900">{item.id}</td>
+                  <td className="px-4 py-4 whitespace-nowrap truncate max-w-[150px] text-gray-900">
                     {item.title}
-                  </Td>
-                  <Td
-                    color={!item.description ? "ui.dim" : "inherit"}
-                    isTruncated
-                    maxWidth="150px"
-                  >
+                  </td>
+                  <td className={`px-4 py-4 whitespace-nowrap truncate max-w-[150px] ${
+                    !item.description ? 'text-gray-400' : 'text-gray-900'
+                  }`}>
                     {item.description || "N/A"}
-                  </Td>
-                  <Td>
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap">
                     <ActionsMenu type={"Item"} value={item} />
-                  </Td>
-                </Tr>
+                  </td>
+                </tr>
               ))}
-            </Tbody>
+            </tbody>
           )}
-        </Table>
-      </TableContainer>
+        </table>
+      </div>
       <PaginationFooter
         page={page}
         onChangePage={setPage}
@@ -123,13 +112,13 @@ function ItemsTable() {
 
 function Items() {
   return (
-    <Container maxW="full">
-      <Heading size="lg" textAlign={{ base: "center", md: "left" }} pt={12}>
+    <div className="max-w-full mx-auto px-4">
+      <h1 className="text-2xl font-bold text-center md:text-left pt-12 mb-6">
         Items Management
-      </Heading>
+      </h1>
 
       <Navbar type={"Item"} addModalAs={AddItem} />
       <ItemsTable />
-    </Container>
+    </div>
   )
 }

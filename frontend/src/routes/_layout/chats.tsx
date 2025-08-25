@@ -1,6 +1,3 @@
-import {
-  Container,
-} from "@chakra-ui/react"
 import { createFileRoute } from "@tanstack/react-router"
 import { useEffect } from "react"
 import { v4 } from 'uuid';
@@ -23,8 +20,8 @@ function ChatsList() {
 
 function Chats() {
   return (
-    <Container maxW="4xl">
+    <div className="max-w-4xl mx-auto px-4">
       <ChatsList />
-    </Container>
+    </div>
   )
 }

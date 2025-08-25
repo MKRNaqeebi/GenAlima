@@ -1,21 +1,4 @@
-import {
-  Box,
-  Flex,
-  Text,
-  VStack,
-  HStack,
-  Card,
-  CardBody,
-  SkeletonText,
-  useColorModeValue,
-  Icon,
-  Badge,
-  Grid,
-  Input,
-  InputGroup,
-  InputLeftElement,
-  Button,
-} from "@chakra-ui/react"
+import React from "react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useEffect, useState } from "react"
@@ -59,13 +42,6 @@ function getKnowledgeFilesQueryOptions({ page }: { page: number }) {
 }
 
 function KnowledgeFileCard({ file, onClick }: { file: KnowledgeFilePublic; onClick: () => void }) {
-  const isDark = useColorModeValue(false, true)
-  const bgColor = isDark ? "#2b2b2b" : "#ffffff"
-  const textColor = isDark ? "#e3e3e3" : "#2e2e2e"
-  const borderColor = isDark ? "rgba(255,255,255,0.1)" : "#e5e5e5"
-  const hoverBg = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.02)"
-  const metaColor = isDark ? "#8e8e8e" : "#6b7280"
-
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-US', {
       month: 'short',
@@ -88,60 +64,38 @@ function KnowledgeFileCard({ file, onClick }: { file: KnowledgeFilePublic; onCli
   }
 
   return (
-    <Card
-      bg={bgColor}
-      borderColor={borderColor}
-      borderWidth="1px"
-      _hover={{ 
-        bg: hoverBg,
-        transform: "translateY(-2px)",
-        boxShadow: isDark ? "0 4px 20px rgba(0,0,0,0.3)" : "0 4px 20px rgba(0,0,0,0.1)" 
-      }}
-      transition="all 0.2s"
-    >
-      <CardBody p={6}>
-        <VStack align="start" spacing={4}>
-          <HStack justify="space-between" w="100%">
-            <HStack spacing={3}>
-              <Icon as={FiFileText} boxSize={5} color="#10a37f" />
-              <Text 
-                fontSize="lg" 
-                fontWeight="semibold" 
-                color={textColor} 
-                noOfLines={1}
-                cursor="pointer"
-                _hover={{ textDecoration: "underline" }}
+    <div className="bg-white dark:bg-[#2f2f2f] border border-gray-200 dark:border-gray-700 rounded-lg hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 cursor-pointer">
+      <div className="p-6">
+        <div className="flex flex-col items-start space-y-4">
+          <div className="flex justify-between items-start w-full">
+            <div className="flex items-center space-x-3">
+              <FiFileText className="w-5 h-5 text-green-600" />
+              <span 
+                className="text-lg font-semibold text-gray-900 dark:text-white truncate cursor-pointer hover:underline"
                 onClick={handleFileClick}
               >
                 {getFilename(file.file_path)}
-              </Text>
-            </HStack>
-            <Box onClick={handleMenuClick}>
+              </span>
+            </div>
+            <div onClick={handleMenuClick}>
               <ActionsMenu type="Knowledge" value={{ id: file.id || "", content: getFilename(file.file_path) } as any} />
-            </Box>
-          </HStack>
+            </div>
+          </div>
 
-          <VStack align="start" spacing={2} w="100%">
-            <HStack spacing={4} w="100%">
-              <Badge 
-                colorScheme="blue" 
-                variant="subtle" 
-                fontSize="xs"
-                px={2}
-                py={1}
-                borderRadius="md"
-              >
+          <div className="flex flex-col items-start space-y-2 w-full">
+            <div className="flex items-center space-x-4 w-full">
+              <span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
                 {file.chunk_count} chunk{file.chunk_count !== 1 ? 's' : ''}
-              </Badge>
-            </HStack>
+              </span>
+            </div>
             
-            <Text fontSize="xs" color={metaColor}>
+            <p className="text-xs text-gray-600 dark:text-gray-400">
               Created {file.created_at ? formatDate(file.created_at) : "Unknown"}
-            </Text>
-          </VStack>
-        </VStack>
-      </CardBody>
-    </Card>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -193,15 +147,9 @@ function KnowledgesGrid({ searchQuery }: KnowledgesGridProps) {
     setIsLoadingContent(true)
     
     try {
-      // Fetch all knowledge chunks - you may need to filter by file_id if the API supports it
-      // For now, fetching all and filtering client-side based on file metadata
       const response = await KnowledgesService.readKnowledges({ skip: 0, limit: 1000 }) as KnowledgesPublic
       
-      // Filter knowledge chunks that belong to this file
-      // This assumes the metadata contains a reference to the file
       const fileKnowledge = response.data.filter((knowledge: KnowledgePublic) => {
-        // Check if metadata contains file reference
-        // You may need to adjust this based on your actual metadata structure
         if (knowledge.meta && typeof knowledge.meta === 'object') {
           const meta = knowledge.meta as any
           return meta.file_path === file.file_path || 
@@ -211,7 +159,6 @@ function KnowledgesGrid({ searchQuery }: KnowledgesGridProps) {
         return false
       })
       
-      // If no filtered results, show all for now (you can adjust this logic)
       setFileContent(fileKnowledge.length > 0 ? fileKnowledge : response.data)
     } catch (error) {
       console.error('Error fetching file content:', error)
@@ -221,150 +168,135 @@ function KnowledgesGrid({ searchQuery }: KnowledgesGridProps) {
     }
   }
 
-  const isDark = useColorModeValue(false, true)
-  const bgColor = isDark ? "#212121" : "#ffffff"
-  const textColor = isDark ? "#e3e3e3" : "#2e2e2e"
-  const borderColor = isDark ? "rgba(255,255,255,0.1)" : "#e5e5e5"
-  const placeholderColor = isDark ? "#8e8e8e" : "#9ca3af"
-
   if (isPending) {
     return (
-      <Grid templateColumns="repeat(auto-fill, minmax(300px, 1fr))" gap={6} mt={6}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
         {Array.from({ length: 6 }).map((_, index) => (
-          <Card key={index} bg={bgColor} borderColor={borderColor} borderWidth="1px">
-            <CardBody p={6}>
-              <VStack align="start" spacing={4}>
-                <SkeletonText noOfLines={1} w="60%" />
-                <SkeletonText noOfLines={4} w="100%" />
-                <SkeletonText noOfLines={1} w="40%" />
-              </VStack>
-            </CardBody>
-          </Card>
+          <div key={index} className="bg-white dark:bg-[#2f2f2f] border border-gray-200 dark:border-gray-700 rounded-lg">
+            <div className="p-6">
+              <div className="flex flex-col items-start space-y-4">
+                <div className="animate-pulse h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/5"></div>
+                <div className="animate-pulse space-y-2 w-full">
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                </div>
+                <div className="animate-pulse h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/5"></div>
+              </div>
+            </div>
+          </div>
         ))}
-      </Grid>
+      </div>
     )
   }
 
   // Show file content if a file is selected
   if (selectedFile && fileContent) {
     return (
-      <VStack spacing={4} align="stretch" mt={6}>
-        <HStack spacing={4}>
-          <Button 
-            leftIcon={<FiBookOpen />} 
-            variant="ghost" 
+      <div className="flex flex-col space-y-4 mt-6">
+        <div className="flex items-center space-x-4">
+          <button 
+            className="flex items-center space-x-2 px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
             onClick={() => setSelectedFile(null)}
-            color={textColor}
           >
-            ← Back to Files
-          </Button>
-          <Text fontSize="lg" fontWeight="semibold" color={textColor}>
+            <FiBookOpen className="w-4 h-4" />
+            <span>← Back to Files</span>
+          </button>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             {selectedFile}
-          </Text>
-        </HStack>
+          </h2>
+        </div>
         
-        <VStack spacing={4} align="stretch">
+        <div className="flex flex-col space-y-4">
           {fileContent.map((knowledge, index) => (
-            <Card key={knowledge.id} bg={bgColor} borderColor={borderColor} borderWidth="1px">
-              <CardBody p={6}>
-                <VStack align="start" spacing={4}>
-                  <HStack justify="space-between" w="100%">
-                    <HStack spacing={3}>
-                      <Badge colorScheme="green" variant="subtle">
+            <div key={knowledge.id} className="bg-white dark:bg-[#2f2f2f] border border-gray-200 dark:border-gray-700 rounded-lg">
+              <div className="p-6">
+                <div className="flex flex-col items-start space-y-4">
+                  <div className="flex justify-between items-center w-full">
+                    <div className="flex items-center space-x-3">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
                         Page {index + 1}
-                      </Badge>
-                      <Text fontSize="xs" color={placeholderColor}>
+                      </span>
+                      <span className="text-xs text-gray-600 dark:text-gray-400">
                         ID: {knowledge.id?.slice(0, 8)}...
-                      </Text>
-                    </HStack>
-                  </HStack>
+                      </span>
+                    </div>
+                  </div>
                   
                   {/* Content Section */}
-                  <Box w="100%">
-                    <Text fontSize="xs" fontWeight="semibold" color={placeholderColor} mb={2}>
+                  <div className="w-full">
+                    <p className="text-xs font-semibold mb-2 text-gray-600 dark:text-gray-400">
                       CONTENT
-                    </Text>
-                    <Box 
-                      p={4} 
-                      bg={isDark ? "rgba(255,255,255,0.02)" : "gray.50"} 
-                      borderRadius="md"
-                      borderWidth="1px"
-                      borderColor={borderColor}
-                    >
-                      <Text color={textColor} fontSize="sm" lineHeight="1.6" whiteSpace="pre-wrap">
+                    </p>
+                    <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700">
+                      <p className="text-sm leading-relaxed whitespace-pre-wrap text-gray-900 dark:text-white">
                         {knowledge.content}
-                      </Text>
-                    </Box>
-                  </Box>
+                      </p>
+                    </div>
+                  </div>
                   
                   {/* Metadata Section */}
                   {knowledge.meta && Object.keys(knowledge.meta).length > 0 && (
-                    <Box w="100%">
-                      <Text fontSize="xs" fontWeight="semibold" color={placeholderColor} mb={2}>
+                    <div className="w-full">
+                      <p className="text-xs font-semibold mb-2 text-gray-600 dark:text-gray-400">
                         METADATA
-                      </Text>
-                      <Box 
-                        p={4} 
-                        bg={isDark ? "rgba(255,255,255,0.02)" : "gray.50"} 
-                        borderRadius="md"
-                        borderWidth="1px"
-                        borderColor={borderColor}
-                      >
-                        <VStack align="start" spacing={2}>
+                      </p>
+                      <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700">
+                        <div className="flex flex-col items-start space-y-2">
                           {Object.entries(knowledge.meta as any).map(([key, value]) => (
-                            <HStack key={key} spacing={2} w="100%">
-                              <Text fontSize="sm" fontWeight="medium" color={placeholderColor}>
+                            <div key={key} className="flex items-start space-x-2 w-full">
+                              <span className="text-sm font-medium text-gray-600 dark:text-gray-400">
                                 {key}:
-                              </Text>
-                              <Text fontSize="sm" color={textColor} wordBreak="break-all">
+                              </span>
+                              <span className="text-sm break-all text-gray-900 dark:text-white">
                                 {typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value)}
-                              </Text>
-                            </HStack>
+                              </span>
+                            </div>
                           ))}
-                        </VStack>
-                      </Box>
-                    </Box>
+                        </div>
+                      </div>
+                    </div>
                   )}
-                </VStack>
-              </CardBody>
-            </Card>
+                </div>
+              </div>
+            </div>
           ))}
-        </VStack>
-      </VStack>
+        </div>
+      </div>
     )
   }
 
   // Show loading state when fetching content
   if (selectedFile && isLoadingContent) {
     return (
-      <VStack spacing={4} align="stretch" mt={6}>
-        <HStack spacing={4}>
-          <Button 
-            leftIcon={<FiBookOpen />} 
-            variant="ghost" 
+      <div className="flex flex-col space-y-4 mt-6">
+        <div className="flex items-center space-x-4">
+          <button 
+            className="flex items-center space-x-2 px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
             onClick={() => setSelectedFile(null)}
-            color={textColor}
           >
-            ← Back to Files
-          </Button>
-          <Text fontSize="lg" fontWeight="semibold" color={textColor}>
+            <FiBookOpen className="w-4 h-4" />
+            <span>← Back to Files</span>
+          </button>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             {selectedFile}
-          </Text>
-        </HStack>
+          </h2>
+        </div>
         
-        <Flex justify="center" py={16}>
-          <VStack spacing={4}>
-            <Icon as={FiBookOpen} boxSize={16} color={placeholderColor} />
-            <Text fontSize="lg" color={textColor}>Loading content...</Text>
-          </VStack>
-        </Flex>
-      </VStack>
+        <div className="flex justify-center py-16">
+          <div className="flex flex-col items-center space-y-4">
+            <FiBookOpen className="w-16 h-16 text-gray-400 dark:text-gray-600" />
+            <p className="text-lg text-gray-900 dark:text-white">Loading content...</p>
+          </div>
+        </div>
+      </div>
     )
   }
 
   return (
     <>
-      <Grid templateColumns="repeat(auto-fill, minmax(350px, 1fr))" gap={6} mt={6}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
         {filteredFiles.map((file: KnowledgeFilePublic) => (
           <KnowledgeFileCard 
             key={file.id} 
@@ -372,22 +304,22 @@ function KnowledgesGrid({ searchQuery }: KnowledgesGridProps) {
             onClick={() => handleFileClick(file)}
           />
         ))}
-      </Grid>
+      </div>
       
       {filteredFiles.length === 0 && !isPending && (
-        <Flex justify="center" align="center" py={16}>
-          <VStack spacing={4}>
-            <Icon as={FiBookOpen} boxSize={16} color={placeholderColor} />
-            <Text fontSize="xl" color={textColor}>
+        <div className="flex justify-center items-center py-16">
+          <div className="flex flex-col items-center space-y-4">
+            <FiBookOpen className="w-16 h-16 text-gray-400 dark:text-gray-600" />
+            <h3 className="text-xl text-gray-900 dark:text-white">
               {searchQuery.trim() ? "No matching files found" : "No knowledge files yet"}
-            </Text>
-            <Text color={placeholderColor} textAlign="center">
+            </h3>
+            <p className="text-center text-gray-600 dark:text-gray-400">
               {searchQuery.trim() 
                 ? "Try adjusting your search query" 
                 : "Upload your first PDF to get started"}
-            </Text>
-          </VStack>
-        </Flex>
+            </p>
+          </div>
+        </div>
       )}
 
       <PaginationFooter
@@ -403,63 +335,53 @@ function KnowledgesGrid({ searchQuery }: KnowledgesGridProps) {
 function Knowledges() {
   const [searchQuery, setSearchQuery] = useState("")
   const [isAddOpen, setIsAddOpen] = useState(false)
-  const isDark = useColorModeValue(false, true)
-  const bgColor = isDark ? "#171717" : "#f9fafb"
-  const cardBg = isDark ? "#212121" : "#ffffff"
-  const textColor = isDark ? "#e3e3e3" : "#2e2e2e"
-  const borderColor = isDark ? "rgba(255,255,255,0.1)" : "#e5e5e5"
-  const placeholderColor = isDark ? "#8e8e8e" : "#9ca3af"
 
   return (
-    <Box bg={bgColor} minH="100vh" pb={8} w="100%">
-      <Box px={8} pt={8} w="100%">
+    <div className="min-h-screen bg-gray-50 dark:bg-chat-bg pb-8 w-full transition-colors">
+      <div className="px-8 pt-8 w-full">
         {/* Header Section */}
-        <Box mb={8}>
-          <VStack align="start" spacing={6}>
-            <HStack justify="space-between" w="100%">
-              <VStack align="start" spacing={2}>
-                <HStack spacing={3}>
-                  <Icon as={FiBookOpen} boxSize={8} color="#10a37f" />
-                  <Text fontSize="3xl" fontWeight="bold" color={textColor}>
+        <div className="mb-8">
+          <div className="flex flex-col items-start space-y-6">
+            <div className="flex justify-between items-start w-full">
+              <div className="flex flex-col items-start space-y-2">
+                <div className="flex items-center space-x-3">
+                  <FiBookOpen className="w-8 h-8 text-green-600" />
+                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
                     Knowledge Base
-                  </Text>
-                </HStack>
-                <Text color={placeholderColor} fontSize="lg">
+                  </h1>
+                </div>
+                <p className="text-lg text-gray-600 dark:text-gray-400">
                   Manage your knowledge items and content
-                </Text>
-              </VStack>
-              <Button
-                leftIcon={<FiPlus />}
-                colorScheme="blue"
-                size="md"
+                </p>
+              </div>
+              <button
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                 onClick={() => setIsAddOpen(true)}
               >
-                Add Knowledge
-              </Button>
-            </HStack>
+                <FiPlus className="w-4 h-4" />
+                <span>Add Knowledge</span>
+              </button>
+            </div>
 
             {/* Search Bar */}
-            <Card w="100%" bg={cardBg} borderColor={borderColor} borderWidth="1px">
-              <CardBody p={4}>
-                <InputGroup>
-                  <InputLeftElement pointerEvents="none">
-                    <FiSearch color={placeholderColor} />
-                  </InputLeftElement>
-                  <Input
+            <div className="w-full bg-white dark:bg-[#2f2f2f] border border-gray-200 dark:border-gray-700 rounded-lg">
+              <div className="p-4">
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <FiSearch className="w-4 h-4 text-gray-400 dark:text-gray-500" />
+                  </div>
+                  <input
+                    type="text"
                     placeholder="Search knowledge items..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    border="none"
-                    _focus={{ boxShadow: "none", outline: "none" }}
-                    _placeholder={{ color: placeholderColor }}
-                    color={textColor}
-                    fontSize="15px"
+                    className="block w-full pl-10 pr-3 py-2 border-0 focus:ring-0 focus:outline-none text-base bg-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                   />
-                </InputGroup>
-              </CardBody>
-            </Card>
-          </VStack>
-        </Box>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
 
         <KnowledgesGrid searchQuery={searchQuery} />
         
@@ -467,7 +389,7 @@ function Knowledges() {
           isOpen={isAddOpen} 
           onClose={() => setIsAddOpen(false)} 
         />
-      </Box>
-    </Box>
+      </div>
+    </div>
   )
 }

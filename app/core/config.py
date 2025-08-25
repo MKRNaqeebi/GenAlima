@@ -5,7 +5,6 @@ Application settings.
 from enum import Enum
 import os
 from pathlib import Path
-import secrets
 import warnings
 
 # Third-party imports
@@ -41,7 +40,7 @@ class Settings(BaseSettings):
         extra="ignore",
     )
     API_V1_STR: str = "/api/v1"
-    SECRET_KEY: str = secrets.token_urlsafe(32)
+    SECRET_KEY: str = os.getenv("SECRET_KEY", "this-is-my-secret-key-change-this")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(
         os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", str(60 * 24 * 8)))
     FRONTEND_HOST: str = os.getenv("FRONTEND_HOST", "http://localhost:5173")

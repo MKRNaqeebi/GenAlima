@@ -23,28 +23,21 @@ def read_chats(
     """
     Retrieve chats.
     """
-    if current_user.is_superuser:
+    count_statement = (
         # pylint: disable=not-callable
-        count_statement = select(func.count()).select_from(Chat)
-        count = session.exec(count_statement).one()
-        statement = select(Chat).offset(skip).limit(limit)
-        chats = session.exec(statement).all()
-    else:
-        count_statement = (
-            # pylint: disable=not-callable
-            select(func.count())
-            .select_from(Chat)
-            .where(Chat.owner_id == current_user.id)
-        )
-        count = session.exec(count_statement).one()
-        statement = (
-            select(Chat)
-            .where(Chat.owner_id == current_user.id)
-            .offset(skip)
-            .limit(limit)
-        )
-        chats = session.exec(statement).all()
-
+        select(func.count())
+        .select_from(Chat)
+        .where(Chat.owner_id == current_user.id)
+    )
+    count = session.exec(count_statement).one()
+    statement = (
+        select(Chat)
+        .where(Chat.owner_id == current_user.id)
+        .order_by(Chat.updated_at.desc())
+        .offset(skip)
+        .limit(limit)
+    )
+    chats = session.exec(statement).all()
     return ChatsPublic(data=chats, count=count)
 
 

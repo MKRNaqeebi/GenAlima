@@ -1,136 +1,147 @@
-import {
-  Box,
-  Tab,
-  TabList,
-  TabPanel,
-  TabPanels,
-  Tabs,
-  useColorModeValue,
-  VStack,
-  HStack,
-  Icon,
-  Text,
-} from "@chakra-ui/react"
-import { useQueryClient } from "@tanstack/react-query"
+import { useState } from "react"
 import { createFileRoute } from "@tanstack/react-router"
 import {
   FiUser,
   FiLock,
-  FiMonitor,
-  FiAlertTriangle,
-  FiSettings,
+  FiMoon,
+  FiSun,
 } from "react-icons/fi"
-
-import type { UserPublic } from "../../client"
-import Appearance from "../../components/UserSettings/Appearance"
-import ChangePassword from "../../components/UserSettings/ChangePassword"
-import DeleteAccount from "../../components/UserSettings/DeleteAccount"
 import UserInformation from "../../components/UserSettings/UserInformation"
-
-const tabsConfig = [
-  { title: "My profile", component: UserInformation, icon: FiUser },
-  { title: "Password", component: ChangePassword, icon: FiLock },
-  { title: "Appearance", component: Appearance, icon: FiMonitor },
-  { title: "Danger zone", component: DeleteAccount, icon: FiAlertTriangle },
-]
+import ChangePassword from "../../components/UserSettings/ChangePassword"
+import { useTheme } from "../../contexts/ThemeContext"
 
 export const Route = createFileRoute("/_layout/settings")({
   component: UserSettings,
 })
 
 function UserSettings() {
-  const queryClient = useQueryClient()
-  const currentUser = queryClient.getQueryData<UserPublic>(["currentUser"])
-  const finalTabs = currentUser?.is_superuser
-    ? tabsConfig.slice(0, 3)
-    : tabsConfig
+  const [activeTab, setActiveTab] = useState("profile")
+  const { isDark, toggleTheme } = useTheme()
 
-  const isDark = useColorModeValue(false, true)
-  const bgColor = isDark ? "#171717" : "#f9fafb"
-  const cardBg = isDark ? "#212121" : "#ffffff"
-  const textColor = isDark ? "#e3e3e3" : "#2e2e2e"
-  const borderColor = isDark ? "rgba(255,255,255,0.1)" : "#e5e5e5"
-  const placeholderColor = isDark ? "#8e8e8e" : "#9ca3af"
+  const tabs = [
+    { id: "profile", title: "Profile", icon: FiUser },
+    { id: "password", title: "Password", icon: FiLock },
+    { id: "appearance", title: "Appearance", icon: isDark ? FiMoon : FiSun },
+  ]
 
   return (
-    <Box bg={bgColor} minH="100vh" pb={8} w="100%">
-      <Box px={8} pt={8} w="100%">
-        {/* Header Section */}
-        <Box mb={8}>
-          <VStack align="start" spacing={2}>
-            <HStack spacing={3}>
-              <Icon as={FiSettings} boxSize={8} color="#10a37f" />
-              <Text fontSize="3xl" fontWeight="bold" color={textColor}>
-                Settings
-              </Text>
-            </HStack>
-            <Text color={placeholderColor} fontSize="lg">
-              Manage your account settings and preferences
-            </Text>
-          </VStack>
-        </Box>
+    <div className="min-h-screen bg-gray-50 dark:bg-chat-bg transition-colors">
+      <div className="max-w-5xl mx-auto px-6 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Settings</h1>
+          <p className="text-gray-600 dark:text-gray-400">Manage your account settings and preferences</p>
+        </div>
 
-        {/* Settings Tabs */}
-        <Box
-          bg={cardBg}
-          borderColor={borderColor}
-          borderWidth="1px"
-          borderRadius="12px"
-          overflow="hidden"
-        >
-          <Tabs variant="unstyled">
-            <TabList
-              borderBottom="1px solid"
-              borderColor={borderColor}
-              bg={isDark ? "#1a1a1a" : "#f8f9fa"}
-              p={0}
-              overflowX="auto"
-              flexWrap="nowrap"
-            >
-              {finalTabs.map((tab, index) => (
-                <Tab
-                  key={index}
-                  px={6}
-                  py={4}
-                  color={textColor}
-                  fontSize="15px"
-                  fontWeight="normal"
-                  minW="fit-content"
-                  whiteSpace="nowrap"
-                  _selected={{
-                    bg: cardBg,
-                    borderBottom: "3px solid #10a37f",
-                    color: textColor,
-                  }}
-                  _hover={{
-                    bg: isDark ? "#222222" : "#f0f0f0",
-                  }}
-                  transition="all 0.2s"
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Sidebar Navigation */}
+          <div className="lg:col-span-1">
+            <nav className="space-y-1">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all ${
+                    activeTab === tab.id
+                      ? "bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800/50"
+                  }`}
                 >
-                  <HStack spacing={3}>
-                    <Icon 
-                      as={tab.icon} 
-                      boxSize={4} 
-                      color={placeholderColor}
-                    />
-                    <Text>
-                      {tab.title}
-                    </Text>
-                  </HStack>
-                </Tab>
+                  <tab.icon className="w-4 h-4" />
+                  <span>{tab.title}</span>
+                </button>
               ))}
-            </TabList>
+            </nav>
+          </div>
 
-            <TabPanels>
-              {finalTabs.map((tab, index) => (
-                <TabPanel key={index} p={8}>
-                  <tab.component />
-                </TabPanel>
-              ))}
-            </TabPanels>
-          </Tabs>
-        </Box>
-      </Box>
-    </Box>
+          {/* Content Area */}
+          <div className="lg:col-span-3">
+            <div className="bg-white dark:bg-[#2f2f2f] rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+              {activeTab === "profile" && (
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Profile Information</h2>
+                  <UserInformation />
+                </div>
+              )}
+
+              {activeTab === "password" && (
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Change Password</h2>
+                  <ChangePassword />
+                </div>
+              )}
+
+              {activeTab === "appearance" && (
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Appearance</h2>
+                  
+                  <div className="space-y-6">
+                    {/* Dark Mode Toggle */}
+                    <div className="flex items-center justify-between p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                      <div>
+                        <h3 className="text-gray-900 dark:text-white font-medium">Theme</h3>
+                        <p className="text-gray-600 dark:text-gray-400 text-sm mt-1">
+                          Toggle between light and dark theme
+                        </p>
+                      </div>
+                      <button
+                        onClick={toggleTheme}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                          isDark ? "bg-blue-600" : "bg-gray-300"
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                            isDark ? "translate-x-6" : "translate-x-1"
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    {/* Theme Preview */}
+                    <div className="p-4 bg-gray-100 dark:bg-gray-800 rounded-lg">
+                      <h3 className="text-gray-900 dark:text-white font-medium mb-3">Theme Preview</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div 
+                          className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                            !isDark ? "border-blue-500 bg-white" : "border-gray-300 bg-white"
+                          }`}
+                          onClick={() => !isDark || toggleTheme()}
+                        >
+                          <div className="flex items-center gap-2 mb-2">
+                            <FiSun className="w-4 h-4 text-yellow-500" />
+                            <span className="text-gray-900 text-sm font-medium">Light</span>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="h-2 bg-gray-300 rounded"></div>
+                            <div className="h-2 bg-gray-300 rounded w-3/4"></div>
+                          </div>
+                        </div>
+                        
+                        <div 
+                          className={`p-4 rounded-lg border-2 cursor-pointer transition-all ${
+                            isDark ? "border-blue-500 bg-gray-900" : "border-gray-600 bg-gray-900"
+                          }`}
+                          onClick={() => isDark || toggleTheme()}
+                        >
+                          <div className="flex items-center gap-2 mb-2">
+                            <FiMoon className="w-4 h-4 text-blue-400" />
+                            <span className="text-white text-sm font-medium">Dark</span>
+                          </div>
+                          <div className="space-y-2">
+                            <div className="h-2 bg-gray-700 rounded"></div>
+                            <div className="h-2 bg-gray-700 rounded w-3/4"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }

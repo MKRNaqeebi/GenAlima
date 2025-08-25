@@ -1,6 +1,5 @@
 import type { ComponentType, ElementType } from "react"
-
-import { Button, Flex, Icon, useDisclosure } from "@chakra-ui/react"
+import { useState } from "react"
 import { FaPlus } from "react-icons/fa"
 
 interface NavbarProps {
@@ -9,22 +8,20 @@ interface NavbarProps {
 }
 
 const Navbar = ({ type, addModalAs }: NavbarProps) => {
-  const addModal = useDisclosure()
+  const [isOpen, setIsOpen] = useState(false)
 
   const AddModal = addModalAs
   return (
     <>
-      <Flex py={8} gap={4}>
-        <Button
-          variant="primary"
-          gap={1}
-          fontSize={{ base: "sm", md: "inherit" }}
-          onClick={addModal.onOpen}
+      <div className="flex py-8 gap-4">
+        <button
+          className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm md:text-base transition-colors"
+          onClick={() => setIsOpen(true)}
         >
-          <Icon as={FaPlus} /> Add {type}
-        </Button>
-        <AddModal isOpen={addModal.isOpen} onClose={addModal.onClose} />
-      </Flex>
+          <FaPlus /> Add {type}
+        </button>
+        <AddModal isOpen={isOpen} onClose={() => setIsOpen(false)} />
+      </div>
     </>
   )
 }

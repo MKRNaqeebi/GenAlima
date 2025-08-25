@@ -1,27 +1,11 @@
-import { ViewIcon, ViewOffIcon } from "@chakra-ui/icons"
-import {
-  Button,
-  Container,
-  FormControl,
-  FormErrorMessage,
-  Icon,
-  Image,
-  Input,
-  InputGroup,
-  InputRightElement,
-  Link,
-  Text,
-  useBoolean,
-  useColorModeValue,
-  Box,
-  VStack,
-} from "@chakra-ui/react"
+import { MdVisibility, MdVisibilityOff } from "react-icons/md"
 import {
   Link as RouterLink,
   createFileRoute,
   redirect,
 } from "@tanstack/react-router"
 import { type SubmitHandler, useForm } from "react-hook-form"
+import { useState } from "react"
 
 import Logo from "/assets/images/genalima-logo.png"
 import type { Body_login_login_access_token as AccessToken } from "../client"
@@ -40,17 +24,8 @@ export const Route = createFileRoute("/login")({
 })
 
 function Login() {
-  const [show, setShow] = useBoolean()
+  const [show, setShow] = useState(false)
   const { loginMutation, error, resetError } = useAuth()
-  
-  const isDark = useColorModeValue(false, true)
-  const bgColor = isDark ? "#1a1a1a" : "#ffffff"
-  const textColor = isDark ? "#e3e3e3" : "#2e2e2e"
-  const borderColor = isDark ? "rgba(255,255,255,0.1)" : "#e5e5e5"
-  const inputBg = isDark ? "#2b2b2b" : "#f7f7f7"
-  const placeholderColor = isDark ? "#8e8e8e" : "#9ca3af"
-  const cardBg = isDark ? "#2b2b2b" : "#ffffff"
-  const cardShadow = isDark ? "0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.1)" : "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)"
   const {
     register,
     handleSubmit,
@@ -77,28 +52,20 @@ function Login() {
   }
 
   return (
-    <Box minH="100vh" bg={bgColor} display="flex" alignItems="center" justifyContent="center" px={4}>
-      <Container maxW="sm" p={0}>
-        <Box
-          as="form"
+    <div className="min-h-screen bg-white dark:bg-gray-900 flex items-center justify-center px-4">
+      <div className="max-w-sm w-full p-0">
+        <form
           onSubmit={handleSubmit(onSubmit)}
-          bg={cardBg}
-          p={8}
-          borderRadius="xl"
-          boxShadow={cardShadow}
-          borderWidth="1px"
-          borderColor={borderColor}
+          className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700"
         >
-          <VStack spacing={6}>
-            <Image
+          <div className="space-y-6">
+            <img
               src={Logo}
               alt="GenAlima logo"
-              height="auto"
-              maxW="2xs"
-              alignSelf="center"
+              className="h-auto max-w-xs mx-auto"
             />
-            <FormControl id="username" isInvalid={!!errors.username || !!error}>
-              <Input
+            <div className="space-y-2">
+              <input
                 id="username"
                 {...register("username", {
                   required: "Username is required",
@@ -107,91 +74,77 @@ function Login() {
                 placeholder="Email"
                 type="email"
                 required
-                size="lg"
-                bg={inputBg}
-                borderColor={borderColor}
-                color={textColor}
-                _placeholder={{ color: placeholderColor }}
-                _hover={{ borderColor: "#10a37f" }}
-                _focus={{ borderColor: "#10a37f", boxShadow: "0 0 0 1px #10a37f" }}
-                isDisabled={loginMutation.isPending}
+                disabled={loginMutation.isPending}
+                className={`w-full px-4 py-3 text-lg rounded-lg border bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 hover:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  (errors.username || error) ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'
+                }`}
               />
               {errors.username && (
-                <FormErrorMessage>{errors.username.message}</FormErrorMessage>
+                <p className="text-red-500 text-sm mt-1">{errors.username.message}</p>
               )}
-            </FormControl>
-            <FormControl id="password" isInvalid={!!error}>
-              <InputGroup size="lg">
-                <Input
+            </div>
+            <div className="space-y-2">
+              <div className="relative">
+                <input
                   {...register("password", {
                     required: "Password is required",
                   })}
                   type={show ? "text" : "password"}
                   placeholder="Password"
                   required
-                  bg={inputBg}
-                  borderColor={borderColor}
-                  color={textColor}
-                  _placeholder={{ color: placeholderColor }}
-                  _hover={{ borderColor: "#10a37f" }}
-                  _focus={{ borderColor: "#10a37f", boxShadow: "0 0 0 1px #10a37f" }}
-                  isDisabled={loginMutation.isPending}
+                  disabled={loginMutation.isPending}
+                  className={`w-full px-4 py-3 pr-12 text-lg rounded-lg border bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 hover:border-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    error ? 'border-red-300 dark:border-red-600' : 'border-gray-300 dark:border-gray-600'
+                  }`}
                 />
-                <InputRightElement
-                  color={placeholderColor}
-                  _hover={{
-                    cursor: "pointer",
-                    color: textColor,
-                  }}
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 cursor-pointer"
+                  onClick={() => setShow(!show)}
+                  aria-label={show ? "Hide password" : "Show password"}
                 >
-                  <Icon
-                    as={show ? ViewOffIcon : ViewIcon}
-                    onClick={setShow.toggle}
-                    aria-label={show ? "Hide password" : "Show password"}
-                  />
-                </InputRightElement>
-              </InputGroup>
-              {error && <FormErrorMessage>{error}</FormErrorMessage>}
-            </FormControl>
-            <Link 
-              as={RouterLink} 
+                  {show ? (
+                    <MdVisibilityOff className="h-5 w-5" />
+                  ) : (
+                    <MdVisibility className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
+              {error && <p className="text-red-500 text-sm mt-1">{error}</p>}
+            </div>
+            <RouterLink 
               to="/recover-password" 
-              color="#10a37f"
-              fontSize="sm"
-              _hover={{ color: "#0d8265" }}
-              alignSelf="flex-start"
+              className="text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 text-sm self-start transition-colors"
             >
               Forgot password?
-            </Link>
-            <Button 
+            </RouterLink>
+            <button 
               type="submit" 
-              size="lg"
-              width="full"
-              bg="#10a37f"
-              color="white"
-              _hover={{ bg: "#0d8265" }}
-              _active={{ bg: "#0a6b4f" }}
-              isLoading={loginMutation.isPending}
-              loadingText="Signing in..."
-              isDisabled={loginMutation.isPending}
+              disabled={loginMutation.isPending}
+              className="w-full py-3 px-4 text-lg font-medium text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Sign In
-            </Button>
-            <Text color={textColor} textAlign="center">
+              {loginMutation.isPending ? "Signing in..." : "Sign In"}
+            </button>
+            <p className="text-gray-900 dark:text-gray-100 text-center">
               Don't have an account?{" "}
-              <Link 
-                as={RouterLink} 
+              <RouterLink 
                 to="/signup" 
-                color="#10a37f"
-                fontWeight="medium"
-                _hover={{ color: "#0d8265" }}
+                className="text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 font-medium transition-colors"
               >
                 Sign up
-              </Link>
-            </Text>
-          </VStack>
-        </Box>
-      </Container>
-    </Box>
+              </RouterLink>
+            </p>
+            <p className="text-gray-600 dark:text-gray-400 text-center text-sm mt-2">
+              <RouterLink 
+                to="/home" 
+                className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+              >
+                ← Back to homepage
+              </RouterLink>
+            </p>
+          </div>
+        </form>
+      </div>
+    </div>
   )
 }

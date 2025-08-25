@@ -1,35 +1,29 @@
-import {
-  Button,
-  Container,
-  Heading,
-  Text,
-  useDisclosure,
-} from "@chakra-ui/react"
-
+import { useState } from "react"
 import DeleteConfirmation from "./DeleteConfirmation"
 
 const DeleteAccount = () => {
-  const confirmationModal = useDisclosure()
+  const [isOpen, setIsOpen] = useState(false)
 
   return (
-    <>
-      <Container maxW="full">
-        <Heading size="sm" py={4}>
-          Delete Account
-        </Heading>
-        <Text>
-          Permanently delete your data and everything associated with your
-          account.
-        </Text>
-        <Button variant="danger" mt={4} onClick={confirmationModal.onOpen}>
-          Delete
-        </Button>
-        <DeleteConfirmation
-          isOpen={confirmationModal.isOpen}
-          onClose={confirmationModal.onClose}
-        />
-      </Container>
-    </>
+    <div className="max-w-full mx-auto">
+      <h2 className="text-sm font-medium py-4">
+        Delete Account
+      </h2>
+      <p className="text-gray-700 mb-4">
+        Permanently delete your data and everything associated with your
+        account.
+      </p>
+      <button
+        className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+        onClick={() => setIsOpen(true)}
+      >
+        Delete
+      </button>
+      <DeleteConfirmation
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+      />
+    </div>
   )
 }
 export default DeleteAccount

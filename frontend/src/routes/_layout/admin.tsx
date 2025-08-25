@@ -1,18 +1,3 @@
-import {
-  Badge,
-  Box,
-  Container,
-  Flex,
-  Heading,
-  SkeletonText,
-  Table,
-  TableContainer,
-  Tbody,
-  Td,
-  Th,
-  Thead,
-  Tr,
-} from "@chakra-ui/react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useEffect } from "react"
@@ -71,72 +56,64 @@ function UsersTable() {
 
   return (
     <>
-      <TableContainer>
-        <Table size={{ base: "sm", md: "md" }}>
-          <Thead>
-            <Tr>
-              <Th width="20%">Full name</Th>
-              <Th width="50%">Email</Th>
-              <Th width="10%">Role</Th>
-              <Th width="10%">Status</Th>
-              <Th width="10%">Actions</Th>
-            </Tr>
-          </Thead>
+      <div className="overflow-x-auto">
+        <table className="min-w-full table-auto text-sm md:text-base">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="w-1/5 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Full name</th>
+              <th className="w-1/2 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+              <th className="w-1/10 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+              <th className="w-1/10 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th className="w-1/10 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
           {isPending ? (
-            <Tbody>
-              <Tr>
-                {new Array(4).fill(null).map((_, index) => (
-                  <Td key={index}>
-                    <SkeletonText noOfLines={1} paddingBlock="16px" />
-                  </Td>
+            <tbody className="bg-white divide-y divide-gray-200">
+              <tr>
+                {new Array(5).fill(null).map((_, index) => (
+                  <td key={index} className="px-4 py-4">
+                    <div className="animate-pulse h-4 bg-gray-200 rounded"></div>
+                  </td>
                 ))}
-              </Tr>
-            </Tbody>
+              </tr>
+            </tbody>
           ) : (
-            <Tbody>
+            <tbody className="bg-white divide-y divide-gray-200">
               {users?.data.map((user) => (
-                <Tr key={user.id}>
-                  <Td
-                    color={!user.full_name ? "ui.dim" : "inherit"}
-                    isTruncated
-                    maxWidth="150px"
-                  >
+                <tr key={user.id} className="hover:bg-gray-50">
+                  <td className={`px-4 py-4 whitespace-nowrap truncate max-w-[150px] ${!user.full_name ? 'text-gray-400' : 'text-gray-900'}`}>
                     {user.full_name || "N/A"}
                     {currentUser?.id === user.id && (
-                      <Badge ml="1" colorScheme="teal">
+                      <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800">
                         You
-                      </Badge>
+                      </span>
                     )}
-                  </Td>
-                  <Td isTruncated maxWidth="150px">
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap truncate max-w-[150px] text-gray-900">
                     {user.email}
-                  </Td>
-                  <Td>{user.is_superuser ? "Superuser" : "User"}</Td>
-                  <Td>
-                    <Flex gap={2}>
-                      <Box
-                        w="2"
-                        h="2"
-                        borderRadius="50%"
-                        bg={user.is_active ? "ui.success" : "ui.danger"}
-                        alignSelf="center"
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap text-gray-900">{user.is_superuser ? "Superuser" : "User"}</td>
+                  <td className="px-4 py-4 whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={`w-2 h-2 rounded-full ${user.is_active ? 'bg-green-400' : 'bg-red-400'}`}
                       />
-                      {user.is_active ? "Active" : "Inactive"}
-                    </Flex>
-                  </Td>
-                  <Td>
+                      <span className="text-gray-900">{user.is_active ? "Active" : "Inactive"}</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-4 whitespace-nowrap">
                     <ActionsMenu
                       type="User"
                       value={user}
                       disabled={currentUser?.id === user.id}
                     />
-                  </Td>
-                </Tr>
+                  </td>
+                </tr>
               ))}
-            </Tbody>
+            </tbody>
           )}
-        </Table>
-      </TableContainer>
+        </table>
+      </div>
       <PaginationFooter
         onChangePage={setPage}
         page={page}
@@ -149,13 +126,13 @@ function UsersTable() {
 
 function Admin() {
   return (
-    <Container maxW="full">
-      <Heading size="lg" textAlign={{ base: "center", md: "left" }} pt={12}>
+    <div className="max-w-full mx-auto px-4">
+      <h1 className="text-2xl font-bold text-center md:text-left pt-12 mb-6">
         Users Management
-      </Heading>
+      </h1>
 
       <Navbar type={"User"} addModalAs={AddUser} />
       <UsersTable />
-    </Container>
+    </div>
   )
 }

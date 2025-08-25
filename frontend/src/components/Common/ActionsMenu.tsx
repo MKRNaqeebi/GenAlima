@@ -1,11 +1,4 @@
-import {
-  Button,
-  Menu,
-  MenuButton,
-  MenuItem,
-  MenuList,
-  useDisclosure,
-} from "@chakra-ui/react"
+import { useState, useRef, useEffect } from "react"
 import { BsThreeDotsVertical } from "react-icons/bs"
 import { FiEdit, FiTrash } from "react-icons/fi"
 
@@ -26,84 +19,109 @@ interface ActionsMenuProps {
 }
 
 const ActionsMenu = ({ type, value, disabled }: ActionsMenuProps) => {
-  const editUserModal = useDisclosure()
-  const deleteModal = useDisclosure()
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false)
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsMenuOpen(false)
+      }
+    }
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isMenuOpen])
 
   return (
-    <>
-      <Menu>
-        <MenuButton
-          isDisabled={disabled}
-          as={Button}
-          rightIcon={<BsThreeDotsVertical />}
-          variant="unstyled"
-        />
-        <MenuList>
-          <MenuItem
-            onClick={editUserModal.onOpen}
-            icon={<FiEdit fontSize="16px" />}
+    <div className="relative" ref={menuRef}>
+      <button
+        disabled={disabled}
+        onClick={() => setIsMenuOpen(!isMenuOpen)}
+        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        <BsThreeDotsVertical className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+      </button>
+      
+      {isMenuOpen && (
+        <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10">
+          <button
+            onClick={() => {
+              setIsEditOpen(true)
+              setIsMenuOpen(false)
+            }}
+            className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 first:rounded-t-lg"
           >
+            <FiEdit className="w-4 h-4" />
             Edit {type}
-          </MenuItem>
-          <MenuItem
-            onClick={deleteModal.onOpen}
-            icon={<FiTrash fontSize="16px" />}
-            color="ui.danger"
+          </button>
+          <button
+            onClick={() => {
+              setIsDeleteOpen(true)
+              setIsMenuOpen(false)
+            }}
+            className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 text-red-600 dark:text-red-400 last:rounded-b-lg"
           >
+            <FiTrash className="w-4 h-4" />
             Delete {type}
-          </MenuItem>
-        </MenuList>
-        {type === "User" ? (
-          <EditUser
-            user={value as UserPublic}
-            isOpen={editUserModal.isOpen}
-            onClose={editUserModal.onClose}
-          />
-        ) : type === "Connector" ? (
-          <EditConnector
-            connector={value as ConnectorPublic}
-            isOpen={editUserModal.isOpen}
-            onClose={editUserModal.onClose}
-          />
-        ) : type === "Chat" ? (
-          <EditChat
-            chat={value as ChatPublic}
-            isOpen={editUserModal.isOpen}
-            onClose={editUserModal.onClose}
-          />
-        ) : type === "Message" ? (
-          <EditMessage
-            message={value as MessagePublic}
-            isOpen={editUserModal.isOpen}
-            onClose={editUserModal.onClose}
-          />
-        ) : type === "Knowledge" ? (
-          <EditKnowledge
-            knowledge={value as KnowledgePublic}
-            isOpen={editUserModal.isOpen}
-            onClose={editUserModal.onClose}
-          />
-        ) : type === "Template" ? (
-          <EditTemplate
-            template={value as TemplatePublic}
-            isOpen={editUserModal.isOpen}
-            onClose={editUserModal.onClose}
-          />
-        ) : (
-          <EditItem
-            item={value as ItemPublic}
-            isOpen={editUserModal.isOpen}
-            onClose={editUserModal.onClose}
-          />
-        )}
-        <Delete
-          type={type}
-          id={value.id}
-          isOpen={deleteModal.isOpen}
-          onClose={deleteModal.onClose}
+          </button>
+        </div>
+      )}
+      
+      {type === "User" ? (
+        <EditUser
+          user={value as UserPublic}
+          isOpen={isEditOpen}
+          onClose={() => setIsEditOpen(false)}
         />
-      </Menu>
-    </>
+      ) : type === "Connector" ? (
+        <EditConnector
+          connector={value as ConnectorPublic}
+          isOpen={isEditOpen}
+          onClose={() => setIsEditOpen(false)}
+        />
+      ) : type === "Chat" ? (
+        <EditChat
+          chat={value as ChatPublic}
+          isOpen={isEditOpen}
+          onClose={() => setIsEditOpen(false)}
+        />
+      ) : type === "Message" ? (
+        <EditMessage
+          message={value as MessagePublic}
+          isOpen={isEditOpen}
+          onClose={() => setIsEditOpen(false)}
+        />
+      ) : type === "Knowledge" ? (
+        <EditKnowledge
+          knowledge={value as KnowledgePublic}
+          isOpen={isEditOpen}
+          onClose={() => setIsEditOpen(false)}
+        />
+      ) : type === "Template" ? (
+        <EditTemplate
+          template={value as TemplatePublic}
+          isOpen={isEditOpen}
+          onClose={() => setIsEditOpen(false)}
+        />
+      ) : (
+        <EditItem
+          item={value as ItemPublic}
+          isOpen={isEditOpen}
+          onClose={() => setIsEditOpen(false)}
+        />
+      )}
+      
+      <Delete
+        type={type}
+        id={value.id}
+        isOpen={isDeleteOpen}
+        onClose={() => setIsDeleteOpen(false)}
+      />
+    </div>
   )
 }
 
