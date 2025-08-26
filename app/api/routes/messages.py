@@ -83,6 +83,7 @@ def read_messages_by_chat(
     if not current_user.is_superuser and (chat.owner_id != current_user.id):
         raise HTTPException(status_code=400, detail="Not enough permissions")
     messages = chat.messages
+    messages.sort(key=lambda x: x.created_at)
     return MessagesPublic(data=messages, count=len(messages))
 
 
