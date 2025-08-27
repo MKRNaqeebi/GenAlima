@@ -85,6 +85,7 @@ function UserSettings() {
                         </p>
                       </div>
                       <button
+                        aria-label="Toggle Theme"
                         onClick={toggleTheme}
                         className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                           isDark ? "bg-blue-600" : "bg-gray-300"

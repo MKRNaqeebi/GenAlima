@@ -12,3 +12,4 @@ dist/
 coverage/
 *.log
 *.key.json
+*secret*.json
