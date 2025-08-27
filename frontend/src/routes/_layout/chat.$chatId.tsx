@@ -53,16 +53,13 @@ function MessageBubble({ message, onShowMetadata }: { message: MessagePublic, on
   const isUser = message.role === 'user'
   const hasMetadata = message.meta_data && Object.keys(message.meta_data).length > 0
   const showToast = useCustomToast()
-  const [isCopied, setIsCopied] = useState(false)
   const [isLiked, setIsLiked] = useState(false)
   const [isDisliked, setIsDisliked] = useState(false)
   
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(message.content)
-      setIsCopied(true)
       showToast('Copied!', 'Message copied to clipboard.', 'success')
-      setTimeout(() => setIsCopied(false), 2000)
     } catch (err) {
       showToast('Error', 'Failed to copy message.', 'error')
     }
