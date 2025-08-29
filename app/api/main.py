@@ -18,6 +18,7 @@ from app.api.routes import (
     users,
     utils,
 )
+from app.api.routes import google
 from app.core.config import settings
 
 api_router = APIRouter()
@@ -30,6 +31,7 @@ api_router.include_router(messages.router)
 api_router.include_router(chats.router)
 api_router.include_router(templates.router)
 api_router.include_router(connectors.router)
+api_router.include_router(google.router)
 api_router.include_router(knowledges.router)
 
 

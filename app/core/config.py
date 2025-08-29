@@ -5,11 +5,11 @@ Application settings.
 from enum import Enum
 import os
 from pathlib import Path
+from urllib.parse import quote_plus
 import warnings
 
 # Third-party imports
 from dotenv import load_dotenv
-from urllib.parse import quote_plus
 from pydantic import HttpUrl, PostgresDsn, computed_field, model_validator
 from pydantic_core import Url
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -135,6 +135,21 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str | None = os.getenv("OPENAI_API_KEY")
     GEMINI_API_KEY: str | None = os.getenv("GEMINI_API_KEY")
     ANTHROPIC_API_KEY: str | None = os.getenv("ANTHROPIC_API_KEY")
+
+    # Gmail OAuth2 configuration
+    GOOGLE_CLIENT_ID: str | None = os.getenv("GOOGLE_CLIENT_ID")
+    GOOGLE_CLIENT_SECRET: str | None = os.getenv("GOOGLE_CLIENT_SECRET")
+    GOOGLE_REDIRECT_URI: str = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/api/v1/google/callback/")
+    GOOGLE_AUTH_URI: str = "https://accounts.google.com/o/oauth2/auth"
+    GOOGLE_TOKEN_URI: str = "https://oauth2.googleapis.com/token"
+    GMAIL_SCOPES: list[str] = [
+        "https://www.googleapis.com/auth/gmail.send",
+        "https://www.googleapis.com/auth/gmail.readonly",
+        "https://www.googleapis.com/auth/gmail.modify",
+        "https://mail.google.com/",
+        "https://www.googleapis.com/auth/userinfo.email",
+        "openid"
+    ]
 
     # Logging configuration
     LOG_DIR: Path = Path(os.getenv("LOG_DIR", "./logs"))

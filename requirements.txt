@@ -127,3 +127,9 @@ tzdata==2025.2
 uritemplate==4.1.1
 urllib3==2.3.0
 uvicorn==0.34.0
+
+# Google API dependencies for Gmail connector
+google-auth==2.34.0
+google-auth-oauthlib==1.2.0
+google-auth-httplib2==0.2.0
+google-api-python-client==2.134.0

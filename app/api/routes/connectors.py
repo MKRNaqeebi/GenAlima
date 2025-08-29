@@ -12,12 +12,7 @@ from sqlmodel import func, select
 # Local application imports
 from app.api.deps import CurrentUser, SessionDep
 from app.models import (
-    Connector,
-    ConnectorBase,
-    ConnectorPublic,
-    ConnectorsPublic,
-    ConnectorUpdate,
-    Message,
+    Connector, ConnectorCreate, ConnectorPublic, ConnectorsPublic, ConnectorUpdate, Message,
 )
 
 router = APIRouter(prefix="/connectors", tags=["connectors"])
@@ -25,15 +20,20 @@ router = APIRouter(prefix="/connectors", tags=["connectors"])
 
 @router.get("/", response_model=ConnectorsPublic)
 def read_connectors(
-    session: SessionDep, skip: int = 0, limit: int = 100
+    session: SessionDep, current_user: CurrentUser, skip: int = 0, limit: int = 100
 ) -> Any:
     """
-    Retrieve connectors.
+    Retrieve connectors for the current user.
     """
-    # pylint: disable=not-callable
-    count_statement = select(func.count()).select_from(Connector)
+    # Regular users see only their connectors
+    count_statement = select(func.count()).select_from(Connector).where(
+        Connector.owner_id == current_user.id
+    )
     count = session.exec(count_statement).one()
-    statement = select(Connector).offset(skip).limit(limit)
+    statement = select(Connector).where(
+        Connector.owner_id == current_user.id
+    ).offset(skip).limit(limit)
+
     connectors = session.exec(statement).all()
     return ConnectorsPublic(data=connectors, count=count)
 
@@ -56,14 +56,13 @@ def read_connector(
 
 @router.post("/", response_model=ConnectorPublic)
 def create_connector(
-    *, session: SessionDep, current_user: CurrentUser, connector_in: ConnectorBase
+    *, session: SessionDep, current_user: CurrentUser, connector_in: ConnectorCreate
 ) -> Any:
     """
-    Create new connector.
+    Create new connector for the current user.
     """
-    if not current_user.is_superuser:
-        raise HTTPException(status_code=400, detail="Not enough permissions")
     connector = Connector.model_validate(connector_in)
+    connector.owner_id = current_user.id
     session.add(connector)
     session.commit()
     session.refresh(connector)
@@ -80,12 +79,12 @@ def update_connector(
     connector_in: ConnectorUpdate,
 ) -> Any:
     """
-    Update an connector.
+    Update a connector.
     """
     connector = session.get(Connector, id)
     if not connector:
         raise HTTPException(status_code=404, detail="Connector not found")
-    if not current_user.is_superuser:
+    if not current_user.is_superuser and (connector.owner_id != current_user.id):
         raise HTTPException(status_code=400, detail="Not enough permissions")
     update_dict = connector_in.model_dump(exclude_unset=True)
     connector.sqlmodel_update(update_dict)
@@ -102,12 +101,12 @@ def delete_connector(
     id: uuid.UUID
 ) -> Message:
     """
-    Delete an connector.
+    Delete a connector.
     """
     connector = session.get(Connector, id)
     if not connector:
         raise HTTPException(status_code=404, detail="Connector not found")
-    if not current_user.is_superuser:
+    if not current_user.is_superuser and (connector.owner_id != current_user.id):
         raise HTTPException(status_code=400, detail="Not enough permissions")
     session.delete(connector)
     session.commit()
