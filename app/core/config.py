@@ -5,11 +5,11 @@ Application settings.
 from enum import Enum
 import os
 from pathlib import Path
+from urllib.parse import quote_plus
 import warnings
 
 # Third-party imports
 from dotenv import load_dotenv
-from urllib.parse import quote_plus
 from pydantic import HttpUrl, PostgresDsn, computed_field, model_validator
 from pydantic_core import Url
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -136,14 +136,29 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str | None = os.getenv("GEMINI_API_KEY")
     ANTHROPIC_API_KEY: str | None = os.getenv("ANTHROPIC_API_KEY")
 
+    # Gmail OAuth2 configuration
+    GOOGLE_CLIENT_ID: str | None = os.getenv("GOOGLE_CLIENT_ID")
+    GOOGLE_CLIENT_SECRET: str | None = os.getenv("GOOGLE_CLIENT_SECRET")
+    GOOGLE_REDIRECT_URI: str = os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8000/api/v1/google/callback/")
+    GOOGLE_AUTH_URI: str = "https://accounts.google.com/o/oauth2/auth"
+    GOOGLE_TOKEN_URI: str = "https://oauth2.googleapis.com/token"
+    GMAIL_SCOPES: list[str] = [
+        "https://www.googleapis.com/auth/gmail.send",
+        "https://www.googleapis.com/auth/gmail.readonly",
+        "https://www.googleapis.com/auth/gmail.modify",
+        "https://mail.google.com/",
+        "https://www.googleapis.com/auth/userinfo.email",
+        "openid"
+    ]
+
     # Logging configuration
     LOG_DIR: Path = Path(os.getenv("LOG_DIR", "./logs"))
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     LOG_FORMAT: str = os.getenv("LOG_FORMAT", "json")
 
     # LLM configuration
-    LLM_MODEL: str = os.getenv("LLM_MODEL", "gpt-4.1")
-    DEFAULT_LLM_TEMPERATURE: float = float(os.getenv("DEFAULT_LLM_TEMPERATURE", "0.7"))
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "gpt-5")
+    DEFAULT_LLM_TEMPERATURE: float = float(os.getenv("DEFAULT_LLM_TEMPERATURE", "1"))
     LLM_API_KEY: str | None = os.getenv("LLM_API_KEY", os.getenv("OPENAI_API_KEY"))
     MAX_TOKENS: int = int(os.getenv("MAX_TOKENS", "2000"))
     MAX_LLM_CALL_RETRIES: int = int(os.getenv("MAX_LLM_CALL_RETRIES", "3"))

@@ -85,6 +85,8 @@ class User(UserBase, table=True):
         back_populates="owner", cascade_delete=True)
     knowledge_files: list["KnowledgeFile"] = Relationship(
         back_populates="owner", cascade_delete=True)
+    connectors: list["Connector"] = Relationship(
+        back_populates="owner", cascade_delete=True)
 
 
 class UserPublic(UserBase):
@@ -200,6 +202,13 @@ class ConnectorBase(SQLModel):
     description: str | None = Field(default=None, max_length=255)
     function: str | None = Field(default=None, max_length=255)
     active: bool = Field(default=True)
+    meta_data: Dict[str, Any] | None = Field(default=None, sa_column=Column(JSON))
+
+
+class ConnectorCreate(ConnectorBase):
+    """
+    Properties to receive on connector creation
+    """
 
 
 class ConnectorUpdate(ConnectorBase):
@@ -210,6 +219,7 @@ class ConnectorUpdate(ConnectorBase):
                              max_length=255)  # type: ignore
     description: str | None = Field(default=None, max_length=255)
     active: bool | None = Field(default=None)
+    meta_data: Dict[str, Any] | None = Field(default=None)
 
 
 class Connector(ConnectorBase, table=True):
@@ -218,6 +228,10 @@ class Connector(ConnectorBase, table=True):
     """
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     name: str = Field(max_length=255)
+    owner_id: uuid.UUID = Field(
+        foreign_key="user.id", nullable=False, ondelete="CASCADE"
+    )
+    owner: User | None = Relationship(back_populates="connectors")
 
 
 class ConnectorPublic(ConnectorBase):

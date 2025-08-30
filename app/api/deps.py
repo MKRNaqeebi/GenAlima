@@ -11,7 +11,7 @@ from fastapi.security import OAuth2PasswordBearer
 import jwt
 from jwt.exceptions import InvalidTokenError
 from pydantic import ValidationError
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 # Local application imports
 from app.core import security
@@ -35,6 +35,14 @@ def get_db() -> Generator[Session, None, None]:
 SessionDep = Annotated[Session, Depends(get_db)]
 TokenDep = Annotated[str, Depends(reusable_oauth2)]
 
+
+def get_user_by_email(session: SessionDep, email: str) -> User | None:
+    """
+    Get a user by email.
+    """
+    statement = select(User).where(User.email == email)
+    user = session.exec(statement).first()
+    return user
 
 def get_current_user(session: SessionDep, token: TokenDep) -> User:
     """

@@ -21,7 +21,7 @@ from app.models import (
     MessageUpdate,
 )
 from app.model_utils import save_chat_message, update_chat_message, save_chat
-from graphs.main import lang_graph_agent
+from graphs.main import LangGraphAgent
 
 router = APIRouter(prefix="/messages", tags=["messages"])
 
@@ -107,8 +107,16 @@ async def create_message(
     response_message = save_chat_message(
         session=session, role="assistant", chat_id=chat.id, content="message processing."
     )
-    agent_messages.append(Message(role="system", content=f"message_id={response_message.id} and chat_id={chat.id}"))
-    # get data from connector and pass it to the system prompt
+    user_connectors = current_user.connectors
+    # TODO: get creds from connector and pass it to the system prompt so that agent can use tools
+    user_connectors_id = ""
+    for connector in user_connectors:
+        user_connectors_id += f"For {connector.name} or {connector.function} connector ID: {connector.id}\n"
+    system_prompt = f"""Here are your connectors Ids: {user_connectors_id}.
+    message_id={response_message.id} and chat_id={chat.id}
+    """
+    agent_messages.append(Message(role="system", content=system_prompt))
+    lang_graph_agent = LangGraphAgent(user_connectors)
     response = await lang_graph_agent.get_response(agent_messages, str(chat.id), str(current_user.id))
     if not response:
         raise HTTPException(status_code=500, detail="No response generated")
