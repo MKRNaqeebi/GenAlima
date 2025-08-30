@@ -31,13 +31,13 @@ def get_tools_by_credentials(connectors: list[Connector]) -> list[BaseTool]:
     ]
     if any(connector.name == "google_mail" for connector in connectors):
         tools.extend([
-            # gmail_send_email_tool,
-            # gmail_read_emails_tool,
+            gmail_send_email_tool,
+            gmail_read_emails_tool,
             gmail_search_emails_tool,
-            # gmail_manage_email_tool,
-            # gmail_create_draft_tool,
-            # gmail_get_labels_tool,
-            # gmail_get_profile_tool,
+            gmail_manage_email_tool,
+            gmail_create_draft_tool,
+            gmail_get_labels_tool,
+            gmail_get_profile_tool,
         ])
     print(f"No of tools available: {len(tools)}")
     return tools
