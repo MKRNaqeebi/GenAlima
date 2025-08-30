@@ -2,8 +2,8 @@
 from typing import Any, Dict
 
 # Third-party imports
-from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_core.messages import trim_messages as _trim_messages
+from langchain_openai import ChatOpenAI
 from sqlalchemy.orm.attributes import flag_modified
 from sqlmodel import Session, select
 
@@ -35,7 +35,7 @@ def dump_messages(messages: list[Message]) -> list[dict]:
     return dumped_messages
 
 
-def prepare_messages(messages: list[Message], llm: BaseChatModel, system_prompt: str) -> list[Message]:
+def prepare_messages(messages: list[Message], system_prompt: str) -> list[Message]:
     """Prepare the messages for the LLM.
 
     Args:
@@ -49,7 +49,12 @@ def prepare_messages(messages: list[Message], llm: BaseChatModel, system_prompt:
     trimmed_messages = _trim_messages(
         dump_messages(messages),
         strategy="last",
-        token_counter=llm,
+        token_counter=ChatOpenAI(
+            model="gpt-4.1",
+            temperature=settings.DEFAULT_LLM_TEMPERATURE,
+            api_key=settings.LLM_API_KEY,
+            max_tokens=settings.MAX_TOKENS,
+        ),
         max_tokens=settings.MAX_TOKENS,
         start_on="human",
         include_system=False,

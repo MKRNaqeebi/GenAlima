@@ -157,7 +157,7 @@ class Settings(BaseSettings):
     LOG_FORMAT: str = os.getenv("LOG_FORMAT", "json")
 
     # LLM configuration
-    LLM_MODEL: str = os.getenv("LLM_MODEL", "gpt-4.1")
+    LLM_MODEL: str = os.getenv("LLM_MODEL", "gpt-5")
     DEFAULT_LLM_TEMPERATURE: float = float(os.getenv("DEFAULT_LLM_TEMPERATURE", "0.7"))
     LLM_API_KEY: str | None = os.getenv("LLM_API_KEY", os.getenv("OPENAI_API_KEY"))
     MAX_TOKENS: int = int(os.getenv("MAX_TOKENS", "2000"))

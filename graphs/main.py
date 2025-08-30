@@ -39,9 +39,9 @@ from app.core.config import (
 )
 from app.core.logging import logger
 from app.core.metrics import llm_inference_duration_seconds
-from app.models import Message
+from app.models import Message, Connector
 from graphs.prompts import SYSTEM_PROMPT
-from graphs.tools import tools
+from graphs.tools import get_tools_by_credentials
 from graphs.utils import (
     dump_messages,
     prepare_messages,
@@ -90,8 +90,9 @@ class LangGraphAgent:
     including LLM interactions, database connections, and response processing.
     """
 
-    def __init__(self):
+    def __init__(self, connectors: list[Connector]):
         """Initialize the LangGraph Agent with necessary components."""
+        tools = get_tools_by_credentials(connectors)
         # Use environment-specific LLM model
         self.llm = ChatOpenAI(
             model=settings.LLM_MODEL,
@@ -167,7 +168,7 @@ class LangGraphAgent:
         Returns:
             dict: Updated state with new messages.
         """
-        messages = prepare_messages(state.messages, self.llm, SYSTEM_PROMPT)
+        messages = prepare_messages(state.messages, SYSTEM_PROMPT)
 
         llm_calls_num = 0
 
@@ -199,7 +200,7 @@ class LangGraphAgent:
 
                 # In production, we might want to fall back to a more reliable model
                 if settings.ENVIRONMENT == Environment.PRODUCTION and attempt == max_retries - 2:
-                    fallback_model = "gpt-4.1-mini"
+                    fallback_model = "gpt-5-mini"
                     logger.warning(
                         "using_fallback_model", model=fallback_model, environment=settings.ENVIRONMENT
                     )
@@ -420,5 +421,3 @@ class LangGraphAgent:
         except Exception as e:
             logger.error("Failed to clear chat history", error=str(e))
             raise
-
-lang_graph_agent = LangGraphAgent()

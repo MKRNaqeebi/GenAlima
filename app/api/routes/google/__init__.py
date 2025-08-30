@@ -98,6 +98,7 @@ def _build_connector_data(credentials, user_email: str) -> dict:
             "client_secret": settings.GOOGLE_CLIENT_SECRET,
             "refresh_token": credentials.refresh_token,
             "access_token": credentials.token,
+            "token_uri": settings.GOOGLE_TOKEN_URI,
             "token_expiry": credentials.expiry.isoformat() if credentials.expiry else None,
             "user_email": user_email,
             "scopes": list(credentials.scopes) if credentials.scopes else settings.GMAIL_SCOPES
@@ -139,7 +140,7 @@ def _save_or_update_connector(session, user_id: uuid.UUID, connector_name: str,
 
 @router.get("/login/")
 async def google_login(
-    session: SessionDep, request: Request, connector_name: str = "Login"
+    session: SessionDep, request: Request, connector_name: str = "google_mail"
 ):
     """
     Initiate Gmail OAuth2 authentication flow.
