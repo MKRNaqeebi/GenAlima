@@ -38,7 +38,6 @@ class GoogleMailConnector:
         print("Building credentials...", credentials_data)
         # Extract oauth2 data from meta_data if it's nested
         oauth2_data = credentials_data.get("oauth2", credentials_data)
-        
         creds = Credentials(
             token=oauth2_data.get("access_token"),
             refresh_token=oauth2_data.get("refresh_token"),

@@ -158,7 +158,7 @@ class Settings(BaseSettings):
 
     # LLM configuration
     LLM_MODEL: str = os.getenv("LLM_MODEL", "gpt-5")
-    DEFAULT_LLM_TEMPERATURE: float = float(os.getenv("DEFAULT_LLM_TEMPERATURE", "0.7"))
+    DEFAULT_LLM_TEMPERATURE: float = float(os.getenv("DEFAULT_LLM_TEMPERATURE", "1"))
     LLM_API_KEY: str | None = os.getenv("LLM_API_KEY", os.getenv("OPENAI_API_KEY"))
     MAX_TOKENS: int = int(os.getenv("MAX_TOKENS", "2000"))
     MAX_LLM_CALL_RETRIES: int = int(os.getenv("MAX_LLM_CALL_RETRIES", "3"))

@@ -13,12 +13,12 @@ from langchain_core.callbacks import CallbackManagerForToolRun
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
 from sqlmodel import select, Session
+import structlog
 
 from app.core.db import engine as db_engine
 from app.models import Connector
 from connectors.google_mail_connector import GoogleMailConnector
 from graphs.utils import store_tool_result_metadata
-import structlog
 
 logger = structlog.get_logger()
 
@@ -28,7 +28,7 @@ def get_gmail_connector(connector_id: uuid.UUID) -> Optional[GoogleMailConnector
     """Get the Google Mail connector from database."""
     if not connector_id:
         return None
-        
+
     with Session(db_engine) as session:
         connector = session.exec(
             select(Connector).where(Connector.id == connector_id)
@@ -37,7 +37,7 @@ def get_gmail_connector(connector_id: uuid.UUID) -> Optional[GoogleMailConnector
         if not connector or connector.name != 'google_mail':
             logger.error(f"Google Mail connector not found: {connector_id}")
             return None
-            
+
         return GoogleMailConnector(connector.meta_data)
 
 
@@ -47,7 +47,8 @@ class SendEmailInput(BaseModel):
     to: Union[str, List[str]] = Field(description="Recipient email address(es)")
     subject: str = Field(description="Email subject")
     body: str = Field(description="Email body content")
-    message_id: str = Field(description="The ID of the message being processed")
+    message_id: uuid.UUID = Field(description="The ID of the message being processed")
+    connector_id: uuid.UUID = Field(description="The ID of the connector to get credentials")
     cc: Optional[Union[str, List[str]]] = Field(None, description="CC recipient(s)")
     bcc: Optional[Union[str, List[str]]] = Field(None, description="BCC recipient(s)")
     html: bool = Field(False, description="Whether body is HTML content")
@@ -65,43 +66,26 @@ class SendEmailTool(BaseTool):
     )
     args_schema: Type[BaseModel] = SendEmailInput
     return_direct: bool = False
-    connector_id: Optional[str] = None
-
-    def _get_connector(self) -> Optional[GoogleMailConnector]:
-        """Get the Google Mail connector from database."""
-        if not self.connector_id:
-            return None
-            
-        with Session(db_engine) as session:
-            connector = session.exec(
-                select(Connector).where(Connector.id == self.connector_id)
-            ).first()
-            
-            if not connector or connector.name != 'google_mail':
-                logger.error(f"Google Mail connector not found: {self.connector_id}")
-                return None
-                
-            return GoogleMailConnector(connector.meta_data)
 
     def _run(  # pylint: disable=arguments-differ
         self,
         to: Union[str, List[str]],
         subject: str,
         body: str,
-        message_id: str,
+        message_id: uuid.UUID,
         cc: Optional[Union[str, List[str]]] = None,
         bcc: Optional[Union[str, List[str]]] = None,
         html: bool = False,
         attachments: Optional[List[Dict[str, Any]]] = None,
+        connector_id: uuid.UUID = None,  # Provided via args schema
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
         """Execute the send email operation."""
         _ = run_manager  # Suppress unused argument warning
-        
-        connector = self._get_connector()
+        connector = get_gmail_connector(connector_id)
         if not connector:
             return "Failed to initialize Google Mail connector"
-        
+
         result = connector.send_email(
             to=to,
             subject=subject,
@@ -111,10 +95,10 @@ class SendEmailTool(BaseTool):
             attachments=attachments,
             html=html
         )
-        
+
         # Store metadata
         store_tool_result_metadata(
-            message_id, self.name,
+            str(message_id), self.name,
             {
                 "input": {
                     "to": to,
@@ -123,27 +107,28 @@ class SendEmailTool(BaseTool):
                     "cc": cc,
                     "bcc": bcc,
                     "html": html,
-                    "has_attachments": bool(attachments)
+                    "has_attachments": bool(attachments),
+                    "connector_id": str(connector_id)
                 },
                 "output": result
             }
         )
-        
+
         if result['success']:
             return f"Email sent successfully! Message ID: {result['message_id']}"
-        else:
-            return f"Failed to send email: {result.get('error', 'Unknown error')}"
+        return f"Failed to send email: {result.get('error', 'Unknown error')}"
 
     async def _arun(  # pylint: disable=arguments-differ
         self,
         to: Union[str, List[str]],
         subject: str,
         body: str,
-        message_id: str,
+        message_id: uuid.UUID,
         cc: Optional[Union[str, List[str]]] = None,
         bcc: Optional[Union[str, List[str]]] = None,
         html: bool = False,
         attachments: Optional[List[Dict[str, Any]]] = None,
+        connector_id: uuid.UUID = None,
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
         """Async version of send email."""
@@ -156,6 +141,7 @@ class SendEmailTool(BaseTool):
             bcc=bcc,
             html=html,
             attachments=attachments,
+            connector_id=connector_id,
             run_manager=run_manager,
         )
 
@@ -163,7 +149,8 @@ class SendEmailTool(BaseTool):
 class ReadEmailsInput(BaseModel):
     """Input schema for the read emails tool."""
 
-    message_id: str = Field(description="The ID of the message being processed")
+    message_id: uuid.UUID = Field(description="The ID of the message being processed")
+    connector_id: uuid.UUID = Field(description="The ID of the connector to get credentials")
     query: Optional[str] = Field(None, description="Google Mail search query (e.g., 'is:unread')")
     max_results: int = Field(10, description="Maximum number of emails to retrieve")
     include_spam_trash: bool = Field(False, description="Whether to include spam and trash messages")
@@ -180,27 +167,11 @@ class ReadEmailsTool(BaseTool):
     )
     args_schema: Type[BaseModel] = ReadEmailsInput
     return_direct: bool = False
-    connector_id: Optional[str] = None
-
-    def _get_connector(self) -> Optional[GoogleMailConnector]:
-        """Get the Google Mail connector from database."""
-        if not self.connector_id:
-            return None
-            
-        with Session(db_engine) as session:
-            connector = session.exec(
-                select(Connector).where(Connector.id == self.connector_id)
-            ).first()
-            
-            if not connector or connector.name != 'google_mail':
-                logger.error(f"Google Mail connector not found: {self.connector_id}")
-                return None
-                
-            return GoogleMailConnector(connector.meta_data)
 
     def _run(  # pylint: disable=arguments-differ
         self,
-        message_id: str,
+        message_id: uuid.UUID,
+        connector_id: uuid.UUID,
         query: Optional[str] = None,
         max_results: int = 10,
         include_spam_trash: bool = False,
@@ -208,20 +179,19 @@ class ReadEmailsTool(BaseTool):
     ) -> str:
         """Execute the read emails operation."""
         _ = run_manager  # Suppress unused argument warning
-        
-        connector = self._get_connector()
+        connector = get_gmail_connector(connector_id)
         if not connector:
             return "Failed to initialize Google Mail connector"
-        
+
         emails = connector.read_emails(
             query=query,
             max_results=max_results,
             include_spam_trash=include_spam_trash
         )
-        
+
         if not emails:
             return f"No emails found{' matching query: ' + query if query else ''}"
-        
+
         # Format results
         formatted_results = f"Found {len(emails)} email(s):\n\n"
         for idx, email in enumerate(emails, 1):
@@ -236,15 +206,16 @@ class ReadEmailsTool(BaseTool):
                 f"- Attachments: {len(email['attachments'])} file(s)\n"
                 f"- Message ID: {email['id']}\n\n"
             )
-        
+
         # Store metadata
         store_tool_result_metadata(
-            message_id, self.name,
+            str(message_id), self.name,
             {
                 "input": {
                     "query": query,
                     "max_results": max_results,
-                    "include_spam_trash": include_spam_trash
+                    "include_spam_trash": include_spam_trash,
+                    "connector_id": str(connector_id)
                 },
                 "output": {
                     "count": len(emails),
@@ -252,12 +223,13 @@ class ReadEmailsTool(BaseTool):
                 }
             }
         )
-        
+
         return formatted_results
 
     async def _arun(  # pylint: disable=arguments-differ
         self,
-        message_id: str,
+        message_id: uuid.UUID,
+        connector_id: uuid.UUID,
         query: Optional[str] = None,
         max_results: int = 10,
         include_spam_trash: bool = False,
@@ -266,6 +238,7 @@ class ReadEmailsTool(BaseTool):
         """Async version of read emails."""
         return self._run(
             message_id=message_id,
+            connector_id=connector_id,
             query=query,
             max_results=max_results,
             include_spam_trash=include_spam_trash,
@@ -310,12 +283,12 @@ class SearchEmailsTool(BaseTool):
         connector = get_gmail_connector(connector_id)
         if not connector:
             return "Failed to initialize Google Mail connector"
-        
+
         emails = connector.search_emails(query)[:max_results]
-        
+
         if not emails:
             return f"No emails found matching query: {query}"
-        
+
         # Format results
         formatted_results = f"Found {len(emails)} email(s) matching '{query}':\n\n"
         for idx, email in enumerate(emails, 1):
@@ -327,7 +300,7 @@ class SearchEmailsTool(BaseTool):
                 f"- Snippet: {email['snippet'][:150]}...\n"
                 f"- Message ID: {email['id']}\n\n"
             )
-        
+
         # Store metadata
         store_tool_result_metadata(
             message_id, self.name,
@@ -336,7 +309,7 @@ class SearchEmailsTool(BaseTool):
                 "output": {"count": len(emails), "query": query}
             }
         )
-        
+
         return formatted_results
 
     async def _arun(  # pylint: disable=arguments-differ
@@ -364,7 +337,8 @@ class ManageEmailInput(BaseModel):
     action: str = Field(
         description="Action to perform: 'mark_read', 'mark_unread', 'archive', 'trash', 'delete'"
     )
-    message_id: str = Field(description="The ID of the message being processed")
+    message_id: uuid.UUID = Field(description="The ID of the message being processed")
+    connector_id: uuid.UUID = Field(description="The ID of the connector to get credentials")
 
 
 class ManageEmailTool(BaseTool):
@@ -379,41 +353,24 @@ class ManageEmailTool(BaseTool):
     )
     args_schema: Type[BaseModel] = ManageEmailInput
     return_direct: bool = False
-    connector_id: Optional[str] = None
-
-    def _get_connector(self) -> Optional[GoogleMailConnector]:
-        """Get the Google Mail connector from database."""
-        if not self.connector_id:
-            return None
-            
-        with Session(db_engine) as session:
-            connector = session.exec(
-                select(Connector).where(Connector.id == self.connector_id)
-            ).first()
-            
-            if not connector or connector.name != 'google_mail':
-                logger.error(f"Google Mail connector not found: {self.connector_id}")
-                return None
-                
-            return GoogleMailConnector(connector.meta_data)
 
     def _run(  # pylint: disable=arguments-differ
         self,
         email_id: str,
         action: str,
-        message_id: str,
+        message_id: uuid.UUID,
+        connector_id: uuid.UUID,
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
         """Execute the email management action."""
         _ = run_manager  # Suppress unused argument warning
-        
-        connector = self._get_connector()
+        connector = get_gmail_connector(connector_id)
         if not connector:
             return "Failed to initialize Google Mail connector"
-        
+
         success = False
         action_result = ""
-        
+
         if action == "mark_read":
             success = connector.mark_as_read(email_id)
             action_result = "marked as read" if success else "failed to mark as read"
@@ -431,23 +388,24 @@ class ManageEmailTool(BaseTool):
             action_result = "deleted permanently" if success else "failed to delete"
         else:
             return f"Invalid action: {action}. Use: mark_read, mark_unread, archive, trash, delete"
-        
+
         # Store metadata
         store_tool_result_metadata(
-            message_id, self.name,
+            str(message_id), self.name,
             {
-                "input": {"email_id": email_id, "action": action},
+                "input": {"email_id": email_id, "action": action, "connector_id": str(connector_id)},
                 "output": {"success": success, "result": action_result}
             }
         )
-        
+
         return f"Email {email_id} {action_result}"
 
     async def _arun(  # pylint: disable=arguments-differ
         self,
         email_id: str,
         action: str,
-        message_id: str,
+        message_id: uuid.UUID,
+        connector_id: uuid.UUID,
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
         """Async version of manage email."""
@@ -455,6 +413,7 @@ class ManageEmailTool(BaseTool):
             email_id=email_id,
             action=action,
             message_id=message_id,
+            connector_id=connector_id,
             run_manager=run_manager,
         )
 
@@ -465,7 +424,8 @@ class CreateDraftInput(BaseModel):
     to: Union[str, List[str]] = Field(description="Recipient email address(es)")
     subject: str = Field(description="Email subject")
     body: str = Field(description="Email body content")
-    message_id: str = Field(description="The ID of the message being processed")
+    message_id: uuid.UUID = Field(description="The ID of the message being processed")
+    connector_id: uuid.UUID = Field(description="The ID of the connector to get credentials")
     cc: Optional[Union[str, List[str]]] = Field(None, description="CC recipient(s)")
     bcc: Optional[Union[str, List[str]]] = Field(None, description="BCC recipient(s)")
     html: bool = Field(False, description="Whether body is HTML content")
@@ -482,35 +442,22 @@ class CreateDraftTool(BaseTool):
     )
     args_schema: Type[BaseModel] = CreateDraftInput
     return_direct: bool = False
-    connector_id: Optional[str] = None
-
-    def _get_connector(self) -> Optional[GoogleMailConnector]:
-        """Get the Google Mail connector from database."""
-        if not self.connector_id:
-            return None
-        with Session(db_engine) as session:
-            connector = session.exec(
-                select(Connector).where(Connector.id == self.connector_id)
-            ).first()
-            if not connector or connector.name != 'google_mail':
-                logger.error(f"Google Mail connector not found: {self.connector_id}")
-                return None
-            return GoogleMailConnector(connector.meta_data)
 
     def _run(  # pylint: disable=arguments-differ
         self,
         to: Union[str, List[str]],
         subject: str,
         body: str,
-        message_id: str,
+    message_id: uuid.UUID,
         cc: Optional[Union[str, List[str]]] = None,
         bcc: Optional[Union[str, List[str]]] = None,
         html: bool = False,
+    connector_id: uuid.UUID = None,
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
         """Execute the create draft operation."""
         _ = run_manager  # Suppress unused argument warning
-        connector = self._get_connector()
+        connector = get_gmail_connector(connector_id)
         if not connector:
             return "Failed to initialize Google Mail connector"
         result = connector.create_draft(
@@ -523,7 +470,7 @@ class CreateDraftTool(BaseTool):
         )
         # Store metadata
         store_tool_result_metadata(
-            message_id, self.name,
+            str(message_id), self.name,
             {
                 "input": {
                     "to": to,
@@ -531,7 +478,8 @@ class CreateDraftTool(BaseTool):
                     "body": body[:500],  # Truncate for storage
                     "cc": cc,
                     "bcc": bcc,
-                    "html": html
+                    "html": html,
+                    "connector_id": str(connector_id)
                 },
                 "output": result
             }
@@ -545,10 +493,11 @@ class CreateDraftTool(BaseTool):
         to: Union[str, List[str]],
         subject: str,
         body: str,
-        message_id: str,
+        message_id: uuid.UUID,
         cc: Optional[Union[str, List[str]]] = None,
         bcc: Optional[Union[str, List[str]]] = None,
         html: bool = False,
+        connector_id: uuid.UUID = None,
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
         """Async version of create draft."""
@@ -560,6 +509,7 @@ class CreateDraftTool(BaseTool):
             cc=cc,
             bcc=bcc,
             html=html,
+            connector_id=connector_id,
             run_manager=run_manager,
         )
 
@@ -567,7 +517,8 @@ class CreateDraftTool(BaseTool):
 class GetLabelsInput(BaseModel):
     """Input schema for the get labels tool."""
 
-    message_id: str = Field(description="The ID of the message being processed")
+    message_id: uuid.UUID = Field(description="The ID of the message being processed")
+    connector_id: uuid.UUID = Field(description="The ID of the connector to get credentials")
 
 
 class GetLabelsTool(BaseTool):
@@ -580,63 +531,46 @@ class GetLabelsTool(BaseTool):
     )
     args_schema: Type[BaseModel] = GetLabelsInput
     return_direct: bool = False
-    connector_id: Optional[str] = None
-
-    def _get_connector(self) -> Optional[GoogleMailConnector]:
-        """Get the Google Mail connector from database."""
-        if not self.connector_id:
-            return None
-            
-        with Session(db_engine) as session:
-            connector = session.exec(
-                select(Connector).where(Connector.id == self.connector_id)
-            ).first()
-            
-            if not connector or connector.name != 'google_mail':
-                logger.error(f"Google Mail connector not found: {self.connector_id}")
-                return None
-                
-            return GoogleMailConnector(connector.meta_data)
 
     def _run(  # pylint: disable=arguments-differ
         self,
-        message_id: str,
+        message_id: uuid.UUID,
+        connector_id: uuid.UUID,
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
         """Execute the get labels operation."""
         _ = run_manager  # Suppress unused argument warning
-        
-        connector = self._get_connector()
+        connector = get_gmail_connector(connector_id)
         if not connector:
             return "Failed to initialize Google Mail connector"
-        
+
         labels = connector.get_labels()
-        
+
         if not labels:
             return "No labels found or failed to retrieve labels"
-        
+
         # Group labels by type
         system_labels = [l for l in labels if l['type'] == 'system']
         user_labels = [l for l in labels if l['type'] == 'user']
-        
+
         # Format results
         formatted_results = "Google Mail Labels:\n\n"
-        
+
         if system_labels:
             formatted_results += "System Labels:\n"
             for label in system_labels:
                 formatted_results += f"- {label['name']} (ID: {label['id']})\n"
-        
+
         if user_labels:
             formatted_results += "\nUser Labels:\n"
             for label in user_labels:
                 formatted_results += f"- {label['name']} (ID: {label['id']})\n"
-        
+
         # Store metadata
         store_tool_result_metadata(
-            message_id, self.name,
+            str(message_id), self.name,
             {
-                "input": {},
+                "input": {"connector_id": str(connector_id)},
                 "output": {
                     "total_labels": len(labels),
                     "system_labels": len(system_labels),
@@ -644,17 +578,19 @@ class GetLabelsTool(BaseTool):
                 }
             }
         )
-        
+
         return formatted_results
 
     async def _arun(  # pylint: disable=arguments-differ
         self,
-        message_id: str,
+        message_id: uuid.UUID,
+        connector_id: uuid.UUID,
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
         """Async version of get labels."""
         return self._run(
             message_id=message_id,
+            connector_id=connector_id,
             run_manager=run_manager,
         )
 
@@ -662,7 +598,8 @@ class GetLabelsTool(BaseTool):
 class GetProfileInput(BaseModel):
     """Input schema for the get profile tool."""
 
-    message_id: str = Field(description="The ID of the message being processed")
+    message_id: uuid.UUID = Field(description="The ID of the message being processed")
+    connector_id: uuid.UUID = Field(description="The ID of the connector to get credentials")
 
 
 class GetProfileTool(BaseTool):
@@ -675,41 +612,24 @@ class GetProfileTool(BaseTool):
     )
     args_schema: Type[BaseModel] = GetProfileInput
     return_direct: bool = False
-    connector_id: Optional[str] = None
-
-    def _get_connector(self) -> Optional[GoogleMailConnector]:
-        """Get the Google Mail connector from database."""
-        if not self.connector_id:
-            return None
-            
-        with Session(db_engine) as session:
-            connector = session.exec(
-                select(Connector).where(Connector.id == self.connector_id)
-            ).first()
-            
-            if not connector or connector.name != 'google_mail':
-                logger.error(f"Google Mail connector not found: {self.connector_id}")
-                return None
-                
-            return GoogleMailConnector(connector.meta_data)
 
     def _run(  # pylint: disable=arguments-differ
         self,
-        message_id: str,
+        message_id: uuid.UUID,
+        connector_id: uuid.UUID,
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
         """Execute the get profile operation."""
         _ = run_manager  # Suppress unused argument warning
-        
-        connector = self._get_connector()
+        connector = get_gmail_connector(connector_id)
         if not connector:
             return "Failed to initialize Google Mail connector"
-        
+
         profile = connector.get_profile()
-        
+
         if not profile:
             return "Failed to retrieve Google Mail profile"
-        
+
         # Format results
         formatted_results = (
             "Google Mail Profile:\n\n"
@@ -717,26 +637,28 @@ class GetProfileTool(BaseTool):
             f"Total Messages: {profile.get('messages_total', 0):,}\n"
             f"Total Threads: {profile.get('threads_total', 0):,}\n"
         )
-        
+
         # Store metadata
         store_tool_result_metadata(
-            message_id, self.name,
+            str(message_id), self.name,
             {
-                "input": {},
+                "input": {"connector_id": str(connector_id)},
                 "output": profile
             }
         )
-        
+
         return formatted_results
 
     async def _arun(  # pylint: disable=arguments-differ
         self,
-        message_id: str,
+        message_id: uuid.UUID,
+        connector_id: uuid.UUID,
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
         """Async version of get profile."""
         return self._run(
             message_id=message_id,
+            connector_id=connector_id,
             run_manager=run_manager,
         )
 
