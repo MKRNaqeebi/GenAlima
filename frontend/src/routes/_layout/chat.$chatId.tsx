@@ -9,6 +9,8 @@ import {
   FiArrowUp,
   FiActivity
 } from "react-icons/fi"
+import ReactMarkdown from "react-markdown"
+import remarkGfm from "remark-gfm"
 
 import { MessagePublic, MessagesService } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
@@ -87,10 +89,10 @@ function MessageBubble({ message, onShowMetadata }: { message: MessagePublic, on
         <div className={`max-w-[80%] ${isUser ? 'ml-auto' : 'mr-auto'}`}>
           {isUser ? (
             <div className="bg-gray-200 dark:bg-[#2f2f2f] rounded-3xl px-5 py-1.5">
-              <div className="text-gray-900 dark:text-white text-base leading-relaxed">
-                <p className="whitespace-pre-wrap mb-0">
+              <div className="text-gray-900 dark:text-white text-base leading-relaxed markdown-content">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {message.content}
-                </p>
+                </ReactMarkdown>
               </div>
               {hasMetadata && (
                 <div className="flex justify-end mt-2">
@@ -107,10 +109,10 @@ function MessageBubble({ message, onShowMetadata }: { message: MessagePublic, on
             </div>
           ) : (
             <>
-              <div className="text-gray-900 dark:text-chat-text-primary text-base leading-relaxed">
-                <p className="whitespace-pre-wrap mb-0">
+              <div className="text-gray-900 dark:text-chat-text-primary text-base leading-relaxed markdown-content">
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
                   {message.content}
-                </p>
+                </ReactMarkdown>
               </div>
               <div className="flex items-center gap-1 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
                 <button type="button" onClick={handleCopy} title="Copy message" className="p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-chat-hover text-gray-600 dark:text-chat-text-muted hover:text-gray-900 dark:hover:text-chat-text-primary transition-colors">
