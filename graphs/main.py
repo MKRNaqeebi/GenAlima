@@ -241,10 +241,8 @@ class LangGraphAgent:
         Returns:
             Literal["end", "continue"]: "end" if there are no tool calls, "continue" otherwise.
         """
-        messages = state.messages
-        last_message = messages[-1]
         # If there is no function call, then we finish
-        if not last_message.tool_calls:
+        if not state.messages[-1].tool_calls:
             return "end"
         # Otherwise if there is, we continue
         return "continue"

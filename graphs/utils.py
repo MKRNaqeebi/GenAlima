@@ -1,9 +1,10 @@
 """This file contains the graph utilities for the application."""
-from typing import Any, Dict
+from typing import Any, Dict, Union
+import uuid
+import tiktoken
 
 # Third-party imports
 from langchain_core.messages import trim_messages as _trim_messages
-from langchain_openai import ChatOpenAI
 from sqlalchemy.orm.attributes import flag_modified
 from sqlmodel import Session, select
 
@@ -34,6 +35,36 @@ def dump_messages(messages: list[Message]) -> list[dict]:
         dumped_messages.append(msg_dict)
     return dumped_messages
 
+def hard_coded_token_counter(messages: Union[list, dict, str]) -> int:
+    """
+    Count tokens for messages using tiktoken.
+    
+    Args:
+        messages: Can be a list of messages, a single message dict, or a string
+        
+    Returns:
+        int: Number of tokens
+    """
+    try:
+        encoding = tiktoken.get_encoding("cl100k_base")
+    except KeyError:
+        encoding = tiktoken.encoding_for_model("gpt-4")
+    total_tokens = 0
+    if isinstance(messages, str):
+        return len(encoding.encode(messages))
+    if isinstance(messages, dict):
+        messages = [messages]
+    for message in messages:
+        if isinstance(message, dict):
+            role = message.get("role", "")
+            content = message.get("content", "")
+            total_tokens += len(encoding.encode(role))
+            total_tokens += len(encoding.encode(str(content)))
+            total_tokens += 3
+        elif isinstance(message, str):
+            total_tokens += len(encoding.encode(message))
+    total_tokens += 3
+    return total_tokens
 
 def prepare_messages(messages: list[Message], system_prompt: str) -> list[Message]:
     """Prepare the messages for the LLM.
@@ -49,12 +80,7 @@ def prepare_messages(messages: list[Message], system_prompt: str) -> list[Messag
     trimmed_messages = _trim_messages(
         dump_messages(messages),
         strategy="last",
-        token_counter=ChatOpenAI(
-            model="gpt-4.1",
-            temperature=settings.DEFAULT_LLM_TEMPERATURE,
-            api_key=settings.LLM_API_KEY,
-            max_tokens=settings.MAX_TOKENS,
-        ),
+        token_counter=hard_coded_token_counter,
         max_tokens=settings.MAX_TOKENS,
         start_on="human",
         include_system=False,
@@ -63,10 +89,10 @@ def prepare_messages(messages: list[Message], system_prompt: str) -> list[Messag
     return [Message(role="system", content=system_prompt)] + trimmed_messages
 
 def store_tool_result_metadata(
-    message_id: str,
+    message_id: uuid.UUID,
     tool_name: str,
     tool_result: Dict[str, Any],
-    display_name: str = None,
+    display_name: str | None = None,
 ) -> None:
     """
     Store tool results in message metadata.

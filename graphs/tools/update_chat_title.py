@@ -22,10 +22,10 @@ from graphs.utils import store_tool_result_metadata
 class UpdateChatTitleInput(BaseModel):
     """Input schema for the update chat title tool."""
 
-    chat_id: str = Field(description="The UUID of the chat to update")
+    chat_id: uuid.UUID = Field(description="The UUID of the chat to update")
     title: Optional[str] = Field(
         description="New title for the chat based on conversation context in 2-5 words", default="New Chat")
-    message_id: str = Field(description="The ID of the message being processed")
+    message_id: uuid.UUID = Field(description="The ID of the message being processed")
 
 
 class UpdateChatTitleTool(BaseTool):
@@ -42,8 +42,8 @@ class UpdateChatTitleTool(BaseTool):
     def _run(  # pylint: disable=arguments-differ
         self,
         chat_id: uuid.UUID,
+        message_id: uuid.UUID,
         title: Optional[str] = None,
-        message_id: str = "",
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
         """Execute the chat update."""
@@ -84,7 +84,7 @@ class UpdateChatTitleTool(BaseTool):
             store_tool_result_metadata(
                 message_id, self.name,
                 {
-                    "input": {"chat_id": chat_id, "title": title},
+                    "input": {"chat_id": str(chat_id), "title": title},
                     "output": result_msg,
                     "updates": updates_made
                 }
