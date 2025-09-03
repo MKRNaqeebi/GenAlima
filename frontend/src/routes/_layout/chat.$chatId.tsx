@@ -176,7 +176,7 @@ function MessageInput({ onSendMessage, isLoading }: {
   return (
     <div className="bg-white dark:bg-chat-bg p-4 pb-6 transition-colors">
       <div className="max-w-4xl mx-auto">
-        <div className="relative flex items-end bg-white dark:bg-[#2f2f2f] border border-gray-300 dark:border-chat-border rounded-full px-4 py-3 shadow-sm">
+        <div className="relative flex items-end bg-white dark:bg-[#2f2f2f] border border-gray-300 dark:border-chat-border rounded-[2rem] px-4 py-4 shadow-sm">
           <div className="flex-1 min-w-0">
             <textarea
               ref={textareaRef}
