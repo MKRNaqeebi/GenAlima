@@ -13,3 +13,4 @@ coverage/
 *.log
 *.key.json
 *secret*.json
+posts/

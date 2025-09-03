@@ -2,6 +2,7 @@
 Connectors routes
 """
 # Standard library imports
+import json
 from typing import Any
 import uuid
 
@@ -35,6 +36,14 @@ def read_connectors(
     ).offset(skip).limit(limit)
 
     connectors = session.exec(statement).all()
+    # get connector from connectors/connector.json and append to connectors
+    with open("connectors/connectors.json", encoding="utf-8") as f:
+        connector_data = json.load(f)
+        for conn in connectors:
+            # remove conn.name from connector_data
+            connector_data.pop(conn.name)
+        for conn in connector_data.values():
+            connectors.append(Connector(**conn))
     return ConnectorsPublic(data=connectors, count=count)
 
 

@@ -1,0 +1,29 @@
+{
+    "notion": {
+        "name": "notion",
+        "description": "Notion connector for workspace",
+        "active": true,
+        "meta_data": {
+            "auth": "api",
+            "name": "api_key"
+        }
+    },
+    "google_mail": {
+        "name": "google_mail",
+        "description": "Google Mail connector for workspace",
+        "active": true,
+        "meta_data": {
+            "auth": "OAuth2",
+            "url": "/api/v1/google/login/"
+        }
+    },
+    "github": {
+        "name": "github",
+        "description": "GitHub connector for workspace",
+        "active": true,
+        "meta_data": {
+            "auth": "OAuth2",
+            "url": "/api/v1/github/login/"
+        }
+    }
+}

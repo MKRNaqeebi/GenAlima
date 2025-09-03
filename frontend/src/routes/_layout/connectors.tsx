@@ -6,7 +6,9 @@ import {
   FiSearch, 
   FiGrid, 
   FiZap,
-  FiPlus
+  FiPlus,
+  FiCheck,
+  FiLink
 } from "react-icons/fi"
 
 import { ConnectorsService } from "../../client"
@@ -34,6 +36,13 @@ function getConnectorsQueryOptions({ page }: { page: number }) {
 }
 
 function ConnectorCard({ connector }: { connector: any }) {
+  const handleConnect = () => {
+    if (connector.meta_data?.auth === 'OAuth2' && connector.meta_data?.url) {
+      window.location.href = connector.meta_data.url
+    }
+  }
+  console.log("Connector:", connector, connector.id)
+
   return (
     <div className="bg-white dark:bg-[#2f2f2f] border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-lg transition-all duration-200">
       <div className="p-6">
@@ -42,15 +51,33 @@ function ConnectorCard({ connector }: { connector: any }) {
             <div className="flex items-center space-x-3">
               <FiZap className="w-5 h-5 text-blue-600" />
               <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                {connector.title || 'Connector'}
+                {connector.name || 'Connector'}
               </span>
             </div>
             <ActionsMenu type="Connector" value={connector} />
           </div>
-          <div className="flex flex-col items-start space-y-2 w-full">
+          <div className="flex flex-col items-start space-y-3 w-full">
             <p className="text-sm text-gray-600 dark:text-gray-400">
               {connector.description || 'No description'}
             </p>
+            {/* Connection Status and Action Button */}
+            <div className="flex items-center justify-between w-full">
+              {connector.function ? (
+                <div className="flex items-center space-x-2">
+                  <FiCheck className="w-4 h-4 text-green-600" />
+                  <span className="text-sm font-medium text-green-600">Connected</span>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleConnect}
+                  className="flex items-center space-x-2 px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
+                >
+                  <FiLink className="w-4 h-4" />
+                  <span>Connect</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
