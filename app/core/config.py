@@ -151,6 +151,18 @@ class Settings(BaseSettings):
         "openid"
     ]
 
+    # GitHub OAuth2 configuration
+    GITHUB_CLIENT_ID: str | None = os.getenv("GITHUB_CLIENT_ID")
+    GITHUB_CLIENT_SECRET: str | None = os.getenv("GITHUB_CLIENT_SECRET")
+    GITHUB_REDIRECT_URI: str = os.getenv("GITHUB_REDIRECT_URI", "http://localhost:8000/api/v1/github/callback/")
+    GITHUB_AUTH_URI: str = "https://github.com/login/oauth/authorize"
+    GITHUB_TOKEN_URI: str = "https://github.com/login/oauth/access_token"
+    GITHUB_SCOPES: list[str] = [
+        "repo",
+        "user",
+        "read:org"
+    ]
+
     # Logging configuration
     LOG_DIR: Path = Path(os.getenv("LOG_DIR", "./logs"))
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")

@@ -19,6 +19,7 @@ import structlog
 from app.api.deps import CurrentUser, SessionDep, get_current_user, get_user_by_email
 from app.core.config import settings
 from app.models import Connector, User
+from connectors.github_connector import GitHubConnector
 
 logger = structlog.get_logger()
 
@@ -231,13 +232,11 @@ async def github_callback(
         headers={"Accept": "application/json"},
         timeout=30
     )
-    
+
     if token_response.status_code != 200:
         error_redirect = f"{settings.FRONTEND_HOST}/connectors?error=token_exchange_failed"
         return RedirectResponse(url=error_redirect, status_code=303)
-    
     token_data = token_response.json()
-    
     if "error" in token_data:
         error_redirect = f"{settings.FRONTEND_HOST}/connectors?error={token_data['error']}"
         return RedirectResponse(url=error_redirect, status_code=303)
@@ -253,13 +252,10 @@ async def github_callback(
         },
         timeout=30
     )
-    
     if user_response.status_code != 200:
         error_redirect = f"{settings.FRONTEND_HOST}/connectors?error=user_info_failed"
         return RedirectResponse(url=error_redirect, status_code=303)
-    
     github_user = user_response.json()
-    
     # Get primary email if not public
     if not github_user.get("email"):
         emails_response = requests.get(
@@ -330,7 +326,6 @@ async def list_repositories(
     Returns:
         List of repositories
     """
-    from connectors.github_connector import GitHubConnector
 
     # Get connector from database
     statement = select(Connector).where(
@@ -347,8 +342,7 @@ async def list_repositories(
 
     # Initialize GitHub connector and list repositories
     github_connector = GitHubConnector(connector.meta_data)
-    repositories = github_connector.list_repositories(type_filter=type_filter, per_page=limit)
-    
+    repositories = github_connector.list_repositories(type_filter=type_filter, limit=limit)
     return repositories
 
 
@@ -371,8 +365,6 @@ async def create_issue(
     Returns:
         Created issue information
     """
-    from connectors.github_connector import GitHubConnector
-
     # Get connector from database
     statement = select(Connector).where(
         Connector.id == connector_id,
@@ -396,7 +388,6 @@ async def create_issue(
         labels=request.labels,
         assignees=request.assignees
     )
-    
     return issue
 
 
@@ -419,8 +410,6 @@ async def create_bug_issue(
     Returns:
         Created bug issue information
     """
-    from connectors.github_connector import GitHubConnector
-
     # Get connector from database
     statement = select(Connector).where(
         Connector.id == connector_id,
@@ -447,7 +436,6 @@ async def create_bug_issue(
         environment=request.environment,
         assignees=request.assignees
     )
-    
     return issue
 
 
@@ -470,8 +458,6 @@ async def create_feature_request(
     Returns:
         Created feature request information
     """
-    from connectors.github_connector import GitHubConnector
-
     # Get connector from database
     statement = select(Connector).where(
         Connector.id == connector_id,
@@ -497,7 +483,6 @@ async def create_feature_request(
         alternatives=request.alternatives,
         assignees=request.assignees
     )
-    
     return issue
 
 
@@ -530,8 +515,6 @@ async def list_issues(
     Returns:
         List of issues
     """
-    from connectors.github_connector import GitHubConnector
-
     # Get connector from database
     statement = select(Connector).where(
         Connector.id == connector_id,
@@ -553,9 +536,8 @@ async def list_issues(
         state=state,
         labels=labels,
         assignee=assignee,
-        per_page=limit
+        limit=limit
     )
-    
     return issues
 
 
@@ -584,8 +566,6 @@ async def update_issue(
     Returns:
         Updated issue information
     """
-    from connectors.github_connector import GitHubConnector
-
     # Get connector from database
     statement = select(Connector).where(
         Connector.id == connector_id,
@@ -611,7 +591,6 @@ async def update_issue(
         labels=request.labels,
         assignees=request.assignees
     )
-    
     return issue
 
 
