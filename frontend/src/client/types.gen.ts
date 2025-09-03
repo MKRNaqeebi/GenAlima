@@ -172,9 +172,7 @@ export type ChatUpdate = {
 }
 
 export type MessageUpdate = {
-  role?: string | null
-  content?: string | null
-  chat_id?: string | null
+  meta_data?: any | null
 }
 
 export type KnowledgeUpdate = {

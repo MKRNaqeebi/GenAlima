@@ -363,13 +363,11 @@ class MessageBase(SQLModel):
     )
 
 
-class MessageUpdate(MessageBase):
+class MessageUpdate(SQLModel):
     """
     Properties to receive on item update
     """
-    role: str | None = Field(default=None, min_length=1,
-                             max_length=255)  # type: ignore
-    content: str | None = Field(default=None, max_length=4096)
+    meta_data: Dict[str, Any] = Field(default=None)
 
 
 class Message(MessageBase, table=True):

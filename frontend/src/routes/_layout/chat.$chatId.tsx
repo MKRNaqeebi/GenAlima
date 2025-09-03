@@ -7,12 +7,15 @@ import {
   FiThumbsDown,
   FiMic,
   FiArrowUp,
-  FiActivity
+  FiActivity,
+  FiSend,
+  FiCheck
 } from "react-icons/fi"
+import { FaThumbsUp, FaThumbsDown } from "react-icons/fa"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
 
-import { MessagePublic, MessagesService } from "../../client"
+import { MessagePublic, MessagesService, MessageUpdate } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
 import { handleError } from "../../utils"
 
@@ -55,32 +58,71 @@ function MessageBubble({ message, onShowMetadata }: { message: MessagePublic, on
   const isUser = message.role === 'user'
   const hasMetadata = message.meta_data && Object.keys(message.meta_data).length > 0
   const showToast = useCustomToast()
-  const [isLiked, setIsLiked] = useState(false)
-  const [isDisliked, setIsDisliked] = useState(false)
+  const queryClient = useQueryClient()
+  
+  // Initialize state from metadata
+  const metaData = message.meta_data as any || {}
+  const [takeTextFeedback, setTakeTextFeedback] = useState(false)
+  const [feedback, setFeedback] = useState(metaData.feedback || {})
+  const [isCopied, setIsCopied] = useState(false)
   
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(message.content)
+      setIsCopied(true)
       showToast('Copied!', 'Message copied to clipboard.', 'success')
+      setTimeout(() => setIsCopied(false), 2000)
     } catch (err) {
       showToast('Error', 'Failed to copy message.', 'error')
     }
   }
   
-  const handleLike = () => {
-    if (isDisliked) setIsDisliked(false)
-    setIsLiked(!isLiked)
-    if (!isLiked) {
+  const updateMessageMetadata = async (updates: any) => {
+    try {
+      await MessagesService.updateMessage({
+        id: message.id,
+        requestBody: {
+          meta_data: updates
+        } as MessageUpdate
+      })
+      // Invalidate queries to refresh the data
+      queryClient.invalidateQueries({ queryKey: ['messages'] })
+    } catch (error) {
+      console.error('Error updating message metadata:', error)
+      showToast('Error', 'Failed to save feedback', 'error')
+    }
+  }
+
+  const handleLike = async () => {
+    const newLiked = feedback.role === "liked" ? "none" : "liked"
+    setFeedback({role: newLiked})
+    setTakeTextFeedback(false)
+    await updateMessageMetadata({
+      feedback: { role: newLiked }
+    })
+    if (newLiked === "liked") {
       showToast('Liked!', 'Thanks for your feedback.', 'success')
     }
   }
   
-  const handleDislike = () => {
-    if (isLiked) setIsLiked(false)
-    setIsDisliked(!isDisliked)
-    if (!isDisliked) {
-      showToast('Feedback received', 'Thanks for letting us know.', 'success')
+  const handleDislike = async () => {
+    const newDisliked = feedback.role === "disliked" ? "none" : "disliked"
+    setFeedback({role: newDisliked})
+    setTakeTextFeedback(newDisliked === "disliked")
+    await updateMessageMetadata({
+      feedback: { role: newDisliked }
+    })
+    if (newDisliked === "disliked") {
+      showToast('Feedback', 'Please let us know what went wrong (optional).', 'success')
     }
+  }
+  
+  const handleFeedbackSubmit = async () => {
+    await updateMessageMetadata({
+      feedback: feedback
+    })
+    showToast('Feedback received', 'Thanks for letting us know.', 'success')
+    setTakeTextFeedback(false)
   }
   
   return (
@@ -115,14 +157,41 @@ function MessageBubble({ message, onShowMetadata }: { message: MessagePublic, on
                 </ReactMarkdown>
               </div>
               <div className="flex items-center gap-1 mt-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button type="button" onClick={handleCopy} title="Copy message" className="p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-chat-hover text-gray-600 dark:text-chat-text-muted hover:text-gray-900 dark:hover:text-chat-text-primary transition-colors">
-                  <FiCopy className="w-4 h-4" />
+                <button 
+                  type="button" 
+                  onClick={handleCopy} 
+                  title={isCopied ? "Copied!" : "Copy message"}
+                  className={`p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-chat-hover transition-colors ${
+                    isCopied 
+                      ? 'text-green-600 dark:text-green-400' 
+                      : 'text-gray-600 dark:text-chat-text-muted hover:text-gray-900 dark:hover:text-chat-text-primary'
+                  }`}
+                >
+                  {isCopied ? <FiCheck className="w-4 h-4" /> : <FiCopy className="w-4 h-4" />}
                 </button>
-                <button type="button" onClick={handleLike} title="Like message" className="p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-chat-hover text-gray-600 dark:text-chat-text-muted hover:text-gray-900 dark:hover:text-chat-text-primary transition-colors">
-                  <FiThumbsUp className="w-4 h-4" />
+                <button 
+                  type="button" 
+                  onClick={handleLike} 
+                  title="Like message" 
+                  className={`p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-chat-hover transition-colors ${
+                    feedback.role === "liked"
+                      ? 'text-blue-600 dark:text-blue-400'
+                      : 'text-gray-600 dark:text-chat-text-muted hover:text-gray-900 dark:hover:text-chat-text-primary'
+                  }`}
+                >
+                  {feedback.role === "liked" ? <FaThumbsUp className="w-4 h-4" /> : <FiThumbsUp className="w-4 h-4" />}
                 </button>
-                <button type="button" onClick={handleDislike} title="Dislike message" className="p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-chat-hover text-gray-600 dark:text-chat-text-muted hover:text-gray-900 dark:hover:text-chat-text-primary transition-colors">
-                  <FiThumbsDown className="w-4 h-4" />
+                <button 
+                  type="button" 
+                  onClick={handleDislike} 
+                  title="Dislike message" 
+                  className={`p-1.5 rounded-md hover:bg-gray-200 dark:hover:bg-chat-hover transition-colors ${
+                    feedback.role === "disliked"
+                      ? 'text-red-600 dark:text-red-400'
+                      : 'text-gray-600 dark:text-chat-text-muted hover:text-gray-900 dark:hover:text-chat-text-primary'
+                  }`}
+                >
+                  {feedback.role === "disliked" ? <FaThumbsDown className="w-4 h-4" /> : <FiThumbsDown className="w-4 h-4" />}
                 </button>
                 {hasMetadata && (
                   <button 
@@ -135,6 +204,25 @@ function MessageBubble({ message, onShowMetadata }: { message: MessagePublic, on
                   </button>
                 )}
               </div>
+              {takeTextFeedback && (
+                <div className="mt-3 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                  <textarea
+                    value={feedback.content}
+                    onChange={(e) => setFeedback({ ...feedback, content: e.target.value })}
+                    placeholder="What went wrong? (optional)"
+                    className="w-full p-2 bg-white dark:bg-gray-600 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 rounded border border-gray-300 dark:border-gray-500 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    rows={3}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleFeedbackSubmit}
+                    className="mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors flex items-center gap-2"
+                  >
+                    <FiSend className="w-4 h-4" />
+                    Submit Feedback
+                  </button>
+                </div>
+              )}
             </>
           )}
         </div>

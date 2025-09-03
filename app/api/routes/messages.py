@@ -143,11 +143,9 @@ def update_message(
         raise HTTPException(status_code=404, detail="Message not found")
     if not current_user.is_superuser and (message.owner_id != current_user.id):
         raise HTTPException(status_code=400, detail="Not enough permissions")
-    update_dict = message_in.model_dump(exclude_unset=True)
-    message.sqlmodel_update(update_dict)
+    message.meta_data = message.meta_data | message_in.meta_data
     session.add(message)
     session.commit()
-    session.refresh(message)
     return message
 
 
