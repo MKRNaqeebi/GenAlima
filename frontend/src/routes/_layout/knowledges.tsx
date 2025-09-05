@@ -197,6 +197,7 @@ function KnowledgesGrid({ searchQuery }: KnowledgesGridProps) {
       <div className="flex flex-col space-y-4 mt-6">
         <div className="flex items-center space-x-4">
           <button 
+            type="button"
             className="flex items-center space-x-2 px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
             onClick={() => setSelectedFile(null)}
           >
@@ -273,6 +274,7 @@ function KnowledgesGrid({ searchQuery }: KnowledgesGridProps) {
       <div className="flex flex-col space-y-4 mt-6">
         <div className="flex items-center space-x-4">
           <button 
+            type="button"
             className="flex items-center space-x-2 px-3 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition-colors"
             onClick={() => setSelectedFile(null)}
           >
@@ -355,6 +357,7 @@ function Knowledges() {
                 </p>
               </div>
               <button
+                type="button"
                 className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                 onClick={() => setIsAddOpen(true)}
               >

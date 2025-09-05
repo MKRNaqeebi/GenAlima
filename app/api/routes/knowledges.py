@@ -136,8 +136,7 @@ def create_knowledge_by_files(
         -F 'files=@phasesForAI-GoogleDocs.pdf' \
         -H 'Authorization: Bearer '
     """
-    if not current_user.is_superuser:
-        raise HTTPException(status_code=400, detail="Not enough permissions")
+    # Allow regular users to upload their own knowledge files
     knowledges = []
     for my_file in files:
         pdf_content = pymupdf.open(stream=my_file.file.read(), filetype="pdf")
