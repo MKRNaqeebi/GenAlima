@@ -1,12 +1,10 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { useEffect, useState } from "react"
+import { useEffect } from "react"
 import { z } from "zod"
 import { 
-  FiSearch, 
   FiGrid, 
   FiZap,
-  FiPlus,
   FiCheck,
   FiLink
 } from "react-icons/fi"
@@ -14,7 +12,6 @@ import {
 import { ConnectorsService } from "../../client"
 import ActionsMenu from "../../components/Common/ActionsMenu"
 import { PaginationFooter } from "../../components/Common/PaginationFooter.tsx"
-import AddConnector from "../../components/Connectors/AddConnector"
 
 const connectorsSearchSchema = z.object({
   page: z.number().catch(1),
@@ -85,7 +82,7 @@ function ConnectorCard({ connector }: { connector: any }) {
   )
 }
 
-function ConnectorsGrid({ searchQuery }: { searchQuery: string }) {
+function ConnectorsGrid() {
   const queryClient = useQueryClient()
   const { page } = Route.useSearch()
   const navigate = useNavigate({ from: Route.fullPath })
@@ -110,12 +107,7 @@ function ConnectorsGrid({ searchQuery }: { searchQuery: string }) {
     }
   }, [page, queryClient, hasNextPage])
 
-  const filteredConnectors = (connectors?.data || []).filter((connector: any) => {
-    if (!searchQuery.trim()) return true
-    const query = searchQuery.toLowerCase()
-    const title = (connector.title || '').toLowerCase()
-    return title.includes(query)
-  })
+  const filteredConnectors = connectors?.data || []
 
   if (isPending) {
     return (
@@ -150,12 +142,10 @@ function ConnectorsGrid({ searchQuery }: { searchQuery: string }) {
           <div className="flex flex-col items-center space-y-4">
             <FiGrid className="w-16 h-16 text-gray-400 dark:text-gray-600" />
             <h3 className="text-xl text-gray-900 dark:text-white">
-              {searchQuery.trim() ? "No matching connectors found" : "No connectors yet"}
+              No connectors yet
             </h3>
             <p className="text-center text-gray-600 dark:text-gray-400">
-              {searchQuery.trim() 
-                ? "Try adjusting your search query" 
-                : "Create your first connector to get started"}
+              Available connectors will appear here
             </p>
           </div>
         </div>
@@ -172,9 +162,6 @@ function ConnectorsGrid({ searchQuery }: { searchQuery: string }) {
 }
 
 function Connectors() {
-  const [searchQuery, setSearchQuery] = useState("")
-  const [isAddOpen, setIsAddOpen] = useState(false)
-
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-chat-bg pb-8 w-full transition-colors">
       <div className="px-8 pt-8 w-full">
@@ -193,41 +180,11 @@ function Connectors() {
                   Manage your connector integrations
                 </p>
               </div>
-              <button
-                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                onClick={() => setIsAddOpen(true)}
-              >
-                <FiPlus className="w-4 h-4" />
-                <span>Add Connector</span>
-              </button>
-            </div>
-
-            {/* Search Bar */}
-            <div className="w-full bg-white dark:bg-[#2f2f2f] border border-gray-200 dark:border-gray-700 rounded-lg">
-              <div className="p-4">
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FiSearch className="w-4 h-4 text-gray-400 dark:text-gray-500" />
-                  </div>
-                  <input
-                    type="text"
-                    placeholder="Search connectors..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="block w-full pl-10 pr-3 py-2 border-0 focus:ring-0 focus:outline-none text-base bg-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                  />
-                </div>
-              </div>
             </div>
           </div>
         </div>
 
-        <ConnectorsGrid searchQuery={searchQuery} />
-        
-        <AddConnector 
-          isOpen={isAddOpen} 
-          onClose={() => setIsAddOpen(false)} 
-        />
+        <ConnectorsGrid />
       </div>
     </div>
   )

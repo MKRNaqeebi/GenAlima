@@ -39,9 +39,11 @@ const ActionsMenu = ({ type, value, disabled }: ActionsMenuProps) => {
   return (
     <div className="relative" ref={menuRef}>
       <button
+        type="button"
         disabled={disabled}
         onClick={() => setIsMenuOpen(!isMenuOpen)}
         className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        aria-label="Actions menu"
       >
         <BsThreeDotsVertical className="w-4 h-4 text-gray-600 dark:text-gray-400" />
       </button>
@@ -49,6 +51,7 @@ const ActionsMenu = ({ type, value, disabled }: ActionsMenuProps) => {
       {isMenuOpen && (
         <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10">
           <button
+            type="button"
             onClick={() => {
               setIsEditOpen(true)
               setIsMenuOpen(false)
@@ -59,6 +62,7 @@ const ActionsMenu = ({ type, value, disabled }: ActionsMenuProps) => {
             Edit {type}
           </button>
           <button
+            type="button"
             onClick={() => {
               setIsDeleteOpen(true)
               setIsMenuOpen(false)
