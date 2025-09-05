@@ -1,7 +1,7 @@
-import React, { useState } from "react"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { FiPlus, FiX, FiCheck, FiAlertCircle } from "react-icons/fi"
-import { TemplatesService } from "../../client"
+import React, { useState, useEffect } from "react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { FiPlus, FiX, FiCheck, FiAlertCircle, FiChevronDown } from "react-icons/fi"
+import { TemplatesService, ConnectorsService } from "../../client"
 
 interface AddTemplateProps {
   isOpen: boolean
@@ -14,10 +14,20 @@ const AddTemplate = ({ isOpen, onClose }: AddTemplateProps) => {
     description: "",
     template: "",
     placeholder: "",
-    model: ""
+    model: "",
+    connector: [] as string[],
+    active: true
   })
+  const [showConnectorDropdown, setShowConnectorDropdown] = useState(false)
 
   const queryClient = useQueryClient()
+
+  // Fetch connectors
+  const { data: connectorsData } = useQuery({
+    queryKey: ["connectors", "all"],
+    queryFn: () => ConnectorsService.readConnectors({ limit: 100 }),
+    enabled: isOpen
+  })
 
   const createMutation = useMutation({
     mutationFn: (data: typeof formData) => {
@@ -27,7 +37,9 @@ const AddTemplate = ({ isOpen, onClose }: AddTemplateProps) => {
           description: data.description || null,
           template: data.template || null,
           placeholder: data.placeholder || null,
-          model: data.model || null
+          model: data.model || null,
+          connector: data.connector.length > 0 ? data.connector.join(",") : null,
+          active: data.active
         }
       })
     },
@@ -40,7 +52,9 @@ const AddTemplate = ({ isOpen, onClose }: AddTemplateProps) => {
         description: "",
         template: "",
         placeholder: "",
-        model: ""
+        model: "",
+        connector: [],
+        active: true
       })
       onClose()
     },
@@ -50,9 +64,41 @@ const AddTemplate = ({ isOpen, onClose }: AddTemplateProps) => {
   })
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({ ...prev, [name]: value }))
+    const { name, value, type } = e.target
+    if (type === "checkbox") {
+      const checked = (e.target as HTMLInputElement).checked
+      setFormData(prev => ({ ...prev, [name]: checked }))
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }))
+    }
   }
+
+  const toggleConnector = (connectorId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      connector: prev.connector.includes(connectorId)
+        ? prev.connector.filter(id => id !== connectorId)
+        : [...prev.connector, connectorId]
+    }))
+  }
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement
+      if (!target.closest('.connector-dropdown')) {
+        setShowConnectorDropdown(false)
+      }
+    }
+
+    if (showConnectorDropdown) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showConnectorDropdown])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -68,7 +114,9 @@ const AddTemplate = ({ isOpen, onClose }: AddTemplateProps) => {
         description: "",
         template: "",
         placeholder: "",
-        model: ""
+        model: "",
+        connector: [],
+        active: true
       })
       onClose()
     }
@@ -179,6 +227,73 @@ const AddTemplate = ({ isOpen, onClose }: AddTemplateProps) => {
               placeholder="e.g., gpt-4, claude-3-sonnet..."
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
             />
+          </div>
+
+          {/* Connector Field - Multi-select Dropdown */}
+          <div className="mb-6 relative connector-dropdown">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Connectors
+            </label>
+            <div
+              onClick={() => setShowConnectorDropdown(!showConnectorDropdown)}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-800 text-gray-900 dark:text-white cursor-pointer flex items-center justify-between"
+            >
+              <span className="text-gray-900 dark:text-white">
+                {formData.connector.length > 0
+                  ? `${formData.connector.length} connector(s) selected`
+                  : "Select connectors..."}
+              </span>
+              <FiChevronDown className={`w-4 h-4 transition-transform ${showConnectorDropdown ? 'rotate-180' : ''}`} />
+            </div>
+            
+            {showConnectorDropdown && (
+              <div className="absolute z-10 w-full mt-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-60 overflow-auto">
+                {connectorsData?.data && connectorsData.data.length > 0 ? (
+                  connectorsData.data.map((connector) => (
+                    <div
+                      key={connector.id}
+                      onClick={() => toggleConnector(connector.id)}
+                      className="px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer flex items-center space-x-2"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={formData.connector.includes(connector.id)}
+                        onChange={() => {}}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        aria-label={`Select ${connector.name || connector.id}`}
+                      />
+                      <span className="text-sm text-gray-900 dark:text-white">
+                        {connector.name || `Connector ${connector.id}`}
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                    No connectors available
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Active Field */}
+          <div className="mb-6">
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="active"
+                name="active"
+                checked={formData.active}
+                onChange={handleInputChange}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label htmlFor="active" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Active Template
+              </label>
+            </div>
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              Active templates can be used in chat conversations
+            </p>
           </div>
 
           {/* Error Message */}
