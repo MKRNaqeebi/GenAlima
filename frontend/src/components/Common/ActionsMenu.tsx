@@ -39,31 +39,37 @@ const ActionsMenu = ({ type, value, disabled }: ActionsMenuProps) => {
   return (
     <div className="relative" ref={menuRef}>
       <button
+        type="button"
         disabled={disabled}
         onClick={() => setIsMenuOpen(!isMenuOpen)}
         className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        aria-label="Actions menu"
       >
         <BsThreeDotsVertical className="w-4 h-4 text-gray-600 dark:text-gray-400" />
       </button>
       
       {isMenuOpen && (
         <div className="absolute right-0 top-full mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10">
+          {type !== "Knowledge" && (
+            <button
+              type="button"
+              onClick={() => {
+                setIsEditOpen(true)
+                setIsMenuOpen(false)
+              }}
+              className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 first:rounded-t-lg"
+            >
+              <FiEdit className="w-4 h-4" />
+              Edit {type}
+            </button>
+          )}
           <button
-            onClick={() => {
-              setIsEditOpen(true)
-              setIsMenuOpen(false)
-            }}
-            className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 first:rounded-t-lg"
-          >
-            <FiEdit className="w-4 h-4" />
-            Edit {type}
-          </button>
-          <button
+            type="button"
             onClick={() => {
               setIsDeleteOpen(true)
               setIsMenuOpen(false)
             }}
-            className="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 text-red-600 dark:text-red-400 last:rounded-b-lg"
+            className={`w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 text-red-600 dark:text-red-400 ${type === "Knowledge" ? "first:rounded-t-lg" : ""} last:rounded-b-lg`}
           >
             <FiTrash className="w-4 h-4" />
             Delete {type}
