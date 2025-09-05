@@ -5,7 +5,6 @@ import {
   FiCopy, 
   FiThumbsUp,
   FiThumbsDown,
-  FiMic,
   FiArrowUp,
   FiActivity,
   FiSend,
@@ -278,13 +277,6 @@ function MessageInput({ onSendMessage, isLoading }: {
             />
           </div>
           <div className="flex items-center gap-2 ml-3">
-            <button
-              type="button"
-              className="p-2 text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-600 rounded-full transition-all duration-200"
-              title="Voice input"
-            >
-              <FiMic className="w-5 h-5" />
-            </button>
             <button
               type="submit"
               onClick={handleSubmit}
