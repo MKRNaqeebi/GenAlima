@@ -339,10 +339,10 @@ function Knowledges() {
   const [isAddOpen, setIsAddOpen] = useState(false)
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-chat-bg pb-8 w-full transition-colors">
-      <div className="px-8 pt-8 w-full">
-        {/* Header Section */}
-        <div className="mb-8">
+    <div className="h-screen bg-gray-50 dark:bg-chat-bg w-full transition-colors flex flex-col overflow-hidden">
+      <div className="px-8 pt-8 w-full flex-1 flex flex-col overflow-hidden">
+        {/* Header Section - Fixed */}
+        <div className="mb-6 flex-shrink-0">
           <div className="flex flex-col items-start space-y-6">
             <div className="flex justify-between items-start w-full">
               <div className="flex flex-col items-start space-y-2">
@@ -386,7 +386,10 @@ function Knowledges() {
           </div>
         </div>
 
-        <KnowledgesGrid searchQuery={searchQuery} />
+        {/* Scrollable Content Area */}
+        <div className="flex-1 overflow-y-auto pb-8">
+          <KnowledgesGrid searchQuery={searchQuery} />
+        </div>
         
         <AddKnowledge 
           isOpen={isAddOpen} 
