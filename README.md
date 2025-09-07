@@ -290,13 +290,19 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 
 - [x] File upload and vector search
 - [x] Gmail integration
+- [ ] Notion integration
+- [x] GitHub integration
 - [x] LangGraph agent implementation
-- [x] Template-based chats
+- [ ] Template-based chats with pre-defined templates and workflows
+  - [ ] Draft letter to send to court
+  - [ ] Create task list from meeting notes in given format
 - [ ] Database connector (Text-to-SQL)
 - [ ] API data source configuration
 - [ ] MCP (Model Context Protocol) integration
+- [ ] n8n workflow integration
 - [ ] Advanced analytics dashboard
 - [ ] Team collaboration features
+- [ ] Desktop application for meeting notes and real-time help from Internal Knowledge Base and Internet
 
 ### Future Plans
 

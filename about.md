@@ -74,6 +74,14 @@ Ensure regulatory compliance by making policies, contracts, and compliance docum
 
 Provide leadership with AI-powered insights aggregated from across all business systems for data-driven decision making.
 
+### **Generate Legal Documents or Professional Letters**
+
+Streamline the creation of legal documents and professional letters with AI-generated templates and content suggestions.
+
+### **Real time help in meetings (cheating)**
+
+Provide instant access to relevant information and document snippets during meetings for seamless collaboration.
+
 ## 🏗️ Technology Stack
 
 ### **Backend Infrastructure**
