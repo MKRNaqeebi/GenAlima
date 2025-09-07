@@ -1,17 +1,19 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
 import { useEffect, useState } from "react"
 import { z } from "zod"
 import { 
   FiSearch, 
   FiFileText, 
-  FiPlus
+  FiPlus,
+  FiMessageSquare
 } from "react-icons/fi"
 
-import { TemplatesService } from "../../client"
+import { TemplatesService, ChatsService, type ChatCreate } from "../../client"
 import ActionsMenu from "../../components/Common/ActionsMenu"
 import { PaginationFooter } from "../../components/Common/PaginationFooter.tsx"
 import AddTemplate from "../../components/Templates/AddTemplate"
+import useCustomToast from "../../hooks/useCustomToast"
 
 const templatesSearchSchema = z.object({
   page: z.number().catch(1),
@@ -33,6 +35,28 @@ function getTemplatesQueryOptions({ page }: { page: number }) {
 }
 
 function TemplateCard({ template }: { template: any }) {
+  const navigate = useNavigate()
+  const showToast = useCustomToast()
+  
+  const createChatMutation = useMutation({
+    mutationFn: (data: ChatCreate) =>
+      ChatsService.createChat({ requestBody: data }),
+    onSuccess: (response) => {
+      showToast("Success!", "Chat created successfully.", "success")
+      navigate({ to: `/chat/${response.id}` })
+    },
+    onError: () => {
+      showToast("Error", "Failed to create chat", "error")
+    },
+  })
+
+  const handleStartChat = () => {
+    createChatMutation.mutate({
+      title: template.title || 'New Chat',
+      template_id: template.id
+    })
+  }
+
   return (
     <div className="bg-white dark:bg-[#2f2f2f] border border-gray-200 dark:border-gray-700 rounded-lg hover:shadow-lg transition-all duration-200">
       <div className="p-6">
@@ -44,7 +68,19 @@ function TemplateCard({ template }: { template: any }) {
                 {template.title || 'Template'}
               </span>
             </div>
-            <ActionsMenu type="Template" value={template} />
+            <div className="flex items-center space-x-2">
+              <button
+                type="button"
+                onClick={handleStartChat}
+                disabled={createChatMutation.isPending}
+                className="flex items-center space-x-1 px-2 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Start a chat with this template"
+              >
+                <FiMessageSquare className="w-3 h-3" />
+                <span>{createChatMutation.isPending ? '...' : 'Chat'}</span>
+              </button>
+              <ActionsMenu type="Template" value={template} />
+            </div>
           </div>
           <div className="flex flex-col items-start space-y-2 w-full">
             <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -166,6 +202,7 @@ function Templates() {
                 </p>
               </div>
               <button
+                type="button"
                 className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                 onClick={() => setIsAddOpen(true)}
               >
