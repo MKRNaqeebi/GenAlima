@@ -76,11 +76,11 @@ Provide leadership with AI-powered insights aggregated from across all business 
 
 ### **Generate Legal Documents or Professional Letters**
 
-Streamline the creation of legal documents and professional letters with AI-generated templates and content suggestions.
+Streamline the creation of legal documents and professional letters with AI-generated templates and content suggestions. Letters which feels like written by a human.
 
 ### **Real time help in meetings (cheating)**
 
-Provide instant access to relevant information and document snippets during meetings for seamless collaboration.
+Provide instant access to relevant information and document snippets during meetings for seamless collaboration. No one else has to know you used GenAlima or not to get that info!. GenAlima stay on your desktop and no need to invite to meeting.
 
 ## 🏗️ Technology Stack
 
