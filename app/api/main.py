@@ -18,7 +18,7 @@ from app.api.routes import (
     users,
     utils,
 )
-from app.api.routes import google, notion, github
+from app.api.routes import google, notion, github, outlook
 from app.core.config import settings
 
 api_router = APIRouter()
@@ -34,6 +34,7 @@ api_router.include_router(connectors.router)
 api_router.include_router(google.router)
 api_router.include_router(notion.router)
 api_router.include_router(github.router)
+api_router.include_router(outlook.router)
 api_router.include_router(knowledges.router)
 
 
