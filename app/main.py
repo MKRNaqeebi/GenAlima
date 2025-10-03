@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import sentry_sdk
 from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 
 # Local application imports
 from app.api.main import api_router
@@ -47,6 +48,16 @@ if settings.all_cors_origins:
         allow_methods=["*"],
         allow_headers=["*"],
     )
+
+# Add session middleware for OAuth2
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=settings.SECRET_KEY,
+    session_cookie="session",
+    max_age=3600,  # 1 hour
+    same_site="lax",  # Allow cross-site cookies for OAuth flows
+    https_only=settings.ENVIRONMENT == "production"  # Only use HTTPS in production
+)
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
 

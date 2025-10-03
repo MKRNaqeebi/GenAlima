@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { createFileRoute, useNavigate } from "@tanstack/react-router"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { z } from "zod"
 import { 
   FiGrid, 
@@ -12,9 +12,11 @@ import {
 import { ConnectorsService } from "../../client"
 import ActionsMenu from "../../components/Common/ActionsMenu"
 import { PaginationFooter } from "../../components/Common/PaginationFooter.tsx"
+import useCustomToast from "../../hooks/useCustomToast"
 
 const connectorsSearchSchema = z.object({
   page: z.number().catch(1),
+  outlook_auth: z.string().optional(),
 })
 
 export const Route = createFileRoute("/_layout/connectors")({
@@ -33,11 +35,28 @@ function getConnectorsQueryOptions({ page }: { page: number }) {
 }
 
 function ConnectorCard({ connector }: { connector: any }) {
+  // Check if this is an Outlook connector
+  const isOutlook = connector.name.toLowerCase() === 'outlook';
+  
+  // Determine if the connector is connected based on actual data
+  // For Outlook: check if meta_data has email or display_name (indicates it's connected)
+  // For other connectors: check if function exists
+  const isConnected = isOutlook ? 
+    Boolean(connector.meta_data && (connector.meta_data.email || connector.meta_data.display_name)) :
+    Boolean(connector.function);
+  
+  // Set user info if the connector is connected and has metadata
+  const userInfo = isConnected && isOutlook && connector.meta_data ? {
+    email: connector.meta_data.email || undefined,
+    display_name: connector.meta_data.display_name || undefined
+  } : null;
+    
   const handleConnect = () => {
     if (connector.meta_data?.auth === 'OAuth2' && connector.meta_data?.url) {
       window.location.href = connector.meta_data.url
     }
   }
+  
   console.log("Connector:", connector, connector.id)
 
   return (
@@ -59,10 +78,18 @@ function ConnectorCard({ connector }: { connector: any }) {
             </p>
             {/* Connection Status and Action Button */}
             <div className="flex items-center justify-between w-full">
-              {connector.function ? (
-                <div className="flex items-center space-x-2">
-                  <FiCheck className="w-4 h-4 text-green-600" />
-                  <span className="text-sm font-medium text-green-600">Connected</span>
+              {isConnected ? (
+                <div className="flex flex-col space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <FiCheck className="w-4 h-4 text-green-600" />
+                    <span className="text-sm font-medium text-green-600">Connected</span>
+                  </div>
+                  {/* Show any available user information */}
+                  {userInfo && (userInfo.display_name || userInfo.email) && (
+                    <div className="text-xs text-gray-500">
+                      {userInfo.display_name || userInfo.email}
+                    </div>
+                  )}
                 </div>
               ) : (
                 <button
@@ -84,8 +111,11 @@ function ConnectorCard({ connector }: { connector: any }) {
 
 function ConnectorsGrid() {
   const queryClient = useQueryClient()
-  const { page } = Route.useSearch()
+  const { page, outlook_auth } = Route.useSearch()
   const navigate = useNavigate({ from: Route.fullPath })
+  const showToast = useCustomToast()
+  const [isConnecting, setIsConnecting] = useState(false)
+  
   const setPage = (page: number) =>
     navigate({ search: (prev: any) => ({ ...prev, page }) })
 
@@ -100,6 +130,48 @@ function ConnectorsGrid() {
 
   const hasNextPage = !isPlaceholderData && connectors?.data.length === PER_PAGE
   const hasPreviousPage = page > 1
+
+  // Handle Outlook OAuth callback
+  useEffect(() => {
+    const handleOutlookCallback = async () => {
+      if (outlook_auth === 'success' && !isConnecting) {
+        setIsConnecting(true)
+        try {
+          // Get the auth token from localStorage
+          const token = localStorage.getItem("access_token")
+          
+          // Call the connect endpoint to save the connector
+          const response = await fetch('/api/v1/outlook/connect', {
+            method: 'POST',
+            credentials: 'include', // Important for session cookies
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`, // Add authentication token
+            },
+          })
+          
+          if (response.ok) {
+            const data = await response.json()
+            showToast("Success", `Outlook connected: ${data.email}`, "success")
+            // Refresh the connectors list
+            queryClient.invalidateQueries({ queryKey: ["connectors"] })
+          } else {
+            const error = await response.json()
+            showToast("Error", error.detail || "Failed to connect Outlook", "error")
+          }
+        } catch (error) {
+          showToast("Error", "Failed to connect Outlook account", "error")
+          console.error("Error connecting Outlook:", error)
+        } finally {
+          setIsConnecting(false)
+          // Remove the outlook_auth parameter from URL
+          navigate({ search: { page } })
+        }
+      }
+    }
+    
+    handleOutlookCallback()
+  }, [outlook_auth, isConnecting, showToast, queryClient, navigate, page])
 
   useEffect(() => {
     if (hasNextPage) {

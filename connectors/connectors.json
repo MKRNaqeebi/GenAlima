@@ -25,5 +25,14 @@
             "auth": "OAuth2",
             "url": "/api/v1/github/login/"
         }
+    },
+    "outlook": {
+        "name": "outlook",
+        "description": "Outlook connector for workspace",
+        "active": true,
+        "meta_data": {
+            "auth": "OAuth2",
+            "url": "/api/v1/outlook/login/"
+        }
     }
 }

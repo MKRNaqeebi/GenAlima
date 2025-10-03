@@ -21,6 +21,7 @@ GenAlima is an enterprise-grade AI search platform that enables businesses to cr
 ### 🔌 Data Source Connectors
 
 - **Google Workspace**: Gmail integration with OAuth2
+- **Microsoft Outlook**: Outlook integration using Microsoft Graph API
 - **Azure DevOps**: Project management and collaboration
 - **Notion**: Workspace and documentation (coming soon)
 - **Custom APIs**: Flexible connector architecture for any data source

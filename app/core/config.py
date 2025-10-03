@@ -40,6 +40,12 @@ class Settings(BaseSettings):
         env_ignore_empty=True,
         extra="ignore",
     )
+    
+    # Outlook OAuth2 settings
+    OUTLOOK_CLIENT_ID: str = os.getenv("OUTLOOK_CLIENT_ID", "")
+    OUTLOOK_CLIENT_SECRET: str = os.getenv("OUTLOOK_CLIENT_SECRET", "")
+    OUTLOOK_REDIRECT_URI: str = os.getenv("OUTLOOK_REDIRECT_URI", "http://localhost:8000/api/v1/outlook/callback/")
+    
     API_V1_STR: str = "/api/v1"
     SECRET_KEY: str = os.getenv("SECRET_KEY", "this-is-my-secret-key-change-this")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(

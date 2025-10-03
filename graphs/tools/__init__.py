@@ -20,6 +20,12 @@ from .google_mail_tools import (
     gmail_get_labels_tool,
     gmail_get_profile_tool,
 )
+from .outlook_mail_tools import (
+    outlook_send_email_tool,
+    outlook_read_emails_tool,
+    outlook_create_draft_tool,
+    outlook_get_profile_tool,
+)
 from .notion_tools import (
     notion_search_tool,
     notion_create_page_tool,
@@ -53,6 +59,13 @@ def get_tools_by_credentials(connectors: list[Connector]) -> list[BaseTool]:
             gmail_create_draft_tool,
             gmail_get_labels_tool,
             gmail_get_profile_tool,
+        ])
+    if any(connector.name == "Outlook" for connector in connectors):
+        tools.extend([
+            outlook_send_email_tool,
+            outlook_read_emails_tool,
+            outlook_create_draft_tool,
+            outlook_get_profile_tool,
         ])
     if any(connector.name == "notion" for connector in connectors):
         tools.extend([

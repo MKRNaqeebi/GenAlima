@@ -40,8 +40,8 @@ def read_connectors(
     with open("connectors/connectors.json", encoding="utf-8") as f:
         connector_data = json.load(f)
         for conn in connectors:
-            # remove conn.name from connector_data
-            connector_data.pop(conn.name)
+            # remove conn.name from connector_data if it exists
+            connector_data.pop(conn.name, None)  # Use pop with default to avoid KeyError
         for conn in connector_data.values():
             connectors.append(Connector(**conn))
     return ConnectorsPublic(data=connectors, count=count)
@@ -120,3 +120,20 @@ def delete_connector(
     session.delete(connector)
     session.commit()
     return Message(message="Connector deleted successfully")
+
+
+@router.get("/status")
+def get_status(
+    session: SessionDep, 
+    current_user: CurrentUser
+) -> Any:
+    """
+    Get the connection status of all connectors for the current user.
+    
+    Returns a dictionary with the status of each connector type, including:
+    - Whether it's connected
+    - User information related to the connection
+    """
+    from app.api.deps import get_connector_status
+    
+    return get_connector_status(session, current_user)
