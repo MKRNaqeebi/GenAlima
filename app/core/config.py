@@ -151,6 +151,17 @@ class Settings(BaseSettings):
         "openid"
     ]
 
+    # Outlook OAuth2 configuration
+    OUTLOOK_CLIENT_ID: str | None = os.getenv("OUTLOOK_CLIENT_ID")
+    OUTLOOK_CLIENT_SECRET: str | None = os.getenv("OUTLOOK_CLIENT_SECRET")
+    OUTLOOK_REDIRECT_URI: str = os.getenv("OUTLOOK_REDIRECT_URI", "http://localhost:8000/api/v1/outlook/callback/")
+    OUTLOOK_SCOPES: list[str] = [
+        "offline_access",
+        "https://graph.microsoft.com/Mail.ReadWrite",
+        "https://graph.microsoft.com/Mail.Send",
+        "https://graph.microsoft.com/User.Read",
+    ]
+
     # GitHub OAuth2 configuration
     GITHUB_CLIENT_ID: str | None = os.getenv("GITHUB_CLIENT_ID")
     GITHUB_CLIENT_SECRET: str | None = os.getenv("GITHUB_CLIENT_SECRET")
@@ -162,12 +173,6 @@ class Settings(BaseSettings):
         "user",
         "read:org"
     ]
-
-    # Outlook OAuth2 configuration
-    OUTLOOK_CLIENT_ID: str | None = os.getenv("OUTLOOK_CLIENT_ID")
-    OUTLOOK_CLIENT_SECRET: str | None = os.getenv("OUTLOOK_CLIENT_SECRET")
-    OUTLOOK_REDIRECT_URI: str = os.getenv("OUTLOOK_REDIRECT_URI", "http://localhost:8000/api/v1/outlook/callback/")
-    OUTLOOK_AUTH_URI: str = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize"
 
     # Logging configuration
     LOG_DIR: Path = Path(os.getenv("LOG_DIR", "./logs"))
