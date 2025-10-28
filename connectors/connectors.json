@@ -25,5 +25,31 @@
             "auth": "OAuth2",
             "url": "/api/v1/github/login/"
         }
+    },
+    "google_drive": {
+        "name": "google_drive",
+        "description": "Google Drive connector for workspace",
+        "active": true,
+        "meta_data": {
+            "auth": "OAuth2",
+            "url": "/api/v1/google/login/"
+        }
+    }
+    ,"outlook_mail": {
+        "name": "outlook_mail",
+        "description": "Outlook Mail connector for workspace",
+        "active": true,
+        "meta_data": {
+            "auth": "OAuth2",
+            "url": "/api/v1/outlook/login/"
+        }
+    },"onedrive": {
+        "name": "onedrive",
+        "description": "OneDrive connector for workspace",
+        "active": true,
+        "meta_data": {
+            "auth": "OAuth2",
+            "url": "/api/v1/outlook/login/"
+        }
     }
 }
