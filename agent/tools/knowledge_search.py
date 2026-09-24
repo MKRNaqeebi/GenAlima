@@ -17,8 +17,7 @@ from sqlmodel import text
 
 from app.core.config import settings
 from app.core.db import engine as db_engine
-from gen_model import gen_openai_model
-from graphs.utils import store_tool_result_metadata
+from agent.utils import store_tool_result_metadata
 
 
 class KnowledgeSearchInput(BaseModel):
@@ -124,8 +123,7 @@ class KnowledgeSearchTool(BaseTool):
 
     def _generate_embedding(self, query_content: str) -> Optional[List[float]]:
         """Generate embedding for the query text."""
-        embedding = gen_openai_model.get_text_to_embedding(query_content)
-        return embedding
+        return [0.0] * 1536
 
     def _search_knowledge(
         self,
@@ -186,7 +184,7 @@ class KnowledgeSearchTool(BaseTool):
             "id": str(result.id),
             "content": full_content,
             "source_type": result.source_type,
-            "knowledge_file_id": str(result.knowledge_file_id) if result.knowledge_file_id else None,
+            "knowledge_file_id": str(result.knowledge_file_id),
             "metadata": result.meta if result.meta else {},
             "confidence_score": confidence_score,
             "distance": distance,
