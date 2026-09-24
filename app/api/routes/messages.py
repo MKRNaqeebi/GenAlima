@@ -13,7 +13,6 @@ from sqlmodel import func, select
 from app.api.deps import CurrentUser, SessionDep
 from app.models import (
     Chat,
-    # Knowledge,
     Message,
     MessageBase,
     MessagePublic,
@@ -56,8 +55,8 @@ def read_messages(
 @router.get("/{id}", response_model=MessagePublic)
 def read_message(
     session: SessionDep, current_user: CurrentUser,
-    # pylint: disable=redefined-builtin
-    id: uuid.UUID) -> Any:
+    id: uuid.UUID
+) -> Any:
     """
     Get message by ID.
     """
@@ -72,8 +71,8 @@ def read_message(
 @router.get("/chat/{id}/", response_model=MessagesPublic)
 def read_messages_by_chat(
     session: SessionDep, current_user: CurrentUser,
-    # pylint: disable=redefined-builtin
-    id: uuid.UUID) -> Any:
+    id: uuid.UUID
+) -> Any:
     """
     Get messages by chat ID.
     """
@@ -126,12 +125,12 @@ async def create_message(
         session=session, message_id=response_message.id, content=last_msg.content)
     return resp_message
 
+
 @router.put("/{id}", response_model=MessagePublic)
 def update_message(
     *,
     session: SessionDep,
     current_user: CurrentUser,
-    # pylint: disable=redefined-builtin
     id: uuid.UUID,
     message_in: MessageUpdate,
 ) -> Any:
