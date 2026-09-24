@@ -71,6 +71,8 @@ def get_completions(user_input: CompletionInput) -> list[Message]:
 @app.get("/admin")
 @app.get("/signup")
 @app.get("/recover-password")
+@app.get("/workflows")
+@app.get("/workflow/{workflow_id}")
 async def serve_index(request: Request):
     """
     Serve the frontend application.

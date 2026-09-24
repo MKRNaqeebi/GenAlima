@@ -18,6 +18,7 @@ import { Route as LoginImport } from './routes/login'
 import { Route as HomeImport } from './routes/home'
 import { Route as LayoutImport } from './routes/_layout'
 import { Route as LayoutIndexImport } from './routes/_layout/index'
+import { Route as LayoutWorkflowsImport } from './routes/_layout/workflows'
 import { Route as LayoutTemplatesImport } from './routes/_layout/templates'
 import { Route as LayoutSettingsImport } from './routes/_layout/settings'
 import { Route as LayoutMessagesImport } from './routes/_layout/messages'
@@ -26,6 +27,7 @@ import { Route as LayoutItemsImport } from './routes/_layout/items'
 import { Route as LayoutConnectorsImport } from './routes/_layout/connectors'
 import { Route as LayoutChatsImport } from './routes/_layout/chats'
 import { Route as LayoutAdminImport } from './routes/_layout/admin'
+import { Route as LayoutWorkflowWorkflowIdImport } from './routes/_layout/workflow.$workflowId'
 import { Route as LayoutChatChatIdImport } from './routes/_layout/chat.$chatId'
 
 // Create/Update Routes
@@ -62,6 +64,11 @@ const LayoutRoute = LayoutImport.update({
 
 const LayoutIndexRoute = LayoutIndexImport.update({
   path: '/',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
+const LayoutWorkflowsRoute = LayoutWorkflowsImport.update({
+  path: '/workflows',
   getParentRoute: () => LayoutRoute,
 } as any)
 
@@ -102,6 +109,11 @@ const LayoutChatsRoute = LayoutChatsImport.update({
 
 const LayoutAdminRoute = LayoutAdminImport.update({
   path: '/admin',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
+const LayoutWorkflowWorkflowIdRoute = LayoutWorkflowWorkflowIdImport.update({
+  path: '/workflow/$workflowId',
   getParentRoute: () => LayoutRoute,
 } as any)
 
@@ -170,12 +182,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutTemplatesImport
       parentRoute: typeof LayoutImport
     }
+    '/_layout/workflows': {
+      preLoaderRoute: typeof LayoutWorkflowsImport
+      parentRoute: typeof LayoutImport
+    }
     '/_layout/': {
       preLoaderRoute: typeof LayoutIndexImport
       parentRoute: typeof LayoutImport
     }
     '/_layout/chat/$chatId': {
       preLoaderRoute: typeof LayoutChatChatIdImport
+      parentRoute: typeof LayoutImport
+    }
+    '/_layout/workflow/$workflowId': {
+      preLoaderRoute: typeof LayoutWorkflowWorkflowIdImport
       parentRoute: typeof LayoutImport
     }
   }
@@ -193,8 +213,10 @@ export const routeTree = rootRoute.addChildren([
     LayoutMessagesRoute,
     LayoutSettingsRoute,
     LayoutTemplatesRoute,
+    LayoutWorkflowsRoute,
     LayoutIndexRoute,
     LayoutChatChatIdRoute,
+    LayoutWorkflowWorkflowIdRoute,
   ]),
   HomeRoute,
   LoginRoute,

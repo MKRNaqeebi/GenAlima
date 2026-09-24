@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import {
-  FiEdit, FiSearch, FiArchive, FiGrid, FiTrash2
+  FiEdit, FiSearch, FiArchive, FiGrid, FiTrash2, FiCode
 } from "react-icons/fi"
 import { PiSparkle } from "react-icons/pi"
 import { AiOutlineLoading3Quarters } from "react-icons/ai"
@@ -20,6 +20,7 @@ const topMenuItems = [
   { icon: FiArchive, label: "Knowledges", path: "/knowledges" },
   { icon: PiSparkle, label: "Templates", path: "/templates" },
   { icon: FiGrid, label: "Connectors", path: "/connectors" },
+  { icon: FiCode, label: "Workflows", path: "/workflows" },
 ]
 
 const SidebarItems = ({ onClose, isCollapsed = false }: SidebarItemsProps) => {
