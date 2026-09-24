@@ -40,9 +40,9 @@ from app.core.config import (
 from app.core.logging import logger
 from app.core.metrics import llm_inference_duration_seconds
 from app.models import Message, Connector
-from graphs.prompts import SYSTEM_PROMPT
-from graphs.tools import get_tools_by_credentials
-from graphs.utils import (
+from agent.prompts import SYSTEM_PROMPT
+from agent.tools import get_tools_by_credentials
+from agent.utils import (
     dump_messages,
     prepare_messages,
 )
