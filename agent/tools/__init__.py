@@ -9,15 +9,14 @@ and other external integrations.
 from langchain_core.tools.base import BaseTool
 
 from app.models import Connector
-from .knowledge_search import knowledge_search_tool
 from .update_chat_title import update_chat_title_tool
+
 
 def get_tools_by_credentials(connectors: list[Connector]) -> list[BaseTool]:
     """
     Get a list of tools that can be used with the provided credentials.
     """
     tools = [
-        knowledge_search_tool,
         update_chat_title_tool
     ]
     print(f"No of tools available: {len(tools)}")

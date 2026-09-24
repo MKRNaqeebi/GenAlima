@@ -21,7 +21,7 @@ from app.models import (
     MessageUpdate,
 )
 from app.model_utils import save_chat_message, update_chat_message, save_chat
-from graphs.main import LangGraphAgent
+from agent.main import LangGraphAgent
 
 router = APIRouter(prefix="/messages", tags=["messages"])
 

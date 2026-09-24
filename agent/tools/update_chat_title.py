@@ -16,7 +16,7 @@ from sqlmodel import Session
 
 from app.core.db import engine as db_engine
 from app.models import Chat
-from graphs.utils import store_tool_result_metadata
+from agent.utils import store_tool_result_metadata
 
 
 class UpdateChatTitleInput(BaseModel):

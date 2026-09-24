@@ -1,0 +1,42 @@
+[flake8]
+# Maximum allowed line length (aligned with Black / Pylint / isort in this repo).
+max-line-length = 120
+
+# Maximum allowed McCabe complexity for a function.
+max-complexity = 12
+
+# Directories and files to skip.
+exclude =
+    .git,
+    .hg,
+    .mypy_cache,
+    .pytest_cache,
+    .ruff_cache,
+    .tox,
+    .venv,
+    venv,
+    __pycache__,
+    build,
+    dist,
+    alembic,
+    migrations,
+    node_modules,
+    frontend
+
+# Black-compatible ignores:
+#   E203 - whitespace before ':' (conflicts with Black slice formatting)
+#   W503 - line break before binary operator (conflicts with Black)
+extend-ignore =
+    E203,
+    W503
+
+# Default reported codes, kept explicit for clarity.
+select =
+    E,
+    W,
+    F,
+    C
+
+# Package __init__ files legitimately re-export names.
+per-file-ignores =
+    __init__.py:F401
