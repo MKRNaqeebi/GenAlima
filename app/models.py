@@ -645,6 +645,15 @@ class WorkflowsPublic(SQLModel):
     count: int
 
 
+class WorkflowDetailPublic(WorkflowPublic):
+    """
+    A workflow plus its full graph, returned by GET /workflows/{id} so the
+    editor loads everything in one request.
+    """
+    nodes: list["WorkflowNodePublic"] = Field(default_factory=list)
+    edges: list["WorkflowEdgePublic"] = Field(default_factory=list)
+
+
 class WorkflowFieldSpec(SQLModel):
     """
     Pydantic-style spec for one field of a node's input or output.

@@ -533,14 +533,20 @@ Add to `topMenuItems` in `frontend/src/components/Common/SidebarItems.tsx`:
 ## 10. Milestones
 
 **M0 — schema & CRUD (backend only).**
-Models (already written and verified) + migration + `/workflows` CRUD + `PUT /graph` with DAG
-**and type-compatibility** validation.
+Models + `/workflows` CRUD + `PUT /graph` with DAG **and type-compatibility** validation +
+`graph.py` / `types.py`.
+*Built:* models, `app/services/workflow/{graph,types}.py`, `app/api/routes/workflows.py` (registered
+in `app/api/main.py`). Verified end-to-end against an in-memory database.
+*Remaining:* the Alembic migration — **the endpoints 500 until it is applied**, because the five
+tables do not exist in Postgres yet. Regression tests also not committed (the repo has no test
+convention yet).
 *Done when:* curl can create a workflow, save 2 nodes + 1 edge, and `GET` returns the exact code and
 canonical contracts back; saving an edge whose source output doesn't satisfy the target input is
 rejected with a per-edge reason.
 
 **M1 — engine + Python runner.**
-`graph.py`, `engine.py`, `types.py`, `python_runner.py`, `POST /run` and single-node run.
+`engine.py`, `python_runner.py`, `POST /run` and single-node run. (`graph.py` and `types.py` already
+landed with M0; M1 consumes them.)
 *Done when:* a 3-node Python DAG (`split → transform → aggregate`) with declared contracts executes,
 both run rows and per-node I/O are persisted, and an item violating a contract fails with
 `item N: field 'x' expected float, got str` under `strict` and merely logs under `warn`.

@@ -15,6 +15,7 @@ from app.api.routes import (
     templates,
     users,
     utils,
+    workflows,
 )
 from app.core.config import settings
 
@@ -27,6 +28,7 @@ api_router.include_router(organizations.router)
 api_router.include_router(messages.router)
 api_router.include_router(chats.router)
 api_router.include_router(templates.router)
+api_router.include_router(workflows.router)
 
 
 if settings.ENVIRONMENT == "local":
