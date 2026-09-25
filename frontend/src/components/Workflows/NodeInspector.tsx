@@ -133,11 +133,16 @@ const NodeInspector = ({ node, onChange, onDelete }: NodeInspectorProps) => {
         </label>
       </div>
 
-      <div className="flex border-b border-gray-200 dark:border-gray-700">
+      <div
+        role="tablist"
+        className="flex border-b border-gray-200 dark:border-gray-700"
+      >
         {(["code", "input", "output"] as Tab[]).map((name) => (
           <button
             key={name}
             type="button"
+            role="tab"
+            aria-selected={tab === name}
             onClick={() => setTab(name)}
             className={`px-4 py-2 text-sm capitalize ${
               tab === name

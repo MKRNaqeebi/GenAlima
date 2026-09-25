@@ -76,10 +76,42 @@ def get_completions(user_input: CompletionInput) -> list[Message]:
 async def serve_index(request: Request):
     """
     Serve the frontend application.
+
+    index.html must not be cached: it names the hashed bundle, so a cached copy
+    keeps a browser on the previous build after a rebuild (which looks like a
+    fix "not working"). The hashed assets under /assets are safe to cache.
     """
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(
+        "index.html",
+        {"request": request},
+        headers={"Cache-Control": "no-store, must-revalidate"},
+    )
 
 if __name__ == "__main__":
+    # Standard library imports
+    import os
+
     # Third-party imports
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True)
+
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    # uvicorn's stat reloader walks every `.py` file under the watched
+    # directories. Watching the repository root descends into
+    # frontend/node_modules, where Vite and npm create and remove temporary
+    # directories while the walk is in progress; that race crashes the reloader
+    # with FileNotFoundError. Watch only the Python source trees.
+    # Trade-off: editing this file now needs a manual restart.
+    source_dirs = [
+        os.path.join(base_dir, name)
+        for name in ("app", "agent", "scripts")
+        if os.path.isdir(os.path.join(base_dir, name))
+    ]
+    # Port 8000 matches README and frontend/.env (VITE_API_URL). The Dockerfile
+    # overrides the port on its own command line, so this only affects local dev.
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        reload_dirs=source_dirs or None,
+    )

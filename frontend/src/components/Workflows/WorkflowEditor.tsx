@@ -60,6 +60,10 @@ function parseSaveError(error: unknown): SaveProblem {
   return { message: "The graph was rejected", edges: {} }
 }
 
+const INSPECTOR_DEFAULT_WIDTH = 380
+const INSPECTOR_MIN_WIDTH = 320
+const INSPECTOR_MAX_WIDTH = 820
+
 const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -71,6 +75,44 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
   const [dirty, setDirty] = useState(false)
   const [name, setName] = useState("")
   const [edgeErrors, setEdgeErrors] = useState<Record<string, string>>({})
+  const [resizing, setResizing] = useState(false)
+  const [inspectorWidth, setInspectorWidth] = useState(() => {
+    const stored = Number(localStorage.getItem("workflow-inspector-width"))
+    return stored >= INSPECTOR_MIN_WIDTH && stored <= INSPECTOR_MAX_WIDTH
+      ? stored
+      : INSPECTOR_DEFAULT_WIDTH
+  })
+
+  // Drag the panel's left edge to widen it over the canvas.
+  useEffect(() => {
+    if (!resizing) return
+    const onMove = (event: MouseEvent) => {
+      const next = window.innerWidth - event.clientX
+      setInspectorWidth(
+        Math.min(INSPECTOR_MAX_WIDTH, Math.max(INSPECTOR_MIN_WIDTH, next)),
+      )
+    }
+    const onUp = () => setResizing(false)
+    window.addEventListener("mousemove", onMove)
+    window.addEventListener("mouseup", onUp)
+    document.body.style.userSelect = "none"
+    document.body.style.cursor = "col-resize"
+    return () => {
+      window.removeEventListener("mousemove", onMove)
+      window.removeEventListener("mouseup", onUp)
+      document.body.style.userSelect = ""
+      document.body.style.cursor = ""
+    }
+  }, [resizing])
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("workflow-inspector-width", String(inspectorWidth))
+    } catch {
+      // Private mode or a blocked storage backend; the width just won't persist.
+    }
+  }, [inspectorWidth])
+
 
   const { data, isPending, isError } = useQuery({
     queryKey: ["workflow", workflowId],
@@ -113,7 +155,17 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
 
   const onNodesChange = useCallback((changes: NodeChange<CodeNode>[]) => {
     setNodes((current) => applyNodeChanges(changes, current))
-    if (changes.some((change) => change.type !== "select")) setDirty(true)
+    // React Flow emits "dimensions" (and "select") changes on its own — on mount
+    // and while measuring. Only real edits should mark the graph dirty, or a
+    // freshly opened workflow would immediately look unsaved.
+    const edited = changes.some(
+      (change) =>
+        change.type === "position" ||
+        change.type === "add" ||
+        change.type === "remove" ||
+        change.type === "replace",
+    )
+    if (edited) setDirty(true)
   }, [])
 
   const onEdgesChange = useCallback((changes: EdgeChange[]) => {
@@ -276,7 +328,32 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
           />
         </div>
 
-        <aside className="w-[380px] flex-shrink-0 overflow-hidden border-l border-gray-200 bg-white dark:border-gray-700 dark:bg-[#2f2f2f]">
+        <div
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize node settings"
+          title="Drag to resize the node settings panel (double-click to reset)"
+          onMouseDown={() => setResizing(true)}
+          onDoubleClick={() => setInspectorWidth(INSPECTOR_DEFAULT_WIDTH)}
+          data-testid="inspector-resize-handle"
+          className={`group flex w-1.5 flex-shrink-0 cursor-col-resize items-center justify-center transition-colors ${
+            resizing
+              ? "bg-blue-500"
+              : "bg-gray-200 hover:bg-blue-400 dark:bg-gray-700 dark:hover:bg-blue-500"
+          }`}
+        >
+          <div
+            className={`h-8 w-0.5 rounded ${
+              resizing ? "bg-white" : "bg-gray-400 group-hover:bg-white dark:bg-gray-500"
+            }`}
+          />
+        </div>
+
+        <aside
+          style={{ width: inspectorWidth }}
+          className="flex-shrink-0 overflow-hidden border-l border-gray-200 bg-white dark:border-gray-700 dark:bg-[#2f2f2f]"
+          data-testid="node-inspector"
+        >
           {selectedNode ? (
             <NodeInspector
               node={selectedNode}

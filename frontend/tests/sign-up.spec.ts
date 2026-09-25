@@ -47,10 +47,10 @@ test("Sign Up button is visible", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Sign Up" })).toBeVisible()
 })
 
-test("Log In link is visible", async ({ page }) => {
+test("Sign In link is visible", async ({ page }) => {
   await page.goto("/signup")
 
-  await expect(page.getByRole("link", { name: "Log In" })).toBeVisible()
+  await expect(page.getByRole("link", { name: "Sign In" })).toBeVisible()
 })
 
 test("Sign up with valid name, email, and password", async ({ page }) => {
