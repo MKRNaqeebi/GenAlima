@@ -6,13 +6,9 @@ from fastapi import APIRouter
 
 # Local application imports
 from app.api.routes import (
-    chats,
-    items,
     login,
-    messages,
     organizations,
     private,
-    templates,
     users,
     utils,
     workflows,
@@ -23,11 +19,7 @@ api_router = APIRouter()
 api_router.include_router(login.router)
 api_router.include_router(users.router)
 api_router.include_router(utils.router)
-api_router.include_router(items.router)
 api_router.include_router(organizations.router)
-api_router.include_router(messages.router)
-api_router.include_router(chats.router)
-api_router.include_router(templates.router)
 api_router.include_router(workflows.router)
 
 

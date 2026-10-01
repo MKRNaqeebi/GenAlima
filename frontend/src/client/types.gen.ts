@@ -13,195 +13,85 @@ export type HTTPValidationError = {
   detail?: Array<ValidationError>
 }
 
-export type ItemCreate = {
-  title: string
-  description?: string | null
-}
-
-export type ConnectorCreate = {
-  name: string
-  description?: string | null
-  function: string
-  active?: boolean
-}
-
-export type TemplateCreate = {
-  title: string
-  description?: string | null
-  template?: string | null
-  placeholder?: string | null
-  model?: string | null
-  connector?: string | null
-  active?: boolean
-}
-
-export type ChatCreate = {
-  title: string
-  template_id?: string | null
-}
-
-export type MessageCreate = {
-  role: string
-  content: string
-  chat_id?: string
-}
-
-export type KnowledgeCreate = {
-  files: Array<File>
-}
-
-export type ItemPublic = {
-  title: string
-  description?: string | null
-  id: string
-  owner_id: string
-}
-
-export type ConnectorPublic = {
-  name: string
-  description?: string | null
-  function: string
-  active?: boolean
-  id: string
-  owner_id: string
-}
-
-export type TemplatePublic = {
-  title: string
-  description?: string | null
-  template?: string | null
-  placeholder?: string | null
-  model?: string | null
-  connector?: string | null
-  active?: boolean
-  id: string
-  owner_id: string
-}
-
-export type ChatPublic = {
-  title: string
-  template_id?: string | null
-  id: string
-  owner_id: string
-}
-
-export type MessagePublic = {
-  role: string
-  content: string
-  meta_data: JSON
-  chat_id?: string | null
-  id: string
-  owner_id: string
-}
-
-export type KnowledgePublic = {
-  content: string
-  meta: JSON
-  id: string
-  owner_id: string
-}
-
-export type KnowledgeFilePublic = {
-  id: string
-  owner_id: string
-  file_path: string
-  chunk_count: number
-  created_at: string
-}
-
-export type ItemsPublic = {
-  data: Array<ItemPublic>
-  count: number
-}
-
-export type ConnectorsPublic = {
-  data: Array<ConnectorPublic>
-  count: number
-}
-
-export type TemplatesPublic = {
-  data: Array<TemplatePublic>
-  count: number
-}
-
-export type ChatsPublic = {
-  data: Array<ChatPublic>
-  count: number
-}
-
-export type MessagesPublic = {
-  data: Array<MessagePublic>
-  count: number
-}
-
-export type KnowledgesPublic = {
-  data: Array<KnowledgePublic>
-  count: number
-}
-
-export type KnowledgeFilesPublic = {
-  data: Array<KnowledgeFilePublic>
-  count: number
-}
-
-export type ItemUpdate = {
-  title?: string | null
-  description?: string | null
-}
-
-export type ConnectorUpdate = {
-  name?: string | null
-  description?: string | null
-  function?: string | null
-  active?: boolean
-}
-
-export type TemplateUpdate = {
-  title?: string | null
-  description?: string | null
-  template?: string | null
-  placeholder?: string | null
-  model?: string | null
-  connector?: string | null
-  active?: boolean
-}
-
-export type ChatUpdate = {
-  title?: string | null
-  template_id?: string | null
-}
-
-export type MessageUpdate = {
-  meta_data?: any | null
-}
-
-export type KnowledgeUpdate = {
-  category?: string | null
-  content?: string | null
-  filename?: string | null
-  page_number?: number | null
-  chunk_number?: number | null
-}
-
+/**
+ * Generic single-message response body, returned by endpoints that only need
+ * to report the outcome of the action they performed.
+ */
 export type Message = {
   message: string
 }
 
+/**
+ * Properties to receive via API on update
+ */
 export type NewPassword = {
   token: string
   new_password: string
 }
 
+/**
+ * Shared properties
+ */
+export type OrganizationBase = {
+  title: string
+  description?: string | null
+}
+
+/**
+ * Properties to return via API, id is always required
+ */
+export type OrganizationPublic = {
+  title: string
+  description?: string | null
+  id?: string | null
+  owner_id?: string | null
+}
+
+/**
+ * Properties to return via API, id is always required
+ */
+export type OrganizationsPublic = {
+  data: Array<OrganizationPublic>
+  count: number
+}
+
+/**
+ * Properties to receive on item update
+ */
+export type OrganizationUpdate = {
+  title?: string | null
+  description?: string | null
+}
+
+/**
+ * Model for creating a new user via private API.
+ */
+export type PrivateUserCreate = {
+  email: string
+  password: string
+  full_name: string
+  is_verified?: boolean
+}
+
+/**
+ * JSON payload containing access token
+ */
 export type Token = {
   access_token: string
   token_type?: string
 }
 
+/**
+ * Properties to receive via API on update password
+ */
 export type UpdatePassword = {
   current_password: string
   new_password: string
 }
 
+/**
+ * Properties to receive via API on creation
+ */
 export type UserCreate = {
   email: string
   is_active?: boolean
@@ -210,6 +100,9 @@ export type UserCreate = {
   password: string
 }
 
+/**
+ * Properties to return via API, id is always required
+ */
 export type UserPublic = {
   email: string
   is_active?: boolean
@@ -218,17 +111,26 @@ export type UserPublic = {
   id: string
 }
 
+/**
+ * Properties to receive via API on registration
+ */
 export type UserRegister = {
   email: string
   password: string
   full_name?: string | null
 }
 
+/**
+ * Properties to return via API, id is always required
+ */
 export type UsersPublic = {
   data: Array<UserPublic>
   count: number
 }
 
+/**
+ * Properties to receive via API on update, all are optional
+ */
 export type UserUpdate = {
   email?: string | null
   is_active?: boolean
@@ -237,6 +139,9 @@ export type UserUpdate = {
   password?: string | null
 }
 
+/**
+ * Properties to receive via API on update, all are optional
+ */
 export type UserUpdateMe = {
   full_name?: string | null
   email?: string | null
@@ -248,218 +153,214 @@ export type ValidationError = {
   type: string
 }
 
-export type ItemsReadItemsData = {
-  limit?: number
-  skip?: number
+/**
+ * Properties to receive on workflow creation
+ */
+export type WorkflowCreate = {
+  name: string
+  description?: string | null
+  active?: boolean
+  settings?: {
+    [key: string]: unknown
+  } | null
 }
 
-export type ConnectorsReadConnectorsData = {
-  limit?: number
-  skip?: number
+/**
+ * A workflow plus its full graph, returned by GET /workflows/{id} so the
+ * editor loads everything in one request.
+ */
+export type WorkflowDetailPublic = {
+  name: string
+  description?: string | null
+  active?: boolean
+  settings?: {
+    [key: string]: unknown
+  } | null
+  id?: string | null
+  owner_id?: string | null
+  version?: number | null
+  created_at?: string | null
+  updated_at?: string | null
+  nodes?: Array<WorkflowNodePublic>
+  edges?: Array<WorkflowEdgePublic>
 }
 
-export type TemplatesReadTemplatesData = {
-  limit?: number
-  skip?: number
+/**
+ * Properties to receive when saving an edge
+ */
+export type WorkflowEdgeCreate = {
+  source_node_id: string
+  target_node_id: string
+  source_handle?: string
+  target_handle?: string
+  id?: string | null
 }
 
-export type ChatsReadChatsData = {
-  limit?: number
-  skip?: number
-}
-
-export type MessagesReadMessagesData = {
-  limit?: number
-  skip?: number
-}
-
-export type KnowledgesReadKnowledgesData = {
-  limit?: number
-  skip?: number
-}
-
-export type KnowledgeFilesReadKnowledgeFilesData = {
-  limit?: number
-  skip?: number
-}
-
-export type ItemsReadItemsResponse = ItemsPublic
-
-export type ConnectorsReadConnectorsResponse = ConnectorsPublic
-
-export type TemplatesReadTemplatesResponse = TemplatesPublic
-
-export type ChatsReadChatsResponse = ChatsPublic
-
-export type MessagesReadMessagesResponse = MessagesPublic
-
-export type KnowledgesReadKnowledgesResponse = KnowledgesPublic
-
-export type KnowledgeFilesReadKnowledgeFilesResponse = KnowledgeFilesPublic
-
-export type ItemsCreateItemData = {
-  requestBody: ItemCreate
-}
-
-export type ConnectorsCreateConnectorData = {
-  requestBody: ConnectorCreate
-}
-
-export type TemplatesCreateTemplateData = {
-  requestBody: TemplateCreate
-}
-
-export type ChatsCreateChatData = {
-  requestBody: ChatCreate
-}
-
-export type MessagesCreateMessageData = {
-  requestBody: MessageCreate
-}
-
-export type KnowledgesCreateKnowledgeData = {
-  requestBody: KnowledgeCreate
-}
-
-export type ItemsCreateItemResponse = ItemPublic
-
-export type ConnectorsCreateConnectorResponse = ConnectorPublic
-
-export type TemplatesCreateTemplateResponse = TemplatePublic
-
-export type ChatsCreateChatResponse = ChatPublic
-
-export type MessagesCreateMessageResponse = MessagePublic
-
-export type KnowledgesCreateKnowledgeResponse = KnowledgePublic
-
-export type ItemsReadItemData = {
+/**
+ * Properties to return via API, id is always required
+ */
+export type WorkflowEdgePublic = {
+  source_node_id: string
+  target_node_id: string
+  source_handle?: string
+  target_handle?: string
   id: string
+  workflow_id: string
 }
 
-export type ConnectorsReadConnectorData = {
+/**
+ * Pydantic-style spec for one field of a node's input or output.
+ *
+ * A node declares its input and output as ``{field_name: WorkflowFieldSpec}``.
+ * The allowed ``type`` values mirror the common Pydantic annotations GenAlima
+ * uses: str, int, float, bool, list, dict, datetime, Any. ``items`` names the
+ * element type when ``type`` is "list".
+ *
+ * Invariants enforced here: the type must come from the known vocabulary, and
+ * `required` follows Pydantic semantics — leave it unset and it resolves to
+ * false when a `default` is given, true otherwise. Stating `required: true`
+ * alongside a default is rejected as contradictory.
+ */
+export type WorkflowFieldSpec = {
+  type?: string
+  /**
+   * Resolved automatically: false when a default is set, else true.
+   */
+  required?: boolean | null
+  default?: unknown | null
+  description?: string | null
+  enum?: Array<unknown> | null
+  items?: string | null
+}
+
+/**
+ * Payload for the transactional graph upsert: the full node and edge set of a
+ * workflow. Anything missing from these lists is deleted by the route.
+ */
+export type WorkflowGraphIn = {
+  nodes: Array<WorkflowNodeCreate>
+  edges: Array<WorkflowEdgeCreate>
+}
+
+/**
+ * Canonical graph returned after a save so the client can reconcile ids
+ */
+export type WorkflowGraphPublic = {
   id: string
+  version: number
+  nodes: Array<WorkflowNodePublic>
+  edges: Array<WorkflowEdgePublic>
 }
 
-export type TemplatesReadTemplateData = {
+/**
+ * Properties to receive when saving a node. The id is generated by the client
+ * so edges can reference a node before it has been persisted; the server fills
+ * it in when omitted.
+ */
+export type WorkflowNodeCreate = {
+  key: string
+  name: string
+  type?: string
+  type_version?: number
+  position_x?: number
+  position_y?: number
+  disabled?: boolean
+  code?: string
+  input?: {
+    [key: string]: WorkflowFieldSpec
+  }
+  output?: {
+    [key: string]: WorkflowFieldSpec
+  }
+  type_enforcement?: string
+  parameters?: {
+    [key: string]: unknown
+  }
+  notes?: string | null
+  id?: string | null
+}
+
+/**
+ * Properties to return via API, id is always required
+ */
+export type WorkflowNodePublic = {
+  key: string
+  name: string
+  type?: string
+  type_version?: number
+  position_x?: number
+  position_y?: number
+  disabled?: boolean
+  code?: string
+  input?: {
+    [key: string]: WorkflowFieldSpec
+  }
+  output?: {
+    [key: string]: WorkflowFieldSpec
+  }
+  type_enforcement?: string
+  parameters?: {
+    [key: string]: unknown
+  }
+  notes?: string | null
   id: string
+  workflow_id: string
 }
 
-export type ChatsReadChatData = {
-  id: string
+/**
+ * Properties to return via API, id is always required
+ */
+export type WorkflowPublic = {
+  name: string
+  description?: string | null
+  active?: boolean
+  settings?: {
+    [key: string]: unknown
+  } | null
+  id?: string | null
+  owner_id?: string | null
+  version?: number | null
+  created_at?: string | null
+  updated_at?: string | null
 }
 
-export type MessagesReadMessageData = {
-  id: string
+/**
+ * Properties to return via API for workflow listing
+ */
+export type WorkflowsPublic = {
+  data: Array<WorkflowPublic>
+  count: number
 }
 
-export type KnowledgesReadKnowledgeData = {
-  id: string
+/**
+ * Properties to receive on workflow update
+ */
+export type WorkflowUpdate = {
+  name?: string | null
+  description?: string | null
+  active?: boolean | null
+  settings?: {
+    [key: string]: unknown
+  } | null
 }
 
-export type KnowledgeFilesReadKnowledgeFileData = {
-  id: string
-}
+export type ServeIndexResponse = unknown
 
-export type ItemsReadItemResponse = ItemPublic
+export type ServeIndex1Response = unknown
 
-export type ConnectorsReadConnectorResponse = ConnectorPublic
+export type ServeIndex2Response = unknown
 
-export type TemplatesReadTemplateResponse = TemplatePublic
+export type ServeIndex3Response = unknown
 
-export type ChatsReadChatResponse = ChatPublic
+export type ServeIndex4Response = unknown
 
-export type MessagesReadMessageResponse = MessagePublic
+export type ServeIndex5Response = unknown
 
-export type KnowledgesReadKnowledgeResponse = KnowledgePublic
+export type ServeIndex6Response = unknown
 
-export type KnowledgeFilesReadKnowledgeFileResponse = KnowledgeFilePublic
+export type ServeIndex7Response = unknown
 
-export type ItemsUpdateItemData = {
-  id: string
-  requestBody: ItemUpdate
-}
-
-export type ConnectorsUpdateConnectorData = {
-  id: string
-  requestBody: ConnectorUpdate
-}
-
-export type TemplatesUpdateTemplateData = {
-  id: string
-  requestBody: TemplateUpdate
-}
-
-export type ChatsUpdateChatData = {
-  id: string
-  requestBody: ChatUpdate
-}
-
-export type MessagesUpdateMessageData = {
-  id: string
-  requestBody: MessageUpdate
-}
-
-export type KnowledgesUpdateKnowledgeData = {
-  id: string
-  requestBody: KnowledgeUpdate
-}
-
-export type ItemsUpdateItemResponse = ItemPublic
-
-export type ConnectorsUpdateConnectorResponse = ConnectorPublic
-
-export type TemplatesUpdateTemplateResponse = TemplatePublic
-
-export type ChatsUpdateChatResponse = ChatPublic
-
-export type MessagesUpdateMessageResponse = MessagePublic
-
-export type KnowledgesUpdateKnowledgeResponse = KnowledgePublic
-
-export type KnowledgeFilesUpdateKnowledgeFileResponse = KnowledgeFilePublic
-
-export type ItemsDeleteItemData = {
-  id: string
-}
-
-export type ConnectorsDeleteConnectorData = {
-  id: string
-}
-
-export type TemplatesDeleteTemplateData = {
-  id: string
-}
-
-export type ChatsDeleteChatData = {
-  id: string
-}
-
-export type MessagesDeleteMessageData = {
-  id: string
-}
-
-export type KnowledgesDeleteKnowledgeData = {
-  id: string
-}
-
-export type KnowledgeFilesDeleteKnowledgeFileData = {
-  id: string
-}
-
-export type ItemsDeleteItemResponse = Message
-
-export type ConnectorsDeleteConnectorResponse = Message
-
-export type TemplatesDeleteTemplateResponse = Message
-
-export type ChatsDeleteChatResponse = Message
-
-export type MessagesDeleteMessageResponse = Message
-
-export type KnowledgesDeleteKnowledgeResponse = Message
-
-export type KnowledgeFilesDeleteKnowledgeFileResponse = Message
+export type ServeIndex8Response = unknown
 
 export type LoginLoginAccessTokenData = {
   formData: Body_login_login_access_token
@@ -486,6 +387,44 @@ export type LoginRecoverPasswordHtmlContentData = {
 }
 
 export type LoginRecoverPasswordHtmlContentResponse = string
+
+export type OrganizationsReadOrganizationsData = {
+  limit?: number
+  skip?: number
+}
+
+export type OrganizationsReadOrganizationsResponse = OrganizationsPublic
+
+export type OrganizationsCreateOrganizationData = {
+  requestBody: OrganizationBase
+}
+
+export type OrganizationsCreateOrganizationResponse = OrganizationPublic
+
+export type OrganizationsReadOrganizationData = {
+  id: string
+}
+
+export type OrganizationsReadOrganizationResponse = OrganizationPublic
+
+export type OrganizationsUpdateOrganizationData = {
+  id: string
+  requestBody: OrganizationUpdate
+}
+
+export type OrganizationsUpdateOrganizationResponse = OrganizationPublic
+
+export type OrganizationsDeleteOrganizationData = {
+  id: string
+}
+
+export type OrganizationsDeleteOrganizationResponse = Message
+
+export type PrivateCreateUserData = {
+  requestBody: PrivateUserCreate
+}
+
+export type PrivateCreateUserResponse = UserPublic
 
 export type UsersReadUsersData = {
   limit?: number
@@ -548,3 +487,42 @@ export type UtilsTestEmailData = {
 export type UtilsTestEmailResponse = Message
 
 export type UtilsHealthCheckResponse = boolean
+
+export type WorkflowsReadWorkflowsData = {
+  limit?: number
+  skip?: number
+}
+
+export type WorkflowsReadWorkflowsResponse = WorkflowsPublic
+
+export type WorkflowsCreateWorkflowData = {
+  requestBody: WorkflowCreate
+}
+
+export type WorkflowsCreateWorkflowResponse = WorkflowPublic
+
+export type WorkflowsReadWorkflowData = {
+  id: string
+}
+
+export type WorkflowsReadWorkflowResponse = WorkflowDetailPublic
+
+export type WorkflowsUpdateWorkflowData = {
+  id: string
+  requestBody: WorkflowUpdate
+}
+
+export type WorkflowsUpdateWorkflowResponse = WorkflowPublic
+
+export type WorkflowsDeleteWorkflowData = {
+  id: string
+}
+
+export type WorkflowsDeleteWorkflowResponse = Message
+
+export type WorkflowsUpdateWorkflowGraphData = {
+  id: string
+  requestBody: WorkflowGraphIn
+}
+
+export type WorkflowsUpdateWorkflowGraphResponse = WorkflowGraphPublic

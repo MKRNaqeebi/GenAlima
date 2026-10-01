@@ -4,14 +4,12 @@ utils.py
 # Standard library imports
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
-from functools import wraps
 import logging
 from pathlib import Path
 from typing import Any
 
 # Third-party imports
 import emails  # type: ignore
-from fastapi import Request
 from jinja2 import Template
 import jwt
 from jwt.exceptions import InvalidTokenError
@@ -153,15 +151,3 @@ def verify_password_reset_token(token: str) -> str | None:
         return str(decoded_token["sub"])
     except InvalidTokenError:
         return None
-
-
-def auth_required(func):
-    """
-    Decorator to check if the user is authenticated.
-    """
-    @wraps(func)
-    def wrapper(request: Request, *args, **kwargs):
-        # usr_email = get_current_user_email(request.headers.get('Authorization').split(' ')[1])
-        # if usr_email:
-        return func(request=request, *args, **kwargs)
-    return wrapper

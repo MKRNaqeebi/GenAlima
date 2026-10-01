@@ -12,8 +12,6 @@ from starlette.middleware.cors import CORSMiddleware
 # Local application imports
 from app.api.main import api_router
 from app.core.config import settings
-from app.models import CompletionInput, Message
-from app.utils import auth_required
 
 
 def custom_generate_unique_id(route: APIRoute) -> str:
@@ -51,23 +49,10 @@ if settings.all_cors_origins:
 app.include_router(api_router, prefix=settings.API_V1_STR)
 
 
-@app.get("/api/completions")
-@auth_required
-def get_completions(user_input: CompletionInput) -> list[Message]:
-    """
-    Endpoint for generating completions for the user input.
-    """
-    return {"completions": user_input}
-
-
 @app.get("/")
 @app.get("/login")
 @app.get("/settings")
-@app.get("/items")
 @app.get("/home")
-@app.get("/chats")
-@app.get("/chat/{chat_id}")
-@app.get("/messages")
 @app.get("/admin")
 @app.get("/signup")
 @app.get("/recover-password")

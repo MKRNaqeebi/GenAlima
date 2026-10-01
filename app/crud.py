@@ -3,14 +3,13 @@ This module contains the CRUD (Create, Read, Update, Delete) operations for the 
 """
 # Standard library imports
 from typing import Any
-import uuid
 
 # Third-party imports
 from sqlmodel import Session, select
 
 # Local application imports
 from app.core.security import get_password_hash, verify_password
-from app.models import Item, ItemBase, User, UserCreate, UserUpdate
+from app.models import User, UserCreate, UserUpdate
 
 
 def create_user(*, session: Session, user_create: UserCreate) -> User:
@@ -63,14 +62,3 @@ def authenticate(*, session: Session, email: str, password: str) -> User | None:
     if not verify_password(password, db_user.hashed_password):
         return None
     return db_user
-
-
-def create_item(*, session: Session, item_in: ItemBase, owner_id: uuid.UUID) -> Item:
-    """
-    Create a new item in the database.
-    """
-    db_item = Item.model_validate(item_in, update={"owner_id": owner_id})
-    session.add(db_item)
-    session.commit()
-    session.refresh(db_item)
-    return db_item

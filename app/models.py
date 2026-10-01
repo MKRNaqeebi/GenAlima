@@ -4,11 +4,10 @@ The schema is used to validate the data that is sent to the application.
 """
 # Standard library imports
 from datetime import datetime
-from typing import Any, Dict, List
+from typing import Any, Dict, Optional
 import uuid
 
 # Third-party imports
-from pgvector.sqlalchemy import Vector
 from pydantic import EmailStr, ConfigDict, field_validator, model_validator
 from sqlalchemy import Column, Text
 from sqlmodel import JSON, Field, Relationship, SQLModel
@@ -75,18 +74,18 @@ class User(UserBase, table=True):
     """
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
     hashed_password: str
-    items: list["Item"] = Relationship(
-        back_populates="owner", cascade_delete=True)
+    organization_id: uuid.UUID | None = Field(
+        default=None, foreign_key="organization.id", ondelete="SET NULL"
+    )
+    organization: Optional["Organization"] = Relationship(
+        back_populates="users",
+        sa_relationship_kwargs={"foreign_keys": "User.organization_id"},
+    )
     organizations: list["Organization"] = Relationship(
-        back_populates="owner", cascade_delete=True)
-    templates: list["Template"] = Relationship(
-        back_populates="owner", cascade_delete=True)
-    chats: list["Chat"] = Relationship(
-        back_populates="owner", cascade_delete=True)
-    knowledge_files: list["KnowledgeFile"] = Relationship(
-        back_populates="owner", cascade_delete=True)
-    connectors: list["Connector"] = Relationship(
-        back_populates="owner", cascade_delete=True)
+        back_populates="owner",
+        cascade_delete=True,
+        sa_relationship_kwargs={"foreign_keys": "Organization.owner_id"},
+    )
     workflows: list["Workflow"] = Relationship(
         back_populates="owner", cascade_delete=True)
 
@@ -132,7 +131,14 @@ class Organization(OrganizationBase, table=True):
     owner_id: uuid.UUID = Field(
         foreign_key="user.id", nullable=False, ondelete="CASCADE"
     )
-    owner: User | None = Relationship(back_populates="organizations")
+    owner: User = Relationship(
+        back_populates="organizations",
+        sa_relationship_kwargs={"foreign_keys": "Organization.owner_id"},
+    )
+    users: list["User"] = Relationship(
+        back_populates="organization",
+        sa_relationship_kwargs={"foreign_keys": "User.organization_id"},
+    )
 
 
 class OrganizationPublic(OrganizationBase):
@@ -151,314 +157,12 @@ class OrganizationsPublic(SQLModel):
     count: int
 
 
-# All LargeModel models
-class LargeModelBase(SQLModel):
+class Message(SQLModel):
     """
-    This is the schema for the large model
+    Generic single-message response body, returned by endpoints that only need
+    to report the outcome of the action they performed.
     """
-    title: str = Field(max_length=255)
-    description: str | None = Field(default=None, max_length=255)
-    rank: int = Field(default=0)
-    provider: str | None = Field(default=None, max_length=255)
-    active: bool = Field(default=True)
-
-
-class LargeModelUpdate(LargeModelBase):
-    """
-    Properties to receive on item update
-    """
-    title: str | None = Field(
-        default=None, min_length=1, max_length=255)  # type: ignore
-    description: str | None = Field(default=None, max_length=255)
-
-
-class LargeModel(LargeModelBase, table=True):
-    """
-    Database model, database table inferred from class name
-    """
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    title: str = Field(max_length=255)
-
-
-class LargeModelPublic(LargeModelBase):
-    """
-    Properties to return via API, id is always required
-    """
-    id: uuid.UUID | None = None
-
-
-class LargeModelsPublic(SQLModel):
-    """
-    Properties to return via API, id is always required
-    """
-    data: list[LargeModelPublic]
-    count: int
-
-
-# All Connector models
-class ConnectorBase(SQLModel):
-    """
-    This is the schema for the connector
-    """
-    name: str = Field(max_length=255)
-    description: str | None = Field(default=None, max_length=255)
-    function: str | None = Field(default=None, max_length=255)
-    active: bool = Field(default=True)
-    meta_data: Dict[str, Any] | None = Field(default=None, sa_column=Column(JSON))
-
-
-class ConnectorCreate(ConnectorBase):
-    """
-    Properties to receive on connector creation
-    """
-
-
-class ConnectorUpdate(ConnectorBase):
-    """
-    Properties to receive on item update
-    """
-    name: str | None = Field(default=None, min_length=1,
-                             max_length=255)  # type: ignore
-    description: str | None = Field(default=None, max_length=255)
-    active: bool | None = Field(default=None)
-    meta_data: Dict[str, Any] | None = Field(default=None)
-
-
-class Connector(ConnectorBase, table=True):
-    """
-    Database model, database table inferred from class name
-    """
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    name: str = Field(max_length=255)
-    owner_id: uuid.UUID = Field(
-        foreign_key="user.id", nullable=False, ondelete="CASCADE"
-    )
-    owner: User | None = Relationship(back_populates="connectors")
-
-
-class ConnectorPublic(ConnectorBase):
-    """
-    Properties to return via API, id is always required
-    """
-    id: uuid.UUID | None = None
-
-
-class ConnectorsPublic(SQLModel):
-    """
-    Properties to return via API, id is always required
-    """
-    data: list[ConnectorPublic]
-    count: int
-
-
-# All Template models
-class TemplateBase(SQLModel):
-    """
-    This is the schema for the template
-    """
-    title: str = Field(max_length=255)
-    description: str | None = Field(default=None, max_length=255)
-    template: str | None = Field(default=None, max_length=4096)
-    placeholder: str | None = Field(default=None, max_length=255)
-    model: str | None = Field(default=None, max_length=255)
-    connector: str | None = Field(default=None, max_length=255)
-    active: bool = Field(default=True)
-
-
-class TemplateUpdate(TemplateBase):
-    """
-    Properties to receive on item update
-    """
-    title: str | None = Field(
-        default=None, min_length=1, max_length=255)  # type: ignore
-    description: str | None = Field(default=None, max_length=255)
-
-
-class Template(TemplateBase, table=True):
-    """
-    Database model, database table inferred from class name
-    """
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    title: str = Field(max_length=255)
-    owner_id: uuid.UUID = Field(
-        foreign_key="user.id", nullable=False, ondelete="CASCADE")
-    owner: User | None = Relationship(back_populates="templates")
-    chats: list["Chat"] = Relationship(
-        back_populates="template", cascade_delete=True)
-
-
-class TemplatePublic(TemplateBase):
-    """
-    Properties to return via API, id is always required
-    """
-    id: uuid.UUID | None = None
-
-
-class TemplatesPublic(SQLModel):
-    """
-    Properties to return via API, id is always required
-    """
-    data: list[TemplatePublic]
-    count: int
-
-
-# All Chat models
-class ChatBase(SQLModel):
-    """
-    This is the schema for the chat
-    """
-    title: str = Field(max_length=255)
-    template_id: uuid.UUID = Field(
-        foreign_key="template.id", nullable=False, ondelete="CASCADE"
-    )
-
-
-class ChatUpdate(ChatBase):
-    """
-    Properties to receive on item update
-    """
-    title: str | None = Field(
-        default=None, min_length=1, max_length=255)  # type: ignore
-
-
-class Chat(ChatBase, table=True):
-    """
-    Database model, database table inferred from class name
-    """
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    title: str = Field(max_length=255)
-    owner_id: uuid.UUID = Field(
-        foreign_key="user.id", nullable=False, ondelete="CASCADE")
-    owner: User | None = Relationship(back_populates="chats")
-    template_id: uuid.UUID = Field(
-        foreign_key="template.id", nullable=False, ondelete="CASCADE")
-    template: Template | None = Relationship(back_populates="chats")
-    messages: list["Message"] = Relationship(
-        back_populates="chat", cascade_delete=True)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-
-
-class ChatPublic(ChatBase):
-    """
-    Properties to return via API, id is always required
-    """
-    id: uuid.UUID | None = None
-
-
-class ChatsPublic(SQLModel):
-    """
-    Properties to return via API, id is always required
-    """
-    data: list[ChatPublic]
-    count: int
-
-
-class MessageBase(SQLModel):
-    """
-    This is the schema for the message
-    """
-    role: str = Field(max_length=255)
-    content: str = Field(max_length=4096)
-    meta_data: Dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=True))
-    chat_id: uuid.UUID = Field(
-        foreign_key="chat.id", nullable=False, ondelete="CASCADE"
-    )
-
-
-class MessageUpdate(SQLModel):
-    """
-    Properties to receive on item update
-    """
-    meta_data: Dict[str, Any] = Field(default=None)
-
-
-class Message(MessageBase, table=True):
-    """
-    Database model, database table inferred from class name
-    """
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    role: str = Field(max_length=255)
-    content: str = Field(max_length=4096)
-    chat_id: uuid.UUID = Field(
-        foreign_key="chat.id", nullable=False, ondelete="CASCADE"
-    )
-    chat: Chat | None = Relationship(back_populates="messages")
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-
-
-class MessagePublic(MessageBase):
-    """
-    Properties to return via API, id is always required
-    """
-    id: uuid.UUID | None = None
-    meta_data: Dict[str, Any] | None = None
-
-
-class MessagesPublic(SQLModel):
-    """
-    Properties to return via API, id is always required
-    """
-    data: list[MessagePublic]
-    count: int
-
-
-# All Completion models
-class CompletionInput(SQLModel):
-    """
-    This is the schema for the input data to the get_completions endpoint.
-    """
-    query: str = Field(max_length=255)
-    chat_id: uuid.UUID = Field(
-        foreign_key="chat.id", nullable=False, ondelete="CASCADE"
-    )
-
-
-# Shared properties
-class ItemBase(SQLModel):
-    """
-    Shared properties
-    """
-    title: str = Field(min_length=1, max_length=255)
-    description: str | None = Field(default=None, max_length=255)
-
-
-# Properties to receive on item update
-class ItemUpdate(ItemBase):
-    """
-    Properties to receive on item update
-    """
-    title: str | None = Field(
-        default=None, min_length=1, max_length=255)  # type: ignore
-
-
-# Database model, database table inferred from class name
-class Item(ItemBase, table=True):
-    """
-    Database model, database table inferred from class name
-    """
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    title: str = Field(max_length=255)
-    owner_id: uuid.UUID = Field(
-        foreign_key="user.id", nullable=False, ondelete="CASCADE"
-    )
-    owner: User | None = Relationship(back_populates="items")
-
-
-# Properties to return via API, id is always required
-class ItemPublic(ItemBase):
-    """
-    Properties to return via API, id is always required
-    """
-    id: uuid.UUID | None = None
-    owner_id: uuid.UUID | None = None
-
-
-class ItemsPublic(SQLModel):
-    """
-    Properties to return via API, id is always required
-    """
-    data: list[ItemPublic]
-    count: int
+    message: str
 
 
 class Token(SQLModel):
@@ -484,99 +188,6 @@ class NewPassword(SQLModel):
     new_password: str = Field(min_length=8, max_length=40)
 
 
-class KnowledgeFileBase(SQLModel):
-    """
-    Model for knowledge files.
-    """
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    file_path: str = Field(max_length=255)
-    chunk_count: int = Field(default=0)
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-
-
-class KnowledgeFile(KnowledgeFileBase, table=True):
-    """
-    Database model for knowledge files.
-    """
-    owner_id: uuid.UUID = Field(foreign_key="user.id", nullable=False, ondelete="CASCADE")
-    owner: User | None = Relationship(back_populates="knowledge_files")
-    knowledges: list["Knowledge"] = Relationship(back_populates="knowledge_file")
-
-
-class KnowledgeFilePublic(KnowledgeFileBase):
-    """
-    Properties to return via API, id is always required
-    """
-    id: uuid.UUID | None = None
-    owner_id: uuid.UUID | None = None
-    created_at: datetime | None = None
-
-
-class KnowledgeFilesPublic(SQLModel):
-    """
-    Properties to return via API for file listing
-    """
-    data: list[KnowledgeFilePublic]
-    count: int
-
-
-class KnowledgeBase(SQLModel):
-    """
-    Base model for knowledge-related data.
-    source_type: pdf, txt, word, md, webpage, etc
-    """
-    source_type: str = Field(default="pdf", max_length=64)
-    content: str
-    meta: dict = Field(sa_column=Column(JSON))
-
-
-class KnowledgeUpdate(KnowledgeBase):
-    """
-    Properties to receive on item update
-    """
-    category: str | None = Field(
-        default=None, min_length=1, max_length=255)
-    content: str | None = Field(default=None)
-
-
-class Knowledge(KnowledgeBase, table=True):
-    """
-    Database model, database table inferred from class name
-    """
-    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    content_vector: List[float] = Field(default=None, sa_column=Column(Vector(1536)))
-    knowledge_file_id: uuid.UUID = Field(
-        foreign_key="knowledgefile.id", nullable=False, ondelete="CASCADE"
-    )
-    knowledge_file: KnowledgeFile | None = Relationship(back_populates="knowledges")
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-
-
-class KnowledgePublic(KnowledgeBase):
-    """
-    Properties to return via API, id is always required
-    """
-    id: uuid.UUID | None = None
-    knowledge_file_id: uuid.UUID | None = None
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-
-
-class KnowledgesPublic(SQLModel):
-    """
-    Properties to return via API, id is always required
-    """
-    data: list[KnowledgePublic]
-    count: int
-
-
-# ---------------------------------------------------------------------------
-# All Workflow models
-#
-# A workflow is a DAG of code nodes. Every node holds user-authored Python in
-# the `code` column; edges connect node ids and carry lists of n8n-style items
-# shaped {"json": {...}, "binary": {...}}. Unlike n8n, each node also declares a
-# strict input and output contract built from WorkflowFieldSpec.
-# ---------------------------------------------------------------------------
 ALLOWED_FIELD_TYPES = ("str", "int", "float", "bool", "list", "dict", "datetime", "Any")
 
 
@@ -617,6 +228,7 @@ class Workflow(WorkflowBase, table=True):
         foreign_key="user.id", nullable=False, ondelete="CASCADE"
     )
     version: int = Field(default=1)
+    is_frozen: bool = Field(default=False, index=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
     owner: User | None = Relationship(back_populates="workflows")
@@ -921,17 +533,11 @@ class WorkflowRunNode(SQLModel, table=True):
     Database model for the result of one node inside one run
     """
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
-    run_id: uuid.UUID = Field(
-        foreign_key="workflowrun.id", nullable=False, ondelete="CASCADE"
-    )
-    node_id: uuid.UUID = Field(
-        foreign_key="workflownode.id", nullable=False, ondelete="CASCADE"
-    )
+    run_id: uuid.UUID = Field(foreign_key="workflowrun.id", nullable=False, ondelete="CASCADE")
+    node_id: uuid.UUID = Field(foreign_key="workflownode.id", nullable=False, ondelete="CASCADE")
     status: str = Field(default="pending", max_length=16)
-    input_items: list[dict] = Field(
-        default_factory=list, sa_column=Column(JSON))
-    output_items: list[dict] = Field(
-        default_factory=list, sa_column=Column(JSON))
+    input_items: list[dict] = Field(default_factory=list, sa_column=Column(JSON))
+    output_items: list[dict] = Field(default_factory=list, sa_column=Column(JSON))
     logs: str | None = Field(default=None, sa_column=Column(Text))
     error: str | None = Field(default=None, sa_column=Column(Text))
     duration_ms: int | None = Field(default=None)

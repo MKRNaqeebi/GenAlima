@@ -3,9 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import React from "react"
 import { useForm } from "react-hook-form"
 
-import {
-  ItemsService, UsersService, MessagesService, ChatsService, ConnectorsService, TemplatesService, KnowledgeFilesService,
-} from "../../client"
+import { UsersService } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
 
 interface DeleteProps {
@@ -25,20 +23,8 @@ const Delete = ({ type, id, isOpen, onClose }: DeleteProps) => {
   } = useForm()
 
   const deleteEntity = async (id: string) => {
-    if (type === "Item") {
-      await ItemsService.deleteItem({ id: id })
-    } else if (type === "Connector") {
-      await ConnectorsService.deleteConnector({ id: id })
-    } else if (type === "Template") {
-      await TemplatesService.deleteTemplate({ id: id })
-    } else if (type === "Message") {
-      await MessagesService.deleteMessage({ id: id })
-    } else if (type === "Chat") {
-      await ChatsService.deleteChat({ id: id })
-    } else if (type === "User") {
+    if (type === "User") {
       await UsersService.deleteUser({ userId: id })
-    } else if (type === "Knowledge") {
-      await KnowledgeFilesService.deleteKnowledgeFile({ id: id })
     } else {
       throw new Error(`Unexpected type: ${type}`)
     }
@@ -62,18 +48,8 @@ const Delete = ({ type, id, isOpen, onClose }: DeleteProps) => {
       )
     },
     onSettled: () => {
-      const queryKey = 
-        type === "Item" ? ["items"] :
-        type === "User" ? ["users"] :
-        type === "Knowledge" ? ["knowledgeFiles"] :
-        type === "Connector" ? ["connectors"] :
-        type === "Template" ? ["templates"] :
-        type === "Chat" ? ["chats"] :
-        type === "Message" ? ["messages"] :
-        ["items"]
-      
       queryClient.invalidateQueries({
-        queryKey: queryKey,
+        queryKey: ["users"],
       })
     },
   })

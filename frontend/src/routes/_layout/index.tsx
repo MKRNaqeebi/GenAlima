@@ -1,6 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { useEffect } from "react"
-import { v4 } from 'uuid';
 
 export const Route = createFileRoute("/_layout/")({
   component: Dashboard,
@@ -9,9 +8,9 @@ export const Route = createFileRoute("/_layout/")({
 function Dashboard() {
 
   useEffect(() => {
-    // redirect to new chat page with new uuid
-    const newChatId = v4()
-    window.location.href = `/chat/${newChatId}`
+    // The dashboard is the workflow list; the chat pages were removed along with
+    // the chat/message/template/connector models.
+    window.location.href = "/workflows"
   }, [])
 
   return (

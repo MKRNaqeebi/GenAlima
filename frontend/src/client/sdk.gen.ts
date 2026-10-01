@@ -4,735 +4,225 @@ import type { CancelablePromise } from "./core/CancelablePromise"
 import { OpenAPI } from "./core/OpenAPI"
 import { request as __request } from "./core/request"
 import type {
-  ItemsReadItemsData,
-  ItemsReadItemsResponse,
-  ItemsCreateItemData,
-  ItemsCreateItemResponse,
-  ItemsReadItemData,
-  ItemsReadItemResponse,
-  ItemsUpdateItemData,
-  ItemsUpdateItemResponse,
-  ItemsDeleteItemData,
-  ItemsDeleteItemResponse,
   LoginLoginAccessTokenData,
   LoginLoginAccessTokenResponse,
-  LoginTestTokenResponse,
   LoginRecoverPasswordData,
+  LoginRecoverPasswordHtmlContentData,
+  LoginRecoverPasswordHtmlContentResponse,
   LoginRecoverPasswordResponse,
   LoginResetPasswordData,
   LoginResetPasswordResponse,
-  LoginRecoverPasswordHtmlContentData,
-  LoginRecoverPasswordHtmlContentResponse,
-  ConnectorsReadConnectorsResponse,
-  ConnectorsCreateConnectorData,
-  ConnectorsCreateConnectorResponse,
-  ConnectorsReadConnectorData,
-  ConnectorsReadConnectorResponse,
-  ConnectorsUpdateConnectorData,
-  ConnectorsUpdateConnectorResponse,
-  ConnectorsDeleteConnectorData,
-  ConnectorsDeleteConnectorResponse,
-  TemplatesReadTemplatesResponse,
-  TemplatesCreateTemplateData,
-  TemplatesCreateTemplateResponse,
-  TemplatesReadTemplateData,
-  TemplatesReadTemplateResponse,
-  TemplatesUpdateTemplateData,
-  TemplatesUpdateTemplateResponse,
-  TemplatesDeleteTemplateData,
-  TemplatesDeleteTemplateResponse,
-  ChatsReadChatsResponse,
-  ChatsCreateChatData,
-  ChatsCreateChatResponse,
-  ChatsReadChatData,
-  ChatsReadChatResponse,
-  ChatsUpdateChatData,
-  ChatsUpdateChatResponse,
-  ChatsDeleteChatData,
-  ChatsDeleteChatResponse,
-  MessagesReadMessagesResponse,
-  MessagesCreateMessageData,
-  MessagesCreateMessageResponse,
-  MessagesReadMessageData,
-  MessagesReadMessageResponse,
-  MessagesUpdateMessageData,
-  MessagesUpdateMessageResponse,
-  MessagesDeleteMessageData,
-  MessagesDeleteMessageResponse,
-  KnowledgesReadKnowledgesResponse,
-  KnowledgesCreateKnowledgeData,
-  KnowledgesCreateKnowledgeResponse,
-  KnowledgesReadKnowledgeData,
-  KnowledgesReadKnowledgeResponse,
-  KnowledgesUpdateKnowledgeData,
-  KnowledgesUpdateKnowledgeResponse,
-  KnowledgesDeleteKnowledgeData,
-  KnowledgesDeleteKnowledgeResponse,
-  UsersReadUsersData,
-  UsersReadUsersResponse,
+  LoginTestTokenResponse,
+  OrganizationsCreateOrganizationData,
+  OrganizationsCreateOrganizationResponse,
+  OrganizationsDeleteOrganizationData,
+  OrganizationsDeleteOrganizationResponse,
+  OrganizationsReadOrganizationData,
+  OrganizationsReadOrganizationResponse,
+  OrganizationsReadOrganizationsData,
+  OrganizationsReadOrganizationsResponse,
+  OrganizationsUpdateOrganizationData,
+  OrganizationsUpdateOrganizationResponse,
+  PrivateCreateUserData,
+  PrivateCreateUserResponse,
+  ServeIndex1Response,
+  ServeIndex2Response,
+  ServeIndex3Response,
+  ServeIndex4Response,
+  ServeIndex5Response,
+  ServeIndex6Response,
+  ServeIndex7Response,
+  ServeIndex8Response,
+  ServeIndexResponse,
   UsersCreateUserData,
   UsersCreateUserResponse,
-  UsersReadUserMeResponse,
+  UsersDeleteUserData,
   UsersDeleteUserMeResponse,
-  UsersUpdateUserMeData,
-  UsersUpdateUserMeResponse,
-  UsersUpdatePasswordMeData,
-  UsersUpdatePasswordMeResponse,
-  UsersRegisterUserData,
-  UsersRegisterUserResponse,
+  UsersDeleteUserResponse,
   UsersReadUserByIdData,
   UsersReadUserByIdResponse,
+  UsersReadUserMeResponse,
+  UsersReadUsersData,
+  UsersReadUsersResponse,
+  UsersRegisterUserData,
+  UsersRegisterUserResponse,
+  UsersUpdatePasswordMeData,
+  UsersUpdatePasswordMeResponse,
   UsersUpdateUserData,
+  UsersUpdateUserMeData,
+  UsersUpdateUserMeResponse,
   UsersUpdateUserResponse,
-  UsersDeleteUserData,
-  UsersDeleteUserResponse,
+  UtilsHealthCheckResponse,
   UtilsTestEmailData,
   UtilsTestEmailResponse,
-  UtilsHealthCheckResponse,
-  KnowledgeFilesReadKnowledgeFileData,
-  KnowledgeFilesDeleteKnowledgeFileResponse,
-  KnowledgeFilesDeleteKnowledgeFileData,
-  KnowledgeFilesReadKnowledgeFilesResponse,
+  WorkflowsCreateWorkflowData,
+  WorkflowsCreateWorkflowResponse,
+  WorkflowsDeleteWorkflowData,
+  WorkflowsDeleteWorkflowResponse,
+  WorkflowsReadWorkflowData,
+  WorkflowsReadWorkflowResponse,
+  WorkflowsReadWorkflowsData,
+  WorkflowsReadWorkflowsResponse,
+  WorkflowsUpdateWorkflowData,
+  WorkflowsUpdateWorkflowGraphData,
+  WorkflowsUpdateWorkflowGraphResponse,
+  WorkflowsUpdateWorkflowResponse,
 } from "./types.gen"
 
-export class ItemsService {
+export class DefaultService {
   /**
-   * Read Items
-   * Retrieve items.
-   * @param data The data for the request.
-   * @param data.skip
-   * @param data.limit
-   * @returns ItemsPublic Successful Response
+   * Serve Index
+   * Serve the frontend application.
+   *
+   * index.html must not be cached: it names the hashed bundle, so a cached copy
+   * keeps a browser on the previous build after a rebuild (which looks like a
+   * fix "not working"). The hashed assets under /assets are safe to cache.
+   * @returns unknown Successful Response
    * @throws ApiError
    */
-  public static readItems(
-    data: ItemsReadItemsData = {},
-  ): CancelablePromise<ItemsReadItemsResponse> {
+  public static serveIndex(): CancelablePromise<ServeIndexResponse> {
     return __request(OpenAPI, {
       method: "GET",
-      url: "/api/v1/items/",
-      query: {
-        skip: data.skip,
-        limit: data.limit,
-      },
-      errors: {
-        422: "Validation Error",
-      },
+      url: "/workflow/{workflow_id}",
     })
   }
 
   /**
-   * Create Item
-   * Create new item.
-   * @param data The data for the request.
-   * @param data.requestBody
-   * @returns ItemPublic Successful Response
+   * Serve Index
+   * Serve the frontend application.
+   *
+   * index.html must not be cached: it names the hashed bundle, so a cached copy
+   * keeps a browser on the previous build after a rebuild (which looks like a
+   * fix "not working"). The hashed assets under /assets are safe to cache.
+   * @returns unknown Successful Response
    * @throws ApiError
    */
-  public static createItem(
-    data: ItemsCreateItemData,
-  ): CancelablePromise<ItemsCreateItemResponse> {
-    return __request(OpenAPI, {
-      method: "POST",
-      url: "/api/v1/items/",
-      body: data.requestBody,
-      mediaType: "application/json",
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-
-  /**
-   * Read Item
-   * Get item by ID.
-   * @param data The data for the request.
-   * @param data.id
-   * @returns ItemPublic Successful Response
-   * @throws ApiError
-   */
-  public static readItem(
-    data: ItemsReadItemData,
-  ): CancelablePromise<ItemsReadItemResponse> {
+  public static serveIndex1(): CancelablePromise<ServeIndex1Response> {
     return __request(OpenAPI, {
       method: "GET",
-      url: "/api/v1/items/{id}",
-      path: {
-        id: data.id,
-      },
-      errors: {
-        422: "Validation Error",
-      },
+      url: "/workflows",
     })
   }
 
   /**
-   * Update Item
-   * Update an item.
-   * @param data The data for the request.
-   * @param data.id
-   * @param data.requestBody
-   * @returns ItemPublic Successful Response
+   * Serve Index
+   * Serve the frontend application.
+   *
+   * index.html must not be cached: it names the hashed bundle, so a cached copy
+   * keeps a browser on the previous build after a rebuild (which looks like a
+   * fix "not working"). The hashed assets under /assets are safe to cache.
+   * @returns unknown Successful Response
    * @throws ApiError
    */
-  public static updateItem(
-    data: ItemsUpdateItemData,
-  ): CancelablePromise<ItemsUpdateItemResponse> {
+  public static serveIndex2(): CancelablePromise<ServeIndex2Response> {
     return __request(OpenAPI, {
-      method: "PUT",
-      url: "/api/v1/items/{id}",
-      path: {
-        id: data.id,
-      },
-      body: data.requestBody,
-      mediaType: "application/json",
-      errors: {
-        422: "Validation Error",
-      },
+      method: "GET",
+      url: "/recover-password",
     })
   }
 
   /**
-   * Delete Item
-   * Delete an item.
-   * @param data The data for the request.
-   * @param data.id
-   * @returns Message Successful Response
+   * Serve Index
+   * Serve the frontend application.
+   *
+   * index.html must not be cached: it names the hashed bundle, so a cached copy
+   * keeps a browser on the previous build after a rebuild (which looks like a
+   * fix "not working"). The hashed assets under /assets are safe to cache.
+   * @returns unknown Successful Response
    * @throws ApiError
    */
-  public static deleteItem(
-    data: ItemsDeleteItemData,
-  ): CancelablePromise<ItemsDeleteItemResponse> {
+  public static serveIndex3(): CancelablePromise<ServeIndex3Response> {
     return __request(OpenAPI, {
-      method: "DELETE",
-      url: "/api/v1/items/{id}",
-      path: {
-        id: data.id,
-      },
-      errors: {
-        422: "Validation Error",
-      },
+      method: "GET",
+      url: "/signup",
+    })
+  }
+
+  /**
+   * Serve Index
+   * Serve the frontend application.
+   *
+   * index.html must not be cached: it names the hashed bundle, so a cached copy
+   * keeps a browser on the previous build after a rebuild (which looks like a
+   * fix "not working"). The hashed assets under /assets are safe to cache.
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static serveIndex4(): CancelablePromise<ServeIndex4Response> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/admin",
+    })
+  }
+
+  /**
+   * Serve Index
+   * Serve the frontend application.
+   *
+   * index.html must not be cached: it names the hashed bundle, so a cached copy
+   * keeps a browser on the previous build after a rebuild (which looks like a
+   * fix "not working"). The hashed assets under /assets are safe to cache.
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static serveIndex5(): CancelablePromise<ServeIndex5Response> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/home",
+    })
+  }
+
+  /**
+   * Serve Index
+   * Serve the frontend application.
+   *
+   * index.html must not be cached: it names the hashed bundle, so a cached copy
+   * keeps a browser on the previous build after a rebuild (which looks like a
+   * fix "not working"). The hashed assets under /assets are safe to cache.
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static serveIndex6(): CancelablePromise<ServeIndex6Response> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/settings",
+    })
+  }
+
+  /**
+   * Serve Index
+   * Serve the frontend application.
+   *
+   * index.html must not be cached: it names the hashed bundle, so a cached copy
+   * keeps a browser on the previous build after a rebuild (which looks like a
+   * fix "not working"). The hashed assets under /assets are safe to cache.
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static serveIndex7(): CancelablePromise<ServeIndex7Response> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/login",
+    })
+  }
+
+  /**
+   * Serve Index
+   * Serve the frontend application.
+   *
+   * index.html must not be cached: it names the hashed bundle, so a cached copy
+   * keeps a browser on the previous build after a rebuild (which looks like a
+   * fix "not working"). The hashed assets under /assets are safe to cache.
+   * @returns unknown Successful Response
+   * @throws ApiError
+   */
+  public static serveIndex8(): CancelablePromise<ServeIndex8Response> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/",
     })
   }
 }
-
-export class ConnectorsService {
-  /**
-   * Read Connectors
-   * Retrieve connectors.
-   * @param data The data for the request.
-   * @param data.skip
-   * @param data.limit
-   * @returns ConnectorsPublic Successful Response
-   * @throws ApiError
-   */
-  public static readConnectors(
-    data: ItemsReadItemsData = {},
-  ): CancelablePromise<ConnectorsReadConnectorsResponse> {
-    return __request(OpenAPI, {
-      method: "GET",
-      url: "/api/v1/connectors/",
-      query: {
-        skip: data.skip,
-        limit: data.limit,
-      },
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-
-  /**
-   * Create Connector
-   * Create new connector.
-   * @param data The data for the request.
-   * @param data.requestBody
-   * @returns ConnectorPublic Successful Response
-   * @throws ApiError
-   */
-  public static createConnector(
-    data: ConnectorsCreateConnectorData,
-  ): CancelablePromise<ConnectorsCreateConnectorResponse> {
-    return __request(OpenAPI, {
-      method: "POST",
-      url: "/api/v1/connectors/",
-      body: data.requestBody,
-      mediaType: "application/json",
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-
-  /**
-   * Read Connector
-   * Get connector by ID.
-   * @param data The data for the request.
-   * @param data.id
-   * @returns ConnectorPublic Successful Response
-   * @throws ApiError
-   */
-  public static readConnector(
-    data: ConnectorsReadConnectorData,
-  ): CancelablePromise<ConnectorsReadConnectorResponse> {
-    return __request(OpenAPI, {
-      method: "GET",
-      url: "/api/v1/connectors/{id}",
-      path: {
-        id: data.id,
-      },
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-
-  /**
-   * Update Connector
-   * Update an connector.
-   * @param data The data for the request.
-   * @param data.id
-   * @param data.requestBody
-   * @returns ConnectorPublic Successful Response
-   * @throws ApiError
-   */
-  public static updateConnector(
-    data: ConnectorsUpdateConnectorData,
-  ): CancelablePromise<ConnectorsUpdateConnectorResponse> {
-    return __request(OpenAPI, {
-      method: "PUT",
-      url: "/api/v1/connectors/{id}",
-      path: {
-        id: data.id,
-      },
-      body: data.requestBody,
-      mediaType: "application/json",
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-
-  /**
-   * Delete Connector
-   * Delete an connector.
-   * @param data The data for the request.
-   * @param data.id
-   * @returns Message Successful Response
-   * @throws ApiError
-   */
-  public static deleteConnector(
-    data: ConnectorsDeleteConnectorData,
-  ): CancelablePromise<ConnectorsDeleteConnectorResponse> {
-    return __request(OpenAPI, {
-      method: "DELETE",
-      url: "/api/v1/connectors/{id}",
-      path: {
-        id: data.id,
-      },
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-}
-
-export class TemplatesService {
-  public static readTemplates(
-    data: ItemsReadItemsData = {},
-  ): CancelablePromise<TemplatesReadTemplatesResponse> {
-    return __request(OpenAPI, {
-      method: "GET",
-      url: "/api/v1/templates/",
-      query: {
-        skip: data.skip,
-        limit: data.limit,
-      },
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-
-  public static createTemplate(
-    data: TemplatesCreateTemplateData,
-  ): CancelablePromise<TemplatesCreateTemplateResponse> {
-    return __request(OpenAPI, {
-      method: "POST",
-      url: "/api/v1/templates/",
-      body: data.requestBody,
-      mediaType: "application/json",
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-
-  public static readTemplate(
-    data: TemplatesReadTemplateData,
-  ): CancelablePromise<TemplatesReadTemplateResponse> {
-    return __request(OpenAPI, {
-      method: "GET",
-      url: "/api/v1/templates/{id}",
-      path: {
-        id: data.id,
-      },
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-
-  public static updateTemplate(
-    data: TemplatesUpdateTemplateData,
-  ): CancelablePromise<TemplatesUpdateTemplateResponse> {
-    return __request(OpenAPI, {
-      method: "PUT",
-      url: "/api/v1/templates/{id}",
-      path: {
-        id: data.id,
-      },
-      body: data.requestBody,
-      mediaType: "application/json",
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-
-  public static deleteTemplate(
-    data: TemplatesDeleteTemplateData,
-  ): CancelablePromise<TemplatesDeleteTemplateResponse> {
-    return __request(OpenAPI, {
-      method: "DELETE",
-      url: "/api/v1/templates/{id}",
-      path: {
-        id: data.id,
-      },
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-}
-
-export class ChatsService {
-  public static readChats(
-    data: ItemsReadItemsData = {},
-  ): CancelablePromise<ChatsReadChatsResponse> {
-    return __request(OpenAPI, {
-      method: "GET",
-      url: "/api/v1/chats/",
-      query: {
-        skip: data.skip,
-        limit: data.limit,
-      },
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-
-  public static createChat(
-    data: ChatsCreateChatData,
-  ): CancelablePromise<ChatsCreateChatResponse> {
-    return __request(OpenAPI, {
-      method: "POST",
-      url: "/api/v1/chats/",
-      body: data.requestBody,
-      mediaType: "application/json",
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-
-  public static readChat(
-    data: ChatsReadChatData,
-  ): CancelablePromise<ChatsReadChatResponse> {
-    return __request(OpenAPI, {
-      method: "GET",
-      url: "/api/v1/chats/{id}",
-      path: {
-        id: data.id,
-      },
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-
-  public static updateChat(
-    data: ChatsUpdateChatData,
-  ): CancelablePromise<ChatsUpdateChatResponse> {
-    return __request(OpenAPI, {
-      method: "PUT",
-      url: "/api/v1/chats/{id}",
-      path: {
-        id: data.id,
-      },
-      body: data.requestBody,
-      mediaType: "application/json",
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-
-  public static deleteChat(
-    data: ChatsDeleteChatData,
-  ): CancelablePromise<ChatsDeleteChatResponse> {
-    return __request(OpenAPI, {
-      method: "DELETE",
-      url: "/api/v1/chats/{id}",
-      path: {
-        id: data.id,
-      },
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-}
-
-
-export class MessagesService {
-  public static readMessages(
-    data: ItemsReadItemsData = {},
-  ): CancelablePromise<MessagesReadMessagesResponse> {
-    return __request(OpenAPI, {
-      method: "GET",
-      url: "/api/v1/messages/",
-      query: {
-        skip: data.skip,
-        limit: data.limit,
-      },
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-
-  public static readMessagesByChat(
-    data: MessagesReadMessageData,
-  ): CancelablePromise<MessagesReadMessagesResponse> {
-    return __request(OpenAPI, {
-      method: "GET",
-      url: "/api/v1/messages/chat/{id}/",
-      path: {
-        id: data.id,
-      },
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-
-  public static createMessage(
-    data: MessagesCreateMessageData,
-  ): CancelablePromise<MessagesCreateMessageResponse> {
-    return __request(OpenAPI, {
-      method: "POST",
-      url: "/api/v1/messages/",
-      body: data.requestBody,
-      mediaType: "application/json",
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-
-  public static readMessage(
-    data: MessagesReadMessageData,
-  ): CancelablePromise<MessagesReadMessageResponse> {
-    return __request(OpenAPI, {
-      method: "GET",
-      url: "/api/v1/messages/{id}",
-      path: {
-        id: data.id,
-      },
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-
-  public static updateMessage(
-    data: MessagesUpdateMessageData,
-  ): CancelablePromise<MessagesUpdateMessageResponse> {
-    return __request(OpenAPI, {
-      method: "PUT",
-      url: "/api/v1/messages/{id}",
-      path: {
-        id: data.id,
-      },
-      body: data.requestBody,
-      mediaType: "application/json",
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-
-  public static deleteMessage(
-    data: MessagesDeleteMessageData,
-  ): CancelablePromise<MessagesDeleteMessageResponse> {
-    return __request(OpenAPI, {
-      method: "DELETE",
-      url: "/api/v1/messages/{id}",
-      path: {
-        id: data.id,
-      },
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-}
-
-
-export class KnowledgesService {
-  public static readKnowledges(
-    data: ItemsReadItemsData = {},
-  ): CancelablePromise<KnowledgesReadKnowledgesResponse> {
-    return __request(OpenAPI, {
-      method: "GET",
-      url: "/api/v1/knowledges/",
-      query: {
-        skip: data.skip,
-        limit: data.limit,
-      },
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-
-  public static createKnowledge(
-    data: KnowledgesCreateKnowledgeData,
-  ): CancelablePromise<KnowledgesCreateKnowledgeResponse> {
-    return __request(OpenAPI, {
-      method: "POST",
-      url: "/api/v1/knowledges/",
-      body: data.requestBody,
-      mediaType: "application/json",
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-
-  public static readKnowledgeFile(
-    data: KnowledgeFilesReadKnowledgeFileData,
-  ): CancelablePromise<KnowledgesReadKnowledgeResponse> {
-    return __request(OpenAPI, {
-      method: "GET",
-      url: "/api/v1/knowledges/files/{id}",
-      path: {
-        id: data.id,
-      },
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-
-  public static readKnowledge(
-    data: KnowledgesReadKnowledgeData,
-  ): CancelablePromise<KnowledgesReadKnowledgeResponse> {
-    return __request(OpenAPI, {
-      method: "GET",
-      url: "/api/v1/knowledges/{id}",
-      path: {
-        id: data.id,
-      },
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-
-  public static updateKnowledge(
-    data: KnowledgesUpdateKnowledgeData,
-  ): CancelablePromise<KnowledgesUpdateKnowledgeResponse> {
-    return __request(OpenAPI, {
-      method: "PUT",
-      url: "/api/v1/knowledges/{id}",
-      path: {
-        id: data.id,
-      },
-      body: data.requestBody,
-      mediaType: "application/json",
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-
-  public static deleteKnowledge(
-    data: KnowledgesDeleteKnowledgeData,
-  ): CancelablePromise<KnowledgesDeleteKnowledgeResponse> {
-    return __request(OpenAPI, {
-      method: "DELETE",
-      url: "/api/v1/knowledges/{id}",
-      path: {
-        id: data.id,
-      },
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-}
-
-
-export class KnowledgeFilesService {
-  public static readKnowledgeFiles(
-    data: ItemsReadItemsData = {},
-  ): CancelablePromise<KnowledgeFilesReadKnowledgeFilesResponse> {
-    return __request(OpenAPI, {
-      method: "GET",
-      url: "/api/v1/knowledges/files/",
-      query: {
-        skip: data.skip,
-        limit: data.limit,
-      },
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-
-  public static createKnowledgeFiles(
-    data: KnowledgesCreateKnowledgeData,
-  ): CancelablePromise<KnowledgesCreateKnowledgeResponse> {
-    return __request(OpenAPI, {
-      method: "POST",
-      url: "/api/v1/knowledges/files/",
-      mediaType: "multipart/form-data",
-      formData: data.requestBody,
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-
-  public static deleteKnowledgeFile(
-    data: KnowledgeFilesDeleteKnowledgeFileData,
-  ): CancelablePromise<KnowledgeFilesDeleteKnowledgeFileResponse> {
-    return __request(OpenAPI, {
-      method: "DELETE",
-      url: "/api/v1/knowledges/files/{id}/",
-      path: {
-        id: data.id,
-      },
-      errors: {
-        422: "Validation Error",
-      },
-    })
-  }
-}
-
 
 export class LoginService {
   /**
@@ -832,6 +322,151 @@ export class LoginService {
       path: {
         email: data.email,
       },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+}
+
+export class OrganizationsService {
+  /**
+   * Read Organizations
+   * Retrieve organizations.
+   * @param data The data for the request.
+   * @param data.skip
+   * @param data.limit
+   * @returns OrganizationsPublic Successful Response
+   * @throws ApiError
+   */
+  public static readOrganizations(
+    data: OrganizationsReadOrganizationsData = {},
+  ): CancelablePromise<OrganizationsReadOrganizationsResponse> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/organizations/",
+      query: {
+        skip: data.skip,
+        limit: data.limit,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  /**
+   * Create Organization
+   * Create new organization.
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @returns OrganizationPublic Successful Response
+   * @throws ApiError
+   */
+  public static createOrganization(
+    data: OrganizationsCreateOrganizationData,
+  ): CancelablePromise<OrganizationsCreateOrganizationResponse> {
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/api/v1/organizations/",
+      body: data.requestBody,
+      mediaType: "application/json",
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  /**
+   * Read Organization
+   * Get organization by ID.
+   * @param data The data for the request.
+   * @param data.id
+   * @returns OrganizationPublic Successful Response
+   * @throws ApiError
+   */
+  public static readOrganization(
+    data: OrganizationsReadOrganizationData,
+  ): CancelablePromise<OrganizationsReadOrganizationResponse> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/organizations/{id}",
+      path: {
+        id: data.id,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  /**
+   * Update Organization
+   * Update an organization.
+   * @param data The data for the request.
+   * @param data.id
+   * @param data.requestBody
+   * @returns OrganizationPublic Successful Response
+   * @throws ApiError
+   */
+  public static updateOrganization(
+    data: OrganizationsUpdateOrganizationData,
+  ): CancelablePromise<OrganizationsUpdateOrganizationResponse> {
+    return __request(OpenAPI, {
+      method: "PUT",
+      url: "/api/v1/organizations/{id}",
+      path: {
+        id: data.id,
+      },
+      body: data.requestBody,
+      mediaType: "application/json",
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  /**
+   * Delete Organization
+   * Delete an organization.
+   * @param data The data for the request.
+   * @param data.id
+   * @returns Message Successful Response
+   * @throws ApiError
+   */
+  public static deleteOrganization(
+    data: OrganizationsDeleteOrganizationData,
+  ): CancelablePromise<OrganizationsDeleteOrganizationResponse> {
+    return __request(OpenAPI, {
+      method: "DELETE",
+      url: "/api/v1/organizations/{id}",
+      path: {
+        id: data.id,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+}
+
+export class PrivateService {
+  /**
+   * Create User
+   * Create a new user.
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @returns UserPublic Successful Response
+   * @throws ApiError
+   */
+  public static createUser(
+    data: PrivateCreateUserData,
+  ): CancelablePromise<PrivateCreateUserResponse> {
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/api/v1/private/users/",
+      body: data.requestBody,
+      mediaType: "application/json",
       errors: {
         422: "Validation Error",
       },
@@ -1078,6 +713,7 @@ export class UtilsService {
 
   /**
    * Health Check
+   * Health check endpoint.
    * @returns boolean Successful Response
    * @throws ApiError
    */
@@ -1085,6 +721,156 @@ export class UtilsService {
     return __request(OpenAPI, {
       method: "GET",
       url: "/api/v1/utils/health-check/",
+    })
+  }
+}
+
+export class WorkflowsService {
+  /**
+   * Read Workflows
+   * Retrieve workflows.
+   * @param data The data for the request.
+   * @param data.skip
+   * @param data.limit
+   * @returns WorkflowsPublic Successful Response
+   * @throws ApiError
+   */
+  public static readWorkflows(
+    data: WorkflowsReadWorkflowsData = {},
+  ): CancelablePromise<WorkflowsReadWorkflowsResponse> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/workflows/",
+      query: {
+        skip: data.skip,
+        limit: data.limit,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  /**
+   * Create Workflow
+   * Create a workflow. It starts with an empty graph.
+   * @param data The data for the request.
+   * @param data.requestBody
+   * @returns WorkflowPublic Successful Response
+   * @throws ApiError
+   */
+  public static createWorkflow(
+    data: WorkflowsCreateWorkflowData,
+  ): CancelablePromise<WorkflowsCreateWorkflowResponse> {
+    return __request(OpenAPI, {
+      method: "POST",
+      url: "/api/v1/workflows/",
+      body: data.requestBody,
+      mediaType: "application/json",
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  /**
+   * Read Workflow
+   * Get a workflow together with its full graph.
+   * @param data The data for the request.
+   * @param data.id
+   * @returns WorkflowDetailPublic Successful Response
+   * @throws ApiError
+   */
+  public static readWorkflow(
+    data: WorkflowsReadWorkflowData,
+  ): CancelablePromise<WorkflowsReadWorkflowResponse> {
+    return __request(OpenAPI, {
+      method: "GET",
+      url: "/api/v1/workflows/{id}",
+      path: {
+        id: data.id,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  /**
+   * Update Workflow
+   * Update a workflow's metadata (not its graph).
+   * @param data The data for the request.
+   * @param data.id
+   * @param data.requestBody
+   * @returns WorkflowPublic Successful Response
+   * @throws ApiError
+   */
+  public static updateWorkflow(
+    data: WorkflowsUpdateWorkflowData,
+  ): CancelablePromise<WorkflowsUpdateWorkflowResponse> {
+    return __request(OpenAPI, {
+      method: "PUT",
+      url: "/api/v1/workflows/{id}",
+      path: {
+        id: data.id,
+      },
+      body: data.requestBody,
+      mediaType: "application/json",
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  /**
+   * Delete Workflow
+   * Delete a workflow and, by cascade, its nodes, edges and runs.
+   * @param data The data for the request.
+   * @param data.id
+   * @returns Message Successful Response
+   * @throws ApiError
+   */
+  public static deleteWorkflow(
+    data: WorkflowsDeleteWorkflowData,
+  ): CancelablePromise<WorkflowsDeleteWorkflowResponse> {
+    return __request(OpenAPI, {
+      method: "DELETE",
+      url: "/api/v1/workflows/{id}",
+      path: {
+        id: data.id,
+      },
+      errors: {
+        422: "Validation Error",
+      },
+    })
+  }
+
+  /**
+   * Update Workflow Graph
+   * Replace a workflow's graph in one transaction.
+   *
+   * Rejects the save with 400 when the graph is not a DAG, when an edge points at
+   * a node outside the graph, or when an edge is type-incompatible.
+   * @param data The data for the request.
+   * @param data.id
+   * @param data.requestBody
+   * @returns WorkflowGraphPublic Successful Response
+   * @throws ApiError
+   */
+  public static updateWorkflowGraph(
+    data: WorkflowsUpdateWorkflowGraphData,
+  ): CancelablePromise<WorkflowsUpdateWorkflowGraphResponse> {
+    return __request(OpenAPI, {
+      method: "PUT",
+      url: "/api/v1/workflows/{id}/graph",
+      path: {
+        id: data.id,
+      },
+      body: data.requestBody,
+      mediaType: "application/json",
+      errors: {
+        422: "Validation Error",
+      },
     })
   }
 }
