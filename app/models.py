@@ -452,11 +452,44 @@ class WorkflowNodePublic(WorkflowNodeBase):
 class WorkflowEdgeBase(SQLModel):
     """
     Shared schema for an edge between two nodes, keyed by node id (not name)
+
+    `mapping` says which key of the source node's output feeds which key of the
+    target node's input, as ``{target_field: source_field}``. It is strict: an
+    edge only carries the pairs it names, so an empty mapping carries nothing.
+    Coverage is checked per target node across its inbound edges, not per edge.
     """
     source_node_id: uuid.UUID
     target_node_id: uuid.UUID
     source_handle: str = Field(default="main", max_length=32)
     target_handle: str = Field(default="main", max_length=32)
+    mapping: Dict[str, str] = Field(
+        default_factory=dict, sa_column=Column(JSON, nullable=False))
+
+    @field_validator("mapping", mode="before")
+    @classmethod
+    def _canonicalize_mapping(cls, value: Any) -> Any:
+        """
+        Reject a mapping that is not a flat object of non-empty field names.
+
+        The column is JSON, so accepting anything else (a list of pairs, a
+        ``{field: spec}`` contract) would store a shape the save-time checker
+        cannot read. Field names are not length-capped here because the input
+        and output contracts do not cap them either.
+        """
+        if value is None:
+            return {}
+        if not isinstance(value, dict):
+            raise ValueError(
+                "mapping must be an object of {target_field: source_field}")
+        canonical: Dict[str, str] = {}
+        for target, source in value.items():
+            if not isinstance(target, str) or not isinstance(source, str):
+                raise ValueError(
+                    "mapping keys and values must be field names (strings)")
+            if not target or not source:
+                raise ValueError("mapping field names must not be empty")
+            canonical[target] = source
+        return canonical
 
 
 class WorkflowEdgeCreate(WorkflowEdgeBase):

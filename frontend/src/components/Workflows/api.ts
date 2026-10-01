@@ -51,6 +51,12 @@ export type WorkflowEdgeCreate = {
   target_node_id: string
   source_handle?: string
   target_handle?: string
+  /**
+   * `{target_field: source_field}` — which key of the source output feeds which
+   * key of the target input. Strict: only the named pairs flow, so `{}` carries
+   * nothing.
+   */
+  mapping?: Record<string, string>
 }
 
 export type WorkflowGraphIn = {
@@ -103,7 +109,9 @@ const BASE_URL = "/api/v1/workflows"
 
 export const WorkflowsService = {
   /** Paginated, owner-scoped list. */
-  readWorkflows(data: { skip?: number; limit?: number } = {}): CancelablePromise<WorkflowsPublic> {
+  readWorkflows(
+    data: { skip?: number; limit?: number } = {},
+  ): CancelablePromise<WorkflowsPublic> {
     return request<WorkflowsPublic>(OpenAPI, {
       method: "GET",
       url: `${BASE_URL}/`,

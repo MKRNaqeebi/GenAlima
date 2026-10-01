@@ -1,31 +1,38 @@
-import { useCallback, useEffect, useMemo, useState } from "react"
-import { Link, useNavigate } from "@tanstack/react-router"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { Link, useNavigate } from "@tanstack/react-router"
 import {
-  addEdge,
-  applyEdgeChanges,
-  applyNodeChanges,
   type Connection,
   type Edge,
   type EdgeChange,
   type NodeChange,
+  addEdge,
+  applyEdgeChanges,
+  applyNodeChanges,
 } from "@xyflow/react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { FiArrowLeft, FiPlus, FiSave } from "react-icons/fi"
 import { v4 as uuidv4 } from "uuid"
 
 import { ApiError } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
-import { WorkflowsService } from "./api"
+import EdgeInspector from "./EdgeInspector"
 import NodeInspector from "./NodeInspector"
 import WorkflowCanvas from "./WorkflowCanvas"
+import { WorkflowsService } from "./api"
 import {
-  edgeIssue,
+  type CodeNode,
+  type CodeNodeData,
+  type InboundContribution,
+  autoMapFields,
+  diffContract,
+  edgeMapping,
+  edgeMappingIssue,
   newCodeNode,
+  nodeCoverageIssue,
+  remapEdgeAfterContractChange,
   toCanvasEdge,
   toCanvasNode,
   toSavePayload,
-  type CodeNode,
-  type CodeNodeData,
 } from "./types"
 
 interface WorkflowEditorProps {
@@ -35,6 +42,7 @@ interface WorkflowEditorProps {
 interface SaveProblem {
   message: string
   edges: Record<string, string>
+  nodes: Record<string, string>
 }
 
 /** Turn a 400 from PUT /graph into something the canvas can highlight. */
@@ -45,19 +53,25 @@ function parseSaveError(error: unknown): SaveProblem {
       const shaped = detail as {
         message?: string
         edges?: { edge_id: string; reason: string }[]
+        nodes?: { node_id: string; reason: string }[]
       }
       const edges: Record<string, string> = {}
       for (const problem of shaped.edges ?? []) {
         edges[problem.edge_id] = problem.reason
       }
+      const nodes: Record<string, string> = {}
+      for (const problem of shaped.nodes ?? []) {
+        nodes[problem.node_id] = problem.reason
+      }
       return {
         message: shaped.message ?? "The graph was rejected",
         edges,
+        nodes,
       }
     }
-    return { message: error.message, edges: {} }
+    return { message: error.message, edges: {}, nodes: {} }
   }
-  return { message: "The graph was rejected", edges: {} }
+  return { message: "The graph was rejected", edges: {}, nodes: {} }
 }
 
 const INSPECTOR_DEFAULT_WIDTH = 380
@@ -72,9 +86,11 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
   const [nodes, setNodes] = useState<CodeNode[]>([])
   const [edges, setEdges] = useState<Edge[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [selectedEdgeId, setSelectedEdgeId] = useState<string | null>(null)
   const [dirty, setDirty] = useState(false)
   const [name, setName] = useState("")
   const [edgeErrors, setEdgeErrors] = useState<Record<string, string>>({})
+  const [nodeErrors, setNodeErrors] = useState<Record<string, string>>({})
   const [resizing, setResizing] = useState(false)
   const [inspectorWidth, setInspectorWidth] = useState(() => {
     const stored = Number(localStorage.getItem("workflow-inspector-width"))
@@ -113,7 +129,6 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
     }
   }, [inspectorWidth])
 
-
   const { data, isPending, isError } = useQuery({
     queryKey: ["workflow", workflowId],
     queryFn: () => WorkflowsService.readWorkflow({ id: workflowId }),
@@ -133,14 +148,85 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
     [nodes, selectedId],
   )
 
-  // Live compatibility feedback, plus whatever the last save complained about.
+  const selectedEdge = useMemo(
+    () => edges.find((edge) => edge.id === selectedEdgeId) ?? null,
+    [edges, selectedEdgeId],
+  )
+
+  const selectedEdgeSource = useMemo(
+    () =>
+      selectedEdge
+        ? nodes.find((node) => node.id === selectedEdge.source) ?? null
+        : null,
+    [nodes, selectedEdge],
+  )
+
+  const selectedEdgeTarget = useMemo(
+    () =>
+      selectedEdge
+        ? nodes.find((node) => node.id === selectedEdge.target) ?? null
+        : null,
+    [nodes, selectedEdge],
+  )
+
+  // A deleted edge (or one removed with its node) must not keep the inspector open.
+  useEffect(() => {
+    if (selectedEdgeId && !edges.some((edge) => edge.id === selectedEdgeId)) {
+      setSelectedEdgeId(null)
+    }
+  }, [edges, selectedEdgeId])
+
+  // Each target's inbound edges, so coverage can be judged per node rather than
+  // per edge: one input field may be supplied by a different edge than another.
+  const inboundByTarget = useMemo(() => {
+    const byId = new Map(nodes.map((node) => [node.id, node]))
+    const inbound = new Map<string, InboundContribution[]>()
+    for (const edge of edges) {
+      const source = byId.get(edge.source)
+      if (!source) continue
+      const contributions = inbound.get(edge.target) ?? []
+      contributions.push({
+        edgeId: edge.id,
+        mapping: edgeMapping(edge),
+        source: source.data,
+      })
+      inbound.set(edge.target, contributions)
+    }
+    return inbound
+  }, [nodes, edges])
+
+  // Live coverage feedback, plus whatever the last save complained about.
+  const coverageByNode = useMemo(() => {
+    const reasons = new Map<string, string>()
+    for (const node of nodes) {
+      const reason =
+        nodeErrors[node.id] ??
+        nodeCoverageIssue(node.data, inboundByTarget.get(node.id) ?? [])
+      if (reason) reasons.set(node.id, reason)
+    }
+    return reasons
+  }, [nodes, inboundByTarget, nodeErrors])
+
+  const decoratedNodes = useMemo(
+    () =>
+      nodes.map((node) => {
+        const reason = coverageByNode.get(node.id)
+        if (!reason) return node
+        return { ...node, data: { ...node.data, error: reason } }
+      }),
+    [nodes, coverageByNode],
+  )
+
+  // Per-edge faults: a dangling mapping reference or an incompatible pair.
   const decoratedEdges = useMemo(() => {
     const byId = new Map(nodes.map((node) => [node.id, node]))
     return edges.map((edge) => {
       const source = byId.get(edge.source)
       const target = byId.get(edge.target)
       const live =
-        source && target ? edgeIssue(source.data, target.data) : null
+        source && target
+          ? edgeMappingIssue(source.data, target.data, edgeMapping(edge))
+          : null
       const reason = edgeErrors[edge.id] ?? live
       if (!reason) return edge
       return {
@@ -152,6 +238,19 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
       }
     })
   }, [nodes, edges, edgeErrors])
+
+  // The edge inspector shows the worst thing it knows about the selected edge.
+  const selectedEdgeIssue =
+    selectedEdge && selectedEdgeSource && selectedEdgeTarget
+      ? edgeErrors[selectedEdge.id] ??
+        edgeMappingIssue(
+          selectedEdgeSource.data,
+          selectedEdgeTarget.data,
+          edgeMapping(selectedEdge),
+        ) ??
+        coverageByNode.get(selectedEdgeTarget.id) ??
+        null
+      : null
 
   const onNodesChange = useCallback((changes: NodeChange<CodeNode>[]) => {
     setNodes((current) => applyNodeChanges(changes, current))
@@ -173,22 +272,68 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
     if (changes.some((change) => change.type !== "select")) setDirty(true)
   }, [])
 
-  const onConnect = useCallback((connection: Connection) => {
-    if (connection.source === connection.target) return
-    setEdges((current) =>
-      addEdge({ ...connection, id: uuidv4() }, current),
-    )
-    setDirty(true)
-  }, [])
+  const onConnect = useCallback(
+    (connection: Connection) => {
+      if (connection.source === connection.target) return
+      // Seed the mapping with the same-name pairs a bare connection used to
+      // imply, so strict edges still "just work" until the author edits them.
+      const source = nodes.find((node) => node.id === connection.source)
+      const target = nodes.find((node) => node.id === connection.target)
+      const mapping =
+        source && target ? autoMapFields(source.data, target.data) : {}
+      setEdges((current) =>
+        addEdge({ ...connection, id: uuidv4(), data: { mapping } }, current),
+      )
+      setDirty(true)
+    },
+    [nodes],
+  )
 
-  const patchNode = useCallback((id: string, patch: Partial<CodeNodeData>) => {
-    setNodes((current) =>
-      current.map((node) =>
-        node.id === id ? { ...node, data: { ...node.data, ...patch } } : node,
-      ),
-    )
-    setDirty(true)
-  }, [])
+  const patchNode = useCallback(
+    (id: string, patch: Partial<CodeNodeData>) => {
+      const node = nodes.find((candidate) => candidate.id === id)
+      if (node) {
+        // Follow field renames and drop mappings whose field was removed, so a
+        // careful edit does not turn into a dangling reference on save.
+        const inputChange = patch.input
+          ? diffContract(node.data.input, patch.input)
+          : null
+        const outputChange = patch.output
+          ? diffContract(node.data.output, patch.output)
+          : null
+        if (
+          (inputChange &&
+            (inputChange.renamed.size > 0 || inputChange.removed.length > 0)) ||
+          (outputChange &&
+            (outputChange.renamed.size > 0 || outputChange.removed.length > 0))
+        ) {
+          setEdges((current) =>
+            current.map((edge) => {
+              let next = edge
+              if (inputChange) {
+                next = remapEdgeAfterContractChange(next, id, inputChange)
+              }
+              if (outputChange) {
+                next = remapEdgeAfterContractChange(next, id, outputChange)
+              }
+              return next
+            }),
+          )
+          setEdgeErrors({})
+          setNodeErrors({})
+        }
+      }
+      setNodes((current) =>
+        current.map((candidate) =>
+          candidate.id === id
+            ? { ...candidate, data: { ...candidate.data, ...patch } }
+            : candidate,
+        ),
+      )
+      setDirty(true)
+    },
+    [nodes],
+  )
 
   const addNode = useCallback(() => {
     setNodes((current) => {
@@ -208,6 +353,33 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
     setDirty(true)
   }, [])
 
+  const updateEdgeMapping = useCallback(
+    (edgeId: string, mapping: Record<string, string>) => {
+      setEdges((current) =>
+        current.map((edge) =>
+          edge.id === edgeId
+            ? { ...edge, data: { ...edge.data, mapping } }
+            : edge,
+        ),
+      )
+      // The last save's complaint about this edge may no longer apply.
+      setEdgeErrors((current) => {
+        if (!(edgeId in current)) return current
+        const next = { ...current }
+        delete next[edgeId]
+        return next
+      })
+      setDirty(true)
+    },
+    [],
+  )
+
+  const deleteEdge = useCallback((id: string) => {
+    setEdges((current) => current.filter((edge) => edge.id !== id))
+    setSelectedEdgeId(null)
+    setDirty(true)
+  }, [])
+
   const saveGraph = useMutation({
     mutationFn: () =>
       WorkflowsService.updateWorkflowGraph({
@@ -218,6 +390,7 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
       setNodes(graph.nodes.map(toCanvasNode))
       setEdges(graph.edges.map(toCanvasEdge))
       setEdgeErrors({})
+      setNodeErrors({})
       setDirty(false)
       queryClient.invalidateQueries({ queryKey: ["workflow", workflowId] })
       queryClient.invalidateQueries({ queryKey: ["workflows"] })
@@ -226,7 +399,9 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
     onError: (error) => {
       const problem = parseSaveError(error)
       setEdgeErrors(problem.edges)
-      const detail = Object.values(problem.edges)[0]
+      setNodeErrors(problem.nodes)
+      const detail =
+        Object.values(problem.edges)[0] ?? Object.values(problem.nodes)[0]
       showToast("Could not save", detail ?? problem.message, "error")
     },
   })
@@ -284,7 +459,8 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
             value={name}
             onChange={(event) => setName(event.target.value)}
             onBlur={() => {
-              if (data && name.trim() && name !== data.name) rename.mutate(name.trim())
+              if (data && name.trim() && name !== data.name)
+                rename.mutate(name.trim())
             }}
             className="min-w-0 rounded border border-transparent bg-transparent px-2 py-1 text-lg font-semibold text-gray-900 hover:border-gray-300 focus:border-blue-500 focus:outline-none dark:text-white dark:hover:border-gray-600"
           />
@@ -319,12 +495,19 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
       <div className="flex min-h-0 flex-1">
         <div className="min-w-0 flex-1">
           <WorkflowCanvas
-            nodes={nodes}
+            nodes={decoratedNodes}
             edges={decoratedEdges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onConnect={onConnect}
-            onSelectNode={setSelectedId}
+            onSelectNode={(id) => {
+              setSelectedId(id)
+              setSelectedEdgeId(null)
+            }}
+            onSelectEdge={(id) => {
+              setSelectedEdgeId(id)
+              setSelectedId(null)
+            }}
           />
         </div>
 
@@ -344,7 +527,9 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
         >
           <div
             className={`h-8 w-0.5 rounded ${
-              resizing ? "bg-white" : "bg-gray-400 group-hover:bg-white dark:bg-gray-500"
+              resizing
+                ? "bg-white"
+                : "bg-gray-400 group-hover:bg-white dark:bg-gray-500"
             }`}
           />
         </div>
@@ -354,7 +539,18 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
           className="flex-shrink-0 overflow-hidden border-l border-gray-200 bg-white dark:border-gray-700 dark:bg-[#2f2f2f]"
           data-testid="node-inspector"
         >
-          {selectedNode ? (
+          {selectedEdge && selectedEdgeSource && selectedEdgeTarget ? (
+            <EdgeInspector
+              source={selectedEdgeSource}
+              target={selectedEdgeTarget}
+              mapping={edgeMapping(selectedEdge)}
+              issue={selectedEdgeIssue}
+              onChange={(mapping) =>
+                updateEdgeMapping(selectedEdge.id, mapping)
+              }
+              onDelete={() => deleteEdge(selectedEdge.id)}
+            />
+          ) : selectedNode ? (
             <NodeInspector
               node={selectedNode}
               onChange={(patch) => patchNode(selectedNode.id, patch)}
@@ -367,7 +563,8 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
               </p>
               <p className="text-xs text-gray-400 dark:text-gray-500">
                 Drag from a node&apos;s right edge to another node&apos;s left
-                edge to connect them.
+                edge to connect them, then click the connection to map which
+                output field feeds which input field.
               </p>
             </div>
           )}

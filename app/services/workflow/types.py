@@ -189,52 +189,50 @@ def _field_problems(
 def check_edge(
     source_output: Mapping[str, Mapping[str, Any]],
     target_input: Mapping[str, Mapping[str, Any]],
+    mapping: Mapping[str, str] | None = None,
 ) -> list[str]:
     """
-    Whether one node's output contract can satisfy another's input contract.
+    Whether one node's output can satisfy another's input through an edge.
 
-    Only fields declared by the target are considered: undeclared incoming
-    fields pass through. An empty source contract is only acceptable when the
-    target declares nothing required.
+    ``mapping`` is ``{target_field: source_field}`` and is strict: an edge
+    carries exactly the pairs it names, so an empty mapping carries nothing.
+    Only those pairs can be judged here. Whether every required target input is
+    covered is a property of the target node and lives in ``check_graph``,
+    because one input field may be supplied by a different inbound edge.
     """
-    if not target_input:
-        return []
-
-    if not source_output:
-        required = sorted(
-            name for name, spec in target_input.items() if spec.get("required")
-        )
-        if required:
-            return [
-                "source has no declared output contract but target requires: "
-                + ", ".join(required)
-            ]
-        return []
-
     problems: list[str] = []
-    for field, target_spec in target_input.items():
-        source_spec = source_output.get(field)
-        if source_spec is None:
-            if target_spec.get("required"):
-                problems.append(
-                    f"field '{field}' is required by the target but not provided "
-                    "by the source"
-                )
+    for target_field, source_field in (mapping or {}).items():
+        target_spec = target_input.get(target_field)
+        if target_spec is None:
+            problems.append(
+                f"mapping names input field '{target_field}', which the target "
+                "does not declare"
+            )
             continue
-        problems.extend(_field_problems(field, source_spec, target_spec))
+        source_spec = source_output.get(source_field)
+        if source_spec is None:
+            problems.append(
+                f"maps input '{target_field}' from '{source_field}', which the "
+                "source does not declare"
+            )
+            continue
+        problems.extend(_field_problems(target_field, source_spec, target_spec))
     return problems
 
 
-def check_graph(
+def _skips_contract_checks(node: Mapping[str, Any]) -> bool:
+    """
+    Whether a node opted out of type checking or is disabled (pass-through).
+    """
+    return node.get("type_enforcement") == "off" or bool(node.get("disabled"))
+
+
+def _edge_problems(
     nodes_by_id: Mapping[Any, Mapping[str, Any]],
     edges: Sequence[Mapping[str, Any]],
 ) -> list[dict[str, str]]:
     """
-    Type-check every edge of a graph.
-
-    Returns one entry per incompatible edge, shaped for an HTTP 400 body:
-    ``{"edge_id": ..., "reason": ...}``. Edges into a node that opted out
-    (`type_enforcement == "off"`) or is disabled are skipped.
+    Check each edge on its own, independent of the rest of the graph.
     """
     problems: list[dict[str, str]] = []
     for edge in edges:
@@ -243,13 +241,150 @@ def check_graph(
         if source is None or target is None:
             # validate_and_order already reports unknown endpoints.
             continue
-        if target.get("type_enforcement") == "off" or target.get("disabled"):
+        if _skips_contract_checks(target):
             continue
         reasons = check_edge(
-            source.get("output") or {}, target.get("input") or {}
+            source.get("output") or {},
+            target.get("input") or {},
+            edge.get("mapping"),
         )
         if reasons:
             problems.append(
                 {"edge_id": str(edge.get("id")), "reason": "; ".join(reasons)}
             )
     return problems
+
+
+def _edge_providers(
+    edge: Mapping[str, Any],
+    nodes_by_id: Mapping[Any, Mapping[str, Any]],
+    target_input: Mapping[str, Any],
+) -> list[str]:
+    """
+    The target fields this one edge validly provides.
+
+    A dangling reference is skipped here because ``_edge_problems`` already
+    reports it as a fault of the edge.
+    """
+    source = nodes_by_id.get(edge.get("source_node_id"))
+    if source is None:
+        return []
+    source_output = source.get("output") or {}
+    return [
+        target_field
+        for target_field, source_field in (edge.get("mapping") or {}).items()
+        if target_field in target_input and source_field in source_output
+    ]
+
+
+def _coverage_problems(
+    target_id: Any,
+    target_input: Mapping[str, Any],
+    providers: Mapping[str, Sequence[str]],
+) -> list[dict[str, str]]:
+    """
+    Faults in one target's coverage: unmapped required fields and conflicts.
+    """
+    problems: list[dict[str, str]] = []
+    for field, spec in target_input.items():
+        owners = providers.get(field, [])
+        if len(owners) > 1:
+            problems.append(
+                {
+                    "node_id": str(target_id),
+                    "reason": (
+                        f"input field '{field}' is provided by more than one "
+                        "incoming edge"
+                    ),
+                }
+            )
+        elif not owners and spec.get("required"):
+            problems.append(
+                {
+                    "node_id": str(target_id),
+                    "reason": (
+                        f"required input field '{field}' is not mapped from any "
+                        "upstream node"
+                    ),
+                }
+            )
+    return problems
+
+
+def _node_coverage_problems(
+    nodes_by_id: Mapping[Any, Mapping[str, Any]],
+    inbound: Mapping[Any, Sequence[Mapping[str, Any]]],
+) -> list[dict[str, str]]:
+    """
+    Aggregate inbound mappings per target node and check what they cover.
+
+    Coverage is a node-level property: one input field may be supplied by a
+    different inbound edge than another, so no single edge can be judged alone.
+    """
+    problems: list[dict[str, str]] = []
+    for target_id, target_edges in inbound.items():
+        target = nodes_by_id.get(target_id)
+        if target is None or _skips_contract_checks(target):
+            continue
+        target_input = target.get("input") or {}
+        if not target_input:
+            continue
+
+        providers: dict[str, list[str]] = {}
+        for edge in target_edges:
+            for field in _edge_providers(edge, nodes_by_id, target_input):
+                providers.setdefault(field, []).append(str(edge.get("id")))
+        problems.extend(_coverage_problems(target_id, target_input, providers))
+    return problems
+
+
+def check_graph(
+    nodes_by_id: Mapping[Any, Mapping[str, Any]],
+    edges: Sequence[Mapping[str, Any]],
+) -> dict[str, list[dict[str, str]]]:
+    """
+    Check every edge of a graph, per edge and per target node.
+
+    Returns ``{"edges": [...], "nodes": [...]}``, each entry shaped for an HTTP
+    400 body. Edge entries are faults the edge itself caused (a dangling mapping
+    reference or an incompatible pair). Node entries are faults of the target's
+    coverage as a whole: a required input no inbound edge maps, or an input two
+    inbound edges both map. Nodes that opted out (`type_enforcement == "off"`)
+    or are disabled are skipped.
+    """
+    inbound: dict[Any, list[Mapping[str, Any]]] = {}
+    for edge in edges:
+        inbound.setdefault(edge.get("target_node_id"), []).append(edge)
+
+    return {
+        "edges": _edge_problems(nodes_by_id, edges),
+        "nodes": _node_coverage_problems(nodes_by_id, inbound),
+    }
+
+
+def apply_edge_mapping(
+    items: Sequence[Mapping[str, Any]],
+    mapping: Mapping[str, str] | None,
+) -> list[dict[str, Any]]:
+    """
+    Project each item's ``json`` through an edge's mapping.
+
+    The result holds exactly the mapped pairs, renamed to the target's field
+    names. A pair is omitted when its source field is absent, so a target
+    default can still apply. Unmapped source fields are dropped: strict mapping
+    means the edge carries only what it declares.
+    """
+    projection = dict(mapping or {})
+    projected: list[dict[str, Any]] = []
+    for item in items:
+        copied = dict(item) if isinstance(item, Mapping) else {}
+        data = copied.get("json")
+        if not isinstance(data, dict):
+            data = {}
+        copied["json"] = {
+            target: data[source]
+            for target, source in projection.items()
+            if source in data
+        }
+        projected.append(copied)
+    return projected

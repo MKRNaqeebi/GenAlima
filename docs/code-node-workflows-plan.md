@@ -190,8 +190,12 @@ Code node adds `pairedItem: {"item": <input index>}` automatically in per-item m
 so lineage survives a run; `error`/`index` stay unused for now but are reserved by the validator.
 
 - Entry nodes (in-degree 0) receive the run's `trigger_items` (default `[{"json": {}}]`).
-- A node with multiple incoming edges receives the **concatenation** of its upstream outputs,
-  in the order edges were created. A future `merge` policy can change this.
+- Every edge projects its source items through its `mapping` first (`apply_edge_mapping`), so an
+  item arrives at a target carrying exactly the fields that edge names. A node with multiple
+  incoming edges therefore receives the **concatenation** of its upstream outputs, in the order
+  edges were created; each item still only carries its own edge's mapped fields, and the target's
+  coverage is guaranteed across edges rather than per item. A future `merge` policy (index-zip or
+  join) can change this without touching the mapping helper.
 - Output validation mirrors n8n: all-items mode must return a list of dicts; each-item mode must
   return one dict (a list is an error), and returning `None` skips that item.
 
@@ -356,25 +360,45 @@ Semantics:
 
 ### 6.4 Static edge checking on save
 
-`PUT /workflows/{id}/graph` runs a compatibility pass over every edge and returns **400** listing
-each incompatible one, instead of silently storing a graph that can only fail at run time.
+`PUT /workflows/{id}/graph` runs a compatibility pass over the whole graph and returns **400**
+listing every fault, instead of silently storing a graph that can only fail at run time. The pass
+is **mapping-driven** and **node-oriented**, because a target input field may be fed by any one of
+several inbound edges.
 
-An edge `source → target` is compatible when, for each field `f` in `target.input`:
+Every edge carries `mapping = {target_field: source_field}` (JSON column on `workflow_edge`). It is
+**strict**: only the named pairs flow, so an empty mapping carries nothing. An edge `source →
+target` is valid when, for each pair in its mapping:
 
 | Case | Result |
 |---|---|
-| `f` not in `source.output` and `target.input[f]` has a default | ok (default fills it) |
-| `f` not in `source.output` and is optional | ok (may legitimately be absent) |
-| `f` not in `source.output` and is required | **error** — target requires a field nothing provides |
-| `f` in both, types identical | ok |
-| `f` in both, `int` → `float` | ok (the one allowed widening) |
-| `f` in both, either side `Any` | source `Any` → error (unprovable); target `Any` → ok |
-| `f` in both, `list` types but `items` differ or source `items` unset | **error** |
-| `f` required by target but optional in source | **error** — source may omit it at run time |
+| `target_field` not declared by `target.input` | **edge fault** — mapping names an input the target does not declare |
+| `source_field` not declared by `source.output` | **edge fault** — mapping reads an output the source does not declare |
+| both declared, types identical | ok |
+| both declared, `int` → `float` | ok (the one allowed widening) |
+| both declared, source `Any` → typed target | **edge fault** — unprovable |
+| both declared, target `Any` | ok |
+| both declared, `list` types but `items` differ or source `items` unset | **edge fault** |
+| both declared, required by target but optional in source | **edge fault** |
 
-Skipped: edges into a node whose `type_enforcement` is `off`, and disabled nodes (pass-through).
-An untyped output feeding a typed input is reported as "source has no declared output contract",
-which is the message that pushes authors to annotate the upstream node.
+Coverage is then checked **per target node** across all its inbound edges (entry nodes, in-degree
+0, are exempt — their inputs come from `trigger_items`):
+
+| Case | Result |
+|---|---|
+| field mapped by exactly one inbound edge | ok |
+| required field mapped by no inbound edge | **node fault** — nothing provides it |
+| field mapped by two or more inbound edges | **node fault** — the winner would be undefined |
+| optional field, or field with a default, mapped by nobody | ok |
+
+Skipped: targets whose `type_enforcement` is `off`, and disabled nodes (pass-through). One output
+field may be mapped into many targets (fan-out); one target input may come from only one edge.
+The 400 body carries both kinds: `{"message": "incompatible connections", "edges": [{"edge_id",
+"reason"}], "nodes": [{"node_id", "reason"}]}`. The editor mirrors these rules live
+(`edgeMappingIssue` / `nodeCoverageIssue` in `types.ts`).
+
+Existing graphs were saved under the old implicit name-matching rules; the migration backfills
+each edge with `{f: f}` for every field present on both sides, and the editor auto-maps same-name
+fields on connect, so nothing that used to work silently stops.
 
 ### 6.5 Editor
 
@@ -427,8 +451,8 @@ Two construction rules enforced by the models, both verified against a real inse
 `PUT /graph` semantics (this is the save path the editor uses):
 
 1. Validate DAG (else `400` with the offending node/edge ids).
-2. **Type-check every edge** (§6.4); on failure return `400`:
-   `{"detail": {"message": "incompatible connections", "edges": [{"edge_id": ..., "reason": "field 'score' required by target but not provided by source"}]}}`.
+2. **Check every edge's mapping and each target's coverage** (§6.4); on failure return `400`:
+   `{"detail": {"message": "incompatible connections", "edges": [{"edge_id": ..., "reason": "maps input 'b' from 'a', which the source does not declare"}], "nodes": [{"node_id": ..., "reason": "required input field 'b' is not mapped from any upstream node"}]}}`.
 3. In one transaction: upsert nodes by `id` (or `key`), upsert edges, delete rows not present.
 4. `workflow.version += 1`, `workflow.updated_at = utcnow()`.
 5. Return the canonical graph (fresh ids, canonicalised contracts) so the client can reconcile.
@@ -471,6 +495,7 @@ No state library is added — local `useState` + react-query is enough and match
 | `WorkflowCanvas.tsx` | React Flow canvas; `nodes`/`edges` adapters; connect/select/delete; `MiniMap`, `Controls`, `Background` |
 | `CodeNode.tsx` | custom node card: name, run status colour, declared input → output summary, code preview, one source + one target handle |
 | `NodeInspector.tsx` | tabbed right panel: **Code** (mode, timeout, disabled, CodeMirror editor) and **Contract** (see next row) |
+| `EdgeInspector.tsx` | shown when a connection is selected: one row per target input field, each mapping it from a source output field, plus type feedback and auto-map/clear |
 | `FieldContractEditor.tsx` | Input/Output contract builder: one row per field (name, type, required-or-default, description), add/remove, raw-JSON escape hatch |
 | `RunPanel.tsx` | Run button, per-node status timeline, logs, pretty-printed output items, validation warnings |
 | `AddWorkflow.tsx` | create modal (name + description) |

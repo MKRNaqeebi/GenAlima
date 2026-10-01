@@ -224,13 +224,14 @@ def _validate_graph_payloads(
         raise HTTPException(status_code=400, detail=exc.as_detail()) from exc
 
     nodes_by_id = {node["id"]: node for node in node_payloads}
-    edge_problems = check_graph(nodes_by_id, edge_payloads)
-    if edge_problems:
+    problems = check_graph(nodes_by_id, edge_payloads)
+    if problems["edges"] or problems["nodes"]:
         raise HTTPException(
             status_code=400,
             detail={
                 "message": "incompatible connections",
-                "edges": edge_problems,
+                "edges": problems["edges"],
+                "nodes": problems["nodes"],
             },
         )
     return nodes_by_id

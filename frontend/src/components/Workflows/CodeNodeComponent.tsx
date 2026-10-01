@@ -1,4 +1,4 @@
-import { Handle, Position, type NodeProps } from "@xyflow/react"
+import { Handle, type NodeProps, Position } from "@xyflow/react"
 import { FiCode, FiSlash } from "react-icons/fi"
 
 import type { CodeNode } from "./types"
@@ -6,7 +6,9 @@ import type { CodeNode } from "./types"
 function contractSummary(contract: Record<string, { type?: string }>): string {
   const entries = Object.entries(contract)
   if (entries.length === 0) return "any"
-  return entries.map(([name, spec]) => `${name}: ${spec.type ?? "Any"}`).join(", ")
+  return entries
+    .map(([name, spec]) => `${name}: ${spec.type ?? "Any"}`)
+    .join(", ")
 }
 
 /**
@@ -18,11 +20,13 @@ const CodeNodeComponent = ({ data, selected }: NodeProps<CodeNode>) => {
   return (
     <div
       className={`w-60 rounded-lg border-2 bg-white shadow-sm transition-colors dark:bg-[#2f2f2f] ${
-        selected
-          ? "border-blue-500"
-          : data.disabled
-            ? "border-gray-300 opacity-70 dark:border-gray-600"
-            : "border-gray-200 dark:border-gray-700"
+        data.error
+          ? "border-red-500"
+          : selected
+            ? "border-blue-500"
+            : data.disabled
+              ? "border-gray-300 opacity-70 dark:border-gray-600"
+              : "border-gray-200 dark:border-gray-700"
       }`}
     >
       <Handle
@@ -60,6 +64,14 @@ const CodeNodeComponent = ({ data, selected }: NodeProps<CodeNode>) => {
         {firstLine && (
           <div className="truncate rounded bg-gray-50 px-1 py-0.5 font-mono text-[11px] text-gray-500 dark:bg-gray-800 dark:text-gray-400">
             {firstLine}
+          </div>
+        )}
+        {data.error && (
+          <div
+            className="truncate text-[11px] font-medium text-red-600 dark:text-red-400"
+            title={data.error}
+          >
+            {data.error}
           </div>
         )}
       </div>

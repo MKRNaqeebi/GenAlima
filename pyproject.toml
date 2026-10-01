@@ -58,3 +58,6 @@ extend-exclude = '''
   | alembic
 )/
 '''
+
+[tool.pytest.ini_options]
+testpaths = ["app/tests"]

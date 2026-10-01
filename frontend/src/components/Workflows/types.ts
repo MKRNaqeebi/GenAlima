@@ -1,7 +1,4 @@
-import type {
-  Edge,
-  Node,
-} from "@xyflow/react"
+import type { Edge, Node } from "@xyflow/react"
 import { v4 as uuidv4 } from "uuid"
 
 import type {
@@ -41,6 +38,11 @@ export interface CodeNodeData extends Record<string, unknown> {
   timeout: number
   onError: string
   disabled: boolean
+  /**
+   * Live or last-save coverage fault for this node. Derived for rendering only:
+   * it is not part of the save payload.
+   */
+  error?: string | null
 }
 
 export type CodeNode = Node<CodeNodeData, "code">
@@ -73,7 +75,10 @@ export function newCodeNode(nodes: CodeNode[]): CodeNode {
   return {
     id: uuidv4(),
     type: "code",
-    position: { x: 80 + (index % 4) * 260, y: 80 + Math.floor(index / 4) * 200 },
+    position: {
+      x: 80 + (index % 4) * 260,
+      y: 80 + Math.floor(index / 4) * 200,
+    },
     data: {
       key: nextNodeKey(nodes),
       name: `Code ${index + 1}`,
@@ -121,7 +126,16 @@ export function toCanvasEdge(edge: WorkflowEdgePublic): Edge {
     target: edge.target_node_id,
     sourceHandle: edge.source_handle ?? "main",
     targetHandle: edge.target_handle ?? "main",
+    data: { mapping: edge.mapping ?? {} },
   }
+}
+
+/** The `{target_field: source_field}` mapping an edge carries, never null. */
+export function edgeMapping(edge: Edge): Record<string, string> {
+  const mapping = (
+    edge.data as { mapping?: Record<string, string> } | undefined
+  )?.mapping
+  return mapping ?? {}
 }
 
 /** Canvas state -> the transactional save payload. */
@@ -156,47 +170,227 @@ export function toSavePayload(
       target_node_id: edge.target,
       source_handle: edge.sourceHandle ?? "main",
       target_handle: edge.targetHandle ?? "main",
+      mapping: edgeMapping(edge),
     })),
   }
 }
 
 /**
- * Client mirror of the server's edge compatibility rules (§6.4 of the plan).
+ * Client mirror of the server's strict edge rules (plan §6.4).
  *
  * Kept in sync deliberately: the server is the authority and still rejects a bad
  * save, but authors should not have to press Save to learn an edge is wrong.
+ * Faults are split the way the server reports them: `edgeMappingIssue` blames
+ * one edge, `nodeCoverageIssue` blames a target's coverage as a whole.
  */
-export function edgeIssue(source: CodeNodeData, target: CodeNodeData): string | null {
-  if (target.disabled || target.typeEnforcement === "off") return null
 
-  const required = Object.entries(target.input).filter(([, spec]) => spec.required)
+/** Whether a target opted out of type checking or is disabled (pass-through). */
+function skipsContractChecks(node: CodeNodeData): boolean {
+  return node.disabled || node.typeEnforcement === "off"
+}
+
+/**
+ * Mirror of `WorkflowFieldSpec._resolve_required`: an unset `required` resolves
+ * against the default, so a field just added in the editor (no `required` yet)
+ * counts as required and its missing mapping is flagged before the first save.
+ */
+export function isRequired(spec: WorkflowFieldSpec): boolean {
+  if (spec.required === undefined || spec.required === null) {
+    return spec.default == null
+  }
+  return spec.required
+}
+
+/** Compatibility of one resolved source-field -> target-field pair. */
+export function fieldIssue(
+  field: string,
+  source: WorkflowFieldSpec,
+  target: WorkflowFieldSpec,
+): string | null {
+  const from = source.type ?? "Any"
+  const to = target.type ?? "Any"
+
+  if (to !== "Any") {
+    if (from === "Any") {
+      return `field '${field}': source type is 'Any' (undeclared) and cannot be proven to satisfy '${to}'`
+    }
+    if (from !== to && !(from === "int" && to === "float")) {
+      return `field '${field}': source declares '${from}', target expects '${to}'`
+    }
+  }
+
+  if (to === "list" && target.items && source.items !== target.items) {
+    return `field '${field}': source list items are ${
+      source.items ?? "unset"
+    } but target expects '${target.items}'`
+  }
+
+  if (isRequired(target) && !isRequired(source)) {
+    return `field '${field}' is required by the target but optional in the source`
+  }
+  return null
+}
+
+/** Faults of one edge's own mapping: dangling references and bad pairs. */
+export function edgeMappingIssue(
+  source: CodeNodeData,
+  target: CodeNodeData,
+  mapping: Record<string, string>,
+): string | null {
+  if (skipsContractChecks(target)) return null
+
+  const problems: string[] = []
+  for (const [targetField, sourceField] of Object.entries(mapping)) {
+    const targetSpec = target.input[targetField]
+    if (!targetSpec) {
+      problems.push(
+        `mapping names input field '${targetField}', which the target does not declare`,
+      )
+      continue
+    }
+    const sourceSpec = source.output[sourceField]
+    if (!sourceSpec) {
+      problems.push(
+        `maps input '${targetField}' from '${sourceField}', which the source does not declare`,
+      )
+      continue
+    }
+    const issue = fieldIssue(targetField, sourceSpec, targetSpec)
+    if (issue) problems.push(issue)
+  }
+  return problems.length > 0 ? problems.join("; ") : null
+}
+
+/** One inbound edge's contribution to a target's coverage. */
+export interface InboundContribution {
+  edgeId: string
+  mapping: Record<string, string>
+  source: CodeNodeData
+}
+
+/**
+ * Faults of a target's coverage across every inbound edge: a required input no
+ * edge maps, or an input two edges both map.
+ */
+export function nodeCoverageIssue(
+  target: CodeNodeData,
+  inbound: InboundContribution[],
+): string | null {
+  if (skipsContractChecks(target)) return null
   if (Object.keys(target.input).length === 0) return null
-  if (Object.keys(source.output).length === 0) {
-    return required.length
-      ? `source declares no output, but target requires: ${required
-          .map(([name]) => name)
-          .join(", ")}`
-      : null
+
+  const providers = new Map<string, string[]>()
+  for (const { edgeId, mapping, source } of inbound) {
+    for (const [targetField, sourceField] of Object.entries(mapping)) {
+      if (!target.input[targetField]) continue
+      if (!source.output[sourceField]) continue
+      providers.set(targetField, [
+        ...(providers.get(targetField) ?? []),
+        edgeId,
+      ])
+    }
   }
 
   const problems: string[] = []
-  for (const [name, spec] of Object.entries(target.input)) {
-    const provided = source.output[name]
-    if (!provided) {
-      if (spec.required) {
-        problems.push(`field '${name}' is required by the target but not provided`)
-      }
-      continue
-    }
-    const from = provided.type ?? "Any"
-    const to = spec.type ?? "Any"
-    if (to !== "Any" && from !== to && !(from === "int" && to === "float")) {
-      problems.push(`field '${name}': source declares '${from}', target expects '${to}'`)
-      continue
-    }
-    if (spec.required && provided.required === false && provided.default == null) {
-      problems.push(`field '${name}' is optional in the source but required by the target`)
+  for (const [field, spec] of Object.entries(target.input)) {
+    const owners = providers.get(field) ?? []
+    if (owners.length > 1) {
+      problems.push(
+        `input field '${field}' is provided by more than one incoming edge`,
+      )
+    } else if (owners.length === 0 && isRequired(spec)) {
+      problems.push(
+        `required input field '${field}' is not mapped from any upstream node`,
+      )
     }
   }
   return problems.length > 0 ? problems.join("; ") : null
+}
+
+/** Map every target input field from a same-named source output field. */
+export function autoMapFields(
+  source: CodeNodeData,
+  target: CodeNodeData,
+): Record<string, string> {
+  const mapping: Record<string, string> = {}
+  for (const field of Object.keys(target.input)) {
+    if (field in source.output) mapping[field] = field
+  }
+  return mapping
+}
+
+/** A contract key rename or removal, for keeping edge mappings in step. */
+export interface ContractChange {
+  renamed: Map<string, string>
+  removed: string[]
+}
+
+/**
+ * Detect field renames and removals between two versions of a contract.
+ *
+ * The editor commits one rename at a time, which shows up as one removed and
+ * one added key; pairing them by position when the counts match recovers it.
+ * An ambiguous change (unequal counts) is treated as removals only, so a stale
+ * mapping surfaces as a visible dangling reference instead of a silent rewire.
+ */
+export function diffContract(
+  before: FieldContract,
+  after: FieldContract,
+): ContractChange {
+  const beforeKeys = Object.keys(before)
+  const afterKeys = Object.keys(after)
+  const removed = beforeKeys.filter((key) => !(key in after))
+  const added = afterKeys.filter((key) => !(key in before))
+  const renamed = new Map<string, string>()
+  if (removed.length === added.length) {
+    removed.forEach((from, index) => renamed.set(from, added[index]))
+  }
+  return { renamed, removed: removed.filter((key) => !renamed.has(key)) }
+}
+
+/**
+ * Rewrite an edge's mapping after a field rename or removal on one endpoint.
+ *
+ * A renamed key is followed; a removed key drops its mapping entry rather than
+ * leaving a dangling reference for the save to reject.
+ */
+export function remapEdgeAfterContractChange(
+  edge: Edge,
+  nodeId: string,
+  change: ContractChange,
+): Edge {
+  const mapping = edgeMapping(edge)
+  const next: Record<string, string> = {}
+  let touched = false
+
+  for (const [targetField, sourceField] of Object.entries(mapping)) {
+    if (edge.target === nodeId) {
+      const renamed = change.renamed.get(targetField)
+      if (renamed !== undefined) {
+        next[renamed] = sourceField
+        touched = true
+        continue
+      }
+      if (change.removed.includes(targetField)) {
+        touched = true
+        continue
+      }
+    }
+    if (edge.source === nodeId) {
+      const renamed = change.renamed.get(sourceField)
+      if (renamed !== undefined) {
+        next[targetField] = renamed
+        touched = true
+        continue
+      }
+      if (change.removed.includes(sourceField)) {
+        touched = true
+        continue
+      }
+    }
+    next[targetField] = sourceField
+  }
+
+  if (!touched) return edge
+  return { ...edge, data: { ...edge.data, mapping: next } }
 }
