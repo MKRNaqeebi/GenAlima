@@ -47,9 +47,28 @@ const CodeNodeComponent = ({ data, selected }: NodeProps<CodeNode>) => {
             {data.name}
           </span>
         </div>
-        <span className="ml-2 flex-shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] uppercase text-gray-500 dark:bg-gray-700 dark:text-gray-300">
-          {data.language}
-        </span>
+        <div className="ml-2 flex flex-shrink-0 items-center space-x-1">
+          {data.boundary && (
+            <span
+              data-testid={`boundary-${data.boundary}`}
+              title={
+                data.boundary === "in"
+                  ? "The component's input contract comes from this node"
+                  : "The component's output contract comes from this node"
+              }
+              className={`rounded px-1.5 py-0.5 text-[10px] font-medium uppercase ${
+                data.boundary === "in"
+                  ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
+                  : "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-300"
+              }`}
+            >
+              {data.boundary === "in" ? "input" : "output"}
+            </span>
+          )}
+          <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] uppercase text-gray-500 dark:bg-gray-700 dark:text-gray-300">
+            {data.language}
+          </span>
+        </div>
       </div>
 
       <div className="space-y-1 px-3 py-2 text-xs text-gray-600 dark:text-gray-400">

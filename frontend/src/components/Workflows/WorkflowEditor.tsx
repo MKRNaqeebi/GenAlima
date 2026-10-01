@@ -10,13 +10,14 @@ import {
   applyNodeChanges,
 } from "@xyflow/react"
 import { useCallback, useEffect, useMemo, useState } from "react"
-import { FiArrowLeft, FiPlus, FiSave } from "react-icons/fi"
+import { FiArrowLeft, FiPlus, FiSave, FiUpload } from "react-icons/fi"
 import { v4 as uuidv4 } from "uuid"
 
 import { ApiError } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
 import EdgeInspector from "./EdgeInspector"
 import NodeInspector from "./NodeInspector"
+import PublishDialog from "./PublishDialog"
 import WorkflowCanvas from "./WorkflowCanvas"
 import { WorkflowsService } from "./api"
 import {
@@ -24,6 +25,7 @@ import {
   type CodeNodeData,
   type InboundContribution,
   autoMapFields,
+  boundaryCandidates,
   diffContract,
   edgeMapping,
   edgeMappingIssue,
@@ -92,6 +94,7 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
   const [edgeErrors, setEdgeErrors] = useState<Record<string, string>>({})
   const [nodeErrors, setNodeErrors] = useState<Record<string, string>>({})
   const [resizing, setResizing] = useState(false)
+  const [isPublishOpen, setIsPublishOpen] = useState(false)
   const [inspectorWidth, setInspectorWidth] = useState(() => {
     const stored = Number(localStorage.getItem("workflow-inspector-width"))
     return stored >= INSPECTOR_MIN_WIDTH && stored <= INSPECTOR_MAX_WIDTH
@@ -142,6 +145,20 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
     setName(data.name)
     setDirty(false)
   }, [data])
+
+  // A published snapshot is readable by the whole organization but never
+  // editable: changes belong in the source workflow and ship as a new version.
+  const isFrozen = data?.is_frozen === true
+
+  // Which nodes form the component boundary, so the interface the publish form
+  // will use is visible on the canvas before it is opened.
+  const boundaryIds = useMemo(() => {
+    const { entries, exits } = boundaryCandidates(nodes, edges)
+    return {
+      entry: entries.length === 1 ? entries[0] : null,
+      exit: exits.length === 1 ? exits[0] : null,
+    }
+  }, [nodes, edges])
 
   const selectedNode = useMemo(
     () => nodes.find((node) => node.id === selectedId) ?? null,
@@ -211,10 +228,16 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
     () =>
       nodes.map((node) => {
         const reason = coverageByNode.get(node.id)
-        if (!reason) return node
-        return { ...node, data: { ...node.data, error: reason } }
+        const boundary =
+          node.id === boundaryIds.entry
+            ? ("in" as const)
+            : node.id === boundaryIds.exit
+              ? ("out" as const)
+              : null
+        if (!reason && !boundary) return node
+        return { ...node, data: { ...node.data, error: reason, boundary } }
       }),
-    [nodes, coverageByNode],
+    [nodes, coverageByNode, boundaryIds],
   )
 
   // Per-edge faults: a dangling mapping reference or an incompatible pair.
@@ -264,16 +287,22 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
         change.type === "remove" ||
         change.type === "replace",
     )
-    if (edited) setDirty(true)
-  }, [])
+    if (edited && !isFrozen) setDirty(true)
+  }, [isFrozen])
 
-  const onEdgesChange = useCallback((changes: EdgeChange[]) => {
-    setEdges((current) => applyEdgeChanges(changes, current))
-    if (changes.some((change) => change.type !== "select")) setDirty(true)
-  }, [])
+  const onEdgesChange = useCallback(
+    (changes: EdgeChange[]) => {
+      setEdges((current) => applyEdgeChanges(changes, current))
+      if (!isFrozen && changes.some((change) => change.type !== "select")) {
+        setDirty(true)
+      }
+    },
+    [isFrozen],
+  )
 
   const onConnect = useCallback(
     (connection: Connection) => {
+      if (isFrozen) return
       if (connection.source === connection.target) return
       // Seed the mapping with the same-name pairs a bare connection used to
       // imply, so strict edges still "just work" until the author edits them.
@@ -286,11 +315,12 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
       )
       setDirty(true)
     },
-    [nodes],
+    [nodes, isFrozen],
   )
 
   const patchNode = useCallback(
     (id: string, patch: Partial<CodeNodeData>) => {
+      if (isFrozen) return
       const node = nodes.find((candidate) => candidate.id === id)
       if (node) {
         // Follow field renames and drop mappings whose field was removed, so a
@@ -332,29 +362,35 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
       )
       setDirty(true)
     },
-    [nodes],
+    [nodes, isFrozen],
   )
 
   const addNode = useCallback(() => {
+    if (isFrozen) return
     setNodes((current) => {
       const node = newCodeNode(current)
       setSelectedId(node.id)
       return [...current, node]
     })
     setDirty(true)
-  }, [])
+  }, [isFrozen])
 
-  const deleteNode = useCallback((id: string) => {
-    setNodes((current) => current.filter((node) => node.id !== id))
-    setEdges((current) =>
-      current.filter((edge) => edge.source !== id && edge.target !== id),
-    )
-    setSelectedId(null)
-    setDirty(true)
-  }, [])
+  const deleteNode = useCallback(
+    (id: string) => {
+      if (isFrozen) return
+      setNodes((current) => current.filter((node) => node.id !== id))
+      setEdges((current) =>
+        current.filter((edge) => edge.source !== id && edge.target !== id),
+      )
+      setSelectedId(null)
+      setDirty(true)
+    },
+    [isFrozen],
+  )
 
   const updateEdgeMapping = useCallback(
     (edgeId: string, mapping: Record<string, string>) => {
+      if (isFrozen) return
       setEdges((current) =>
         current.map((edge) =>
           edge.id === edgeId
@@ -371,14 +407,18 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
       })
       setDirty(true)
     },
-    [],
+    [isFrozen],
   )
 
-  const deleteEdge = useCallback((id: string) => {
-    setEdges((current) => current.filter((edge) => edge.id !== id))
-    setSelectedEdgeId(null)
-    setDirty(true)
-  }, [])
+  const deleteEdge = useCallback(
+    (id: string) => {
+      if (isFrozen) return
+      setEdges((current) => current.filter((edge) => edge.id !== id))
+      setSelectedEdgeId(null)
+      setDirty(true)
+    },
+    [isFrozen],
+  )
 
   const saveGraph = useMutation({
     mutationFn: () =>
@@ -459,12 +499,13 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
             value={name}
             onChange={(event) => setName(event.target.value)}
             onBlur={() => {
-              if (data && name.trim() && name !== data.name)
+              if (!isFrozen && data && name.trim() && name !== data.name)
                 rename.mutate(name.trim())
             }}
-            className="min-w-0 rounded border border-transparent bg-transparent px-2 py-1 text-lg font-semibold text-gray-900 hover:border-gray-300 focus:border-blue-500 focus:outline-none dark:text-white dark:hover:border-gray-600"
+            disabled={isFrozen}
+            className="min-w-0 rounded border border-transparent bg-transparent px-2 py-1 text-lg font-semibold text-gray-900 hover:border-gray-300 focus:border-blue-500 focus:outline-none disabled:cursor-default dark:text-white dark:hover:border-gray-600"
           />
-          {dirty && (
+          {dirty && !isFrozen && (
             <span className="text-xs text-amber-600 dark:text-amber-400">
               unsaved changes
             </span>
@@ -472,25 +513,55 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
         </div>
 
         <div className="flex items-center space-x-2">
-          <button
-            type="button"
-            onClick={addNode}
-            className="flex items-center space-x-1 rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
-          >
-            <FiPlus className="h-4 w-4" />
-            <span>Add code node</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => saveGraph.mutate()}
-            disabled={!dirty || saveGraph.isPending}
-            className="flex items-center space-x-1 rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <FiSave className="h-4 w-4" />
-            <span>{saveGraph.isPending ? "Saving…" : "Save"}</span>
-          </button>
+          {isFrozen ? (
+            <span
+              data-testid="read-only-badge"
+              className="rounded bg-gray-100 px-2 py-1 text-xs font-medium uppercase text-gray-600 dark:bg-gray-700 dark:text-gray-300"
+            >
+              Read-only snapshot
+            </span>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={addNode}
+                className="flex items-center space-x-1 rounded border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
+              >
+                <FiPlus className="h-4 w-4" />
+                <span>Add code node</span>
+              </button>
+              <button
+                type="button"
+                data-testid="publish-workflow"
+                onClick={() => setIsPublishOpen(true)}
+                className="flex items-center space-x-1 rounded border border-purple-300 px-3 py-1.5 text-sm text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-300 dark:hover:bg-purple-900/20"
+              >
+                <FiUpload className="h-4 w-4" />
+                <span>Publish</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => saveGraph.mutate()}
+                disabled={!dirty || saveGraph.isPending}
+                className="flex items-center space-x-1 rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <FiSave className="h-4 w-4" />
+                <span>{saveGraph.isPending ? "Saving…" : "Save"}</span>
+              </button>
+            </>
+          )}
         </div>
       </header>
+
+      {isFrozen && (
+        <div
+          data-testid="read-only-banner"
+          className="border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200"
+        >
+          Published snapshot, shared read-only with your organization. Open the
+          source workflow to make changes and publish a new version.
+        </div>
+      )}
 
       <div className="flex min-h-0 flex-1">
         <div className="min-w-0 flex-1">
@@ -508,6 +579,7 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
               setSelectedEdgeId(id)
               setSelectedId(null)
             }}
+            readOnly={isFrozen}
           />
         </div>
 
@@ -549,12 +621,14 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
                 updateEdgeMapping(selectedEdge.id, mapping)
               }
               onDelete={() => deleteEdge(selectedEdge.id)}
+              readOnly={isFrozen}
             />
           ) : selectedNode ? (
             <NodeInspector
               node={selectedNode}
               onChange={(patch) => patchNode(selectedNode.id, patch)}
               onDelete={() => deleteNode(selectedNode.id)}
+              readOnly={isFrozen}
             />
           ) : (
             <div className="flex h-full flex-col items-center justify-center space-y-2 px-6 text-center">
@@ -570,6 +644,25 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
           )}
         </aside>
       </div>
+
+      {isPublishOpen && !isFrozen && (
+        <PublishDialog
+          workflowId={workflowId}
+          defaultName={name}
+          defaultDescription={data?.description ?? ""}
+          nodes={nodes}
+          edges={edges}
+          onClose={() => setIsPublishOpen(false)}
+          onPublished={() => {
+            setIsPublishOpen(false)
+            // Publishing saved the canvas, so there is nothing unsaved left.
+            setDirty(false)
+            queryClient.invalidateQueries({ queryKey: ["components"] })
+            queryClient.invalidateQueries({ queryKey: ["workflow", workflowId] })
+            queryClient.invalidateQueries({ queryKey: ["workflows"] })
+          }}
+        />
+      )}
     </div>
   )
 }

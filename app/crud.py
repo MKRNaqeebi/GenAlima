@@ -3,24 +3,50 @@ This module contains the CRUD (Create, Read, Update, Delete) operations for the 
 """
 # Standard library imports
 from typing import Any
+import uuid
 
 # Third-party imports
 from sqlmodel import Session, select
 
 # Local application imports
 from app.core.security import get_password_hash, verify_password
-from app.models import User, UserCreate, UserUpdate
+from app.models import Organization, User, UserCreate, UserUpdate
+
+
+def _personal_organization_title(user_create: UserCreate) -> str:
+    """
+    Name the organization a new user owns, within the column's length.
+    """
+    label = user_create.full_name or user_create.email
+    return f"{label} (personal)"[:255]
 
 
 def create_user(*, session: Session, user_create: UserCreate) -> User:
     """
-    Create a new user in the database.
+    Create a user together with the personal organization they own.
+
+    `user.organization_id` and `organization.owner_id` are both mandatory and
+    reference each other, so the two rows are inserted in one transaction and the
+    deferred foreign keys are checked at commit. Ids are generated up front
+    because each row needs the other's id in the same statement batch.
     """
+    user_id = uuid.uuid4()
+    organization_id = uuid.uuid4()
+
     db_obj = User.model_validate(
-        user_create, update={
-            "hashed_password": get_password_hash(user_create.password)}
+        user_create,
+        update={
+            "id": user_id,
+            "organization_id": organization_id,
+            "hashed_password": get_password_hash(user_create.password),
+        },
     )
+    organization = Organization(
+        id=organization_id, title=_personal_organization_title(user_create), owner_id=user_id
+    )
+
     session.add(db_obj)
+    session.add(organization)
     session.commit()
     session.refresh(db_obj)
     return db_obj

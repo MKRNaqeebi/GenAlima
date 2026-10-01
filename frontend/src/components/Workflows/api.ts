@@ -82,6 +82,8 @@ export type WorkflowPublic = {
   settings?: Record<string, unknown> | null
   owner_id?: string | null
   version?: number | null
+  /** A published snapshot: readable, but never writable. */
+  is_frozen?: boolean
   created_at?: string | null
   updated_at?: string | null
 }
@@ -101,6 +103,41 @@ export type WorkflowGraphPublic = {
   version: number
   nodes: WorkflowNodePublic[]
   edges: WorkflowEdgePublic[]
+}
+
+/**
+ * One published, immutable version of a workflow.
+ *
+ * `input` and `output` are the version's public contract, copied from the
+ * snapshot's entry and exit node, so a client can render the component without
+ * loading its graph.
+ */
+export type WorkflowComponentPublic = {
+  id: string
+  name: string
+  description?: string | null
+  owner_id: string
+  version: number
+  snapshot_workflow_id: string
+  source_workflow_id?: string | null
+  input?: Record<string, WorkflowFieldSpec>
+  output?: Record<string, WorkflowFieldSpec>
+  release_notes?: string | null
+  created_at: string
+}
+
+export type WorkflowComponentsPublic = {
+  data: WorkflowComponentPublic[]
+  count: number
+}
+
+export type WorkflowComponentPublishIn = {
+  name: string
+  version: number
+  description?: string | null
+  release_notes?: string | null
+  /** The canvas to save before snapshotting; omit to publish the saved graph. */
+  graph?: WorkflowGraphIn | null
 }
 
 /* ------------------------------------------------------------------- calls */
@@ -187,6 +224,74 @@ export const WorkflowsService = {
       body: data.requestBody,
       mediaType: "application/json",
       errors: { 400: "Invalid graph", 422: "Validation Error" },
+    })
+  },
+
+  /**
+   * Publish the workflow as a component version.
+   *
+   * The supplied graph is saved first so the snapshot matches the canvas. A 409
+   * means the version already exists for this name in the organization; the
+   * body carries the existing versions and a suggestion. A 400 means the graph
+   * has no single entry or exit node.
+   */
+  publishWorkflow(data: {
+    id: string
+    requestBody: WorkflowComponentPublishIn
+  }): CancelablePromise<WorkflowComponentPublic> {
+    return request<WorkflowComponentPublic>(OpenAPI, {
+      method: "POST",
+      url: `${BASE_URL}/{id}/publish`,
+      path: { id: data.id },
+      body: data.requestBody,
+      mediaType: "application/json",
+      errors: {
+        400: "Invalid graph",
+        403: "Published snapshots are read-only",
+        409: "Version already exists",
+        422: "Validation Error",
+      },
+    })
+  },
+}
+
+/* --------------------------------------------------------------- components */
+
+const COMPONENTS_URL = "/api/v1/components"
+
+export const ComponentsService = {
+  /** Component versions published by the caller's organization. */
+  readComponents(
+    data: { skip?: number; limit?: number } = {},
+  ): CancelablePromise<WorkflowComponentsPublic> {
+    return request<WorkflowComponentsPublic>(OpenAPI, {
+      method: "GET",
+      url: `${COMPONENTS_URL}/`,
+      query: { skip: data.skip, limit: data.limit },
+      errors: { 422: "Validation Error" },
+    })
+  },
+
+  /** One published version, including its public contract. */
+  readComponent(data: {
+    id: string
+  }): CancelablePromise<WorkflowComponentPublic> {
+    return request<WorkflowComponentPublic>(OpenAPI, {
+      method: "GET",
+      url: `${COMPONENTS_URL}/{id}`,
+      path: { id: data.id },
+      errors: { 404: "Component not found" },
+    })
+  },
+
+  deleteComponent(data: {
+    id: string
+  }): CancelablePromise<{ message: string }> {
+    return request<{ message: string }>(OpenAPI, {
+      method: "DELETE",
+      url: `${COMPONENTS_URL}/{id}`,
+      path: { id: data.id },
+      errors: { 403: "Not enough permissions", 404: "Component not found" },
     })
   },
 }

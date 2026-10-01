@@ -7,19 +7,22 @@ import type { WorkflowFieldSpec } from "./api"
 interface FieldContractEditorProps {
   value: FieldContract
   onChange: (next: FieldContract) => void
+  /** A published snapshot: the contract is shown but cannot be changed. */
+  readOnly?: boolean
 }
 
 interface FieldRowProps {
   name: string
   spec: WorkflowFieldSpec
   autoFocus: boolean
+  readOnly: boolean
   onRename: (from: string, to: string) => boolean
   onUpdate: (patch: Partial<WorkflowFieldSpec>) => void
   onRemove: () => void
 }
 
 const inputClass =
-  "min-w-0 flex-1 rounded border border-gray-300 bg-transparent px-2 py-1 text-sm text-gray-900 dark:border-gray-600 dark:text-white"
+  "min-w-0 flex-1 rounded border border-gray-300 bg-transparent px-2 py-1 text-sm text-gray-900 disabled:opacity-60 dark:border-gray-600 dark:text-white"
 
 /**
  * One field row.
@@ -33,6 +36,7 @@ const FieldRow = ({
   name,
   spec,
   autoFocus,
+  readOnly,
   onRename,
   onUpdate,
   onRemove,
@@ -57,6 +61,7 @@ const FieldRow = ({
         <input
           value={draftName}
           autoFocus={autoFocus}
+          disabled={readOnly}
           onChange={(event) => setDraftName(event.target.value)}
           onBlur={commitName}
           onKeyDown={(event) => {
@@ -71,8 +76,9 @@ const FieldRow = ({
         />
         <select
           value={spec.type ?? "str"}
+          disabled={readOnly}
           onChange={(event) => onUpdate({ type: event.target.value })}
-          className="rounded border border-gray-300 bg-transparent px-1 py-1 text-sm text-gray-900 dark:border-gray-600 dark:text-white"
+          className="rounded border border-gray-300 bg-transparent px-1 py-1 text-sm text-gray-900 disabled:opacity-60 dark:border-gray-600 dark:text-white"
         >
           {FIELD_TYPES.map((type) => (
             <option key={type} value={type} className="text-black">
@@ -80,14 +86,16 @@ const FieldRow = ({
             </option>
           ))}
         </select>
-        <button
-          type="button"
-          onClick={onRemove}
-          title="Remove field"
-          className="rounded p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
-        >
-          <FiTrash2 className="h-4 w-4" />
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            onClick={onRemove}
+            title="Remove field"
+            className="rounded p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+          >
+            <FiTrash2 className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       <div className="flex items-center space-x-3 text-xs text-gray-600 dark:text-gray-400">
@@ -95,6 +103,7 @@ const FieldRow = ({
           <input
             type="checkbox"
             checked={isRequired}
+            disabled={readOnly}
             onChange={(event) =>
               event.target.checked
                 ? onUpdate({ required: true, default: null })
@@ -109,6 +118,7 @@ const FieldRow = ({
             <span>default</span>
             <input
               defaultValue={spec.default == null ? "" : JSON.stringify(spec.default)}
+              disabled={readOnly}
               onBlur={(event) => {
                 const raw = event.target.value.trim()
                 if (raw === "") {
@@ -134,8 +144,9 @@ const FieldRow = ({
           <span>items</span>
           <select
             value={spec.items ?? ""}
+            disabled={readOnly}
             onChange={(event) => onUpdate({ items: event.target.value || null })}
-            className="rounded border border-gray-300 bg-transparent px-1 py-0.5 text-xs text-gray-900 dark:border-gray-600 dark:text-white"
+            className="rounded border border-gray-300 bg-transparent px-1 py-0.5 text-xs text-gray-900 disabled:opacity-60 dark:border-gray-600 dark:text-white"
           >
             <option value="" className="text-black">
               (unset)
@@ -158,7 +169,11 @@ const FieldRow = ({
  * `required` follows Pydantic semantics: a field with a default is optional, so
  * the UI only exposes a default when "required" is unchecked.
  */
-const FieldContractEditor = ({ value, onChange }: FieldContractEditorProps) => {
+const FieldContractEditor = ({
+  value,
+  onChange,
+  readOnly = false,
+}: FieldContractEditorProps) => {
   const entries = Object.entries(value)
   const [lastAdded, setLastAdded] = useState<string | null>(null)
 
@@ -210,20 +225,23 @@ const FieldContractEditor = ({ value, onChange }: FieldContractEditorProps) => {
           name={name}
           spec={spec}
           autoFocus={name === lastAdded}
+          readOnly={readOnly}
           onRename={rename}
           onUpdate={(patch) => update(name, patch)}
           onRemove={() => remove(name)}
         />
       ))}
 
-      <button
-        type="button"
-        onClick={add}
-        className="flex items-center space-x-1 rounded border border-dashed border-gray-300 px-2 py-1 text-sm text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
-      >
-        <FiPlus className="h-3 w-3" />
-        <span>Add field</span>
-      </button>
+      {!readOnly && (
+        <button
+          type="button"
+          onClick={add}
+          className="flex items-center space-x-1 rounded border border-dashed border-gray-300 px-2 py-1 text-sm text-gray-600 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+        >
+          <FiPlus className="h-3 w-3" />
+          <span>Add field</span>
+        </button>
+      )}
     </div>
   )
 }

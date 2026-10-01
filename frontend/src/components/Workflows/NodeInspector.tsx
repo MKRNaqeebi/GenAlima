@@ -17,14 +17,21 @@ interface NodeInspectorProps {
   node: CodeNode
   onChange: (patch: Partial<CodeNodeData>) => void
   onDelete: () => void
+  /** A published snapshot: shown for inspection, but nothing may change. */
+  readOnly?: boolean
 }
 
 type Tab = "code" | "input" | "output"
 
 const inputClass =
-  "w-full rounded border border-gray-300 bg-transparent px-2 py-1 text-sm text-gray-900 dark:border-gray-600 dark:text-white"
+  "w-full rounded border border-gray-300 bg-transparent px-2 py-1 text-sm text-gray-900 disabled:opacity-60 dark:border-gray-600 dark:text-white"
 
-const NodeInspector = ({ node, onChange, onDelete }: NodeInspectorProps) => {
+const NodeInspector = ({
+  node,
+  onChange,
+  onDelete,
+  readOnly = false,
+}: NodeInspectorProps) => {
   const [tab, setTab] = useState<Tab>("code")
   const { isDark } = useTheme()
   const { data } = node
@@ -35,14 +42,16 @@ const NodeInspector = ({ node, onChange, onDelete }: NodeInspectorProps) => {
         <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
           Node settings
         </h2>
-        <button
-          type="button"
-          onClick={onDelete}
-          title="Delete node"
-          className="rounded p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
-        >
-          <FiTrash2 className="h-4 w-4" />
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            onClick={onDelete}
+            title="Delete node"
+            className="rounded p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+          >
+            <FiTrash2 className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       <div className="space-y-3 border-b border-gray-200 px-4 py-3 dark:border-gray-700">
@@ -50,6 +59,7 @@ const NodeInspector = ({ node, onChange, onDelete }: NodeInspectorProps) => {
           <span className="text-xs text-gray-500 dark:text-gray-400">Name</span>
           <input
             value={data.name}
+            disabled={readOnly}
             onChange={(event) => onChange({ name: event.target.value })}
             className={inputClass}
           />
@@ -60,6 +70,7 @@ const NodeInspector = ({ node, onChange, onDelete }: NodeInspectorProps) => {
             <span className="text-xs text-gray-500 dark:text-gray-400">Mode</span>
             <select
               value={data.mode}
+              disabled={readOnly}
               onChange={(event) => onChange({ mode: event.target.value })}
               className={inputClass}
             >
@@ -79,6 +90,7 @@ const NodeInspector = ({ node, onChange, onDelete }: NodeInspectorProps) => {
               type="number"
               min={1}
               value={data.timeout}
+              disabled={readOnly}
               onChange={(event) =>
                 onChange({ timeout: Number(event.target.value) || 30 })
               }
@@ -92,6 +104,7 @@ const NodeInspector = ({ node, onChange, onDelete }: NodeInspectorProps) => {
             </span>
             <select
               value={data.typeEnforcement}
+              disabled={readOnly}
               onChange={(event) =>
                 onChange({ typeEnforcement: event.target.value })
               }
@@ -111,6 +124,7 @@ const NodeInspector = ({ node, onChange, onDelete }: NodeInspectorProps) => {
             </span>
             <select
               value={data.onError}
+              disabled={readOnly}
               onChange={(event) => onChange({ onError: event.target.value })}
               className={inputClass}
             >
@@ -127,6 +141,7 @@ const NodeInspector = ({ node, onChange, onDelete }: NodeInspectorProps) => {
           <input
             type="checkbox"
             checked={data.disabled}
+            disabled={readOnly}
             onChange={(event) => onChange({ disabled: event.target.checked })}
           />
           <span>Disabled (pass items through)</span>
@@ -163,6 +178,7 @@ const NodeInspector = ({ node, onChange, onDelete }: NodeInspectorProps) => {
             minHeight="320px"
             theme={isDark ? "dark" : "light"}
             extensions={[python()]}
+            editable={!readOnly}
             onChange={(value) => onChange({ code: value })}
           />
         ) : (
@@ -171,6 +187,7 @@ const NodeInspector = ({ node, onChange, onDelete }: NodeInspectorProps) => {
             onChange={(next) =>
               onChange(tab === "input" ? { input: next } : { output: next })
             }
+            readOnly={readOnly}
           />
         )}
       </div>

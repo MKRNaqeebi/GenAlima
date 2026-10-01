@@ -6,6 +6,7 @@ import { z } from "zod"
 
 import { PaginationFooter } from "../../components/Common/PaginationFooter.tsx"
 import AddWorkflow from "../../components/Workflows/AddWorkflow"
+import ComponentsList from "../../components/Workflows/ComponentsList"
 import {
   WorkflowsService,
   type WorkflowPublic,
@@ -175,6 +176,9 @@ function WorkflowsGrid({ searchQuery }: { searchQuery: string }) {
 function Workflows() {
   const [searchQuery, setSearchQuery] = useState("")
   const [isAddOpen, setIsAddOpen] = useState(false)
+  const [tab, setTab] = useState<"workflows" | "components">("workflows")
+
+  const showingWorkflows = tab === "workflows"
 
   return (
     <div className="flex h-screen w-full flex-col overflow-hidden bg-gray-50 transition-colors dark:bg-chat-bg">
@@ -193,37 +197,67 @@ function Workflows() {
                   Build graphs of typed Python code nodes
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setIsAddOpen(true)}
-                className="flex items-center space-x-2 rounded-md bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
-              >
-                <FiPlus className="h-4 w-4" />
-                <span>New workflow</span>
-              </button>
+              {showingWorkflows && (
+                <button
+                  type="button"
+                  onClick={() => setIsAddOpen(true)}
+                  className="flex items-center space-x-2 rounded-md bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
+                >
+                  <FiPlus className="h-4 w-4" />
+                  <span>New workflow</span>
+                </button>
+              )}
             </div>
 
-            <div className="w-full rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-[#2f2f2f]">
-              <div className="p-4">
-                <div className="relative">
-                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                    <FiSearch className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+            <div
+              role="tablist"
+              className="flex space-x-1 rounded-lg border border-gray-200 bg-white p-1 dark:border-gray-700 dark:bg-[#2f2f2f]"
+            >
+              {(["workflows", "components"] as const).map((name) => (
+                <button
+                  key={name}
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === name}
+                  onClick={() => setTab(name)}
+                  className={`rounded-md px-4 py-1.5 text-sm capitalize transition-colors ${
+                    tab === name
+                      ? "bg-blue-600 text-white"
+                      : "text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                  }`}
+                >
+                  {name}
+                </button>
+              ))}
+            </div>
+
+            {showingWorkflows && (
+              <div className="w-full rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-[#2f2f2f]">
+                <div className="p-4">
+                  <div className="relative">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                      <FiSearch className="h-4 w-4 text-gray-400 dark:text-gray-500" />
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Search workflows..."
+                      value={searchQuery}
+                      onChange={(event) => setSearchQuery(event.target.value)}
+                      className="block w-full border-0 bg-transparent py-2 pl-10 pr-3 text-base text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-0 dark:text-white dark:placeholder-gray-400"
+                    />
                   </div>
-                  <input
-                    type="text"
-                    placeholder="Search workflows..."
-                    value={searchQuery}
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    className="block w-full border-0 bg-transparent py-2 pl-10 pr-3 text-base text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-0 dark:text-white dark:placeholder-gray-400"
-                  />
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto pb-8">
-          <WorkflowsGrid searchQuery={searchQuery} />
+          {showingWorkflows ? (
+            <WorkflowsGrid searchQuery={searchQuery} />
+          ) : (
+            <ComponentsList />
+          )}
         </div>
 
         <AddWorkflow isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} />

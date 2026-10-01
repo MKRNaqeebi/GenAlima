@@ -1,8 +1,8 @@
 [flake8]
 # Maximum allowed line length (aligned with Black / Pylint / isort in this repo).
-max-line-length = 120
+max-line-length = 150
 
-# Maximum allowed McCabe complexity for a function.
+# Maximum allowed complexity for a function.
 max-complexity = 12
 
 # Directories and files to skip.

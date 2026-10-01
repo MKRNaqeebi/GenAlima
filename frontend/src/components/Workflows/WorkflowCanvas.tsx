@@ -23,6 +23,8 @@ interface WorkflowCanvasProps {
   onConnect: (connection: Connection) => void
   onSelectNode: (nodeId: string | null) => void
   onSelectEdge: (edgeId: string) => void
+  /** A published snapshot: still selectable for inspection, never editable. */
+  readOnly?: boolean
 }
 
 const WorkflowCanvas = ({
@@ -33,6 +35,7 @@ const WorkflowCanvas = ({
   onConnect,
   onSelectNode,
   onSelectEdge,
+  readOnly = false,
 }: WorkflowCanvasProps) => {
   // Defined once so React Flow does not remount every node on each render.
   const nodeTypes = useMemo(() => ({ code: CodeNodeComponent }), [])
@@ -51,7 +54,10 @@ const WorkflowCanvas = ({
       onPaneClick={() => onSelectNode(null)}
       // Snapping: a drop within this many pixels of a handle still connects.
       connectionRadius={32}
-      deleteKeyCode={["Backspace", "Delete"]}
+      deleteKeyCode={readOnly ? null : ["Backspace", "Delete"]}
+      nodesDraggable={!readOnly}
+      nodesConnectable={!readOnly}
+      edgesReconnectable={!readOnly}
       fitView
       proOptions={{ hideAttribution: true }}
     >

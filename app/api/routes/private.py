@@ -7,10 +7,10 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 # Local application imports
+from app import crud
 from app.api.deps import SessionDep
-from app.core.security import get_password_hash
 from app.models import (
-    User,
+    UserCreate,
     UserPublic,
 )
 
@@ -29,15 +29,9 @@ class PrivateUserCreate(BaseModel):
 def create_user(user_in: PrivateUserCreate, session: SessionDep) -> Any:
     """
     Create a new user.
+
+    Goes through `crud.create_user` so the user gets the mandatory personal
+    organization that `user.organization_id` requires.
     """
-
-    user = User(
-        email=user_in.email,
-        full_name=user_in.full_name,
-        hashed_password=get_password_hash(user_in.password),
-    )
-
-    session.add(user)
-    session.commit()
-
-    return user
+    user_create = UserCreate(email=user_in.email, password=user_in.password, full_name=user_in.full_name)
+    return crud.create_user(session=session, user_create=user_create)

@@ -9,10 +9,12 @@ interface EdgeInspectorProps {
   issue: string | null
   onChange: (mapping: Record<string, string>) => void
   onDelete: () => void
+  /** A published snapshot: the mapping is shown but cannot be changed. */
+  readOnly?: boolean
 }
 
 const selectClass =
-  "min-w-0 flex-1 rounded border border-gray-300 bg-transparent px-2 py-1 text-sm text-gray-900 dark:border-gray-600 dark:text-white"
+  "min-w-0 flex-1 rounded border border-gray-300 bg-transparent px-2 py-1 text-sm text-gray-900 disabled:opacity-60 dark:border-gray-600 dark:text-white"
 
 /**
  * Field mapping for one connection.
@@ -28,6 +30,7 @@ const EdgeInspector = ({
   issue,
   onChange,
   onDelete,
+  readOnly = false,
 }: EdgeInspectorProps) => {
   const targetFields = Object.entries(target.data.input)
   const sourceFields = Object.keys(source.data.output)
@@ -48,14 +51,16 @@ const EdgeInspector = ({
         <h2 className="text-sm font-semibold text-gray-900 dark:text-white">
           Connection
         </h2>
-        <button
-          type="button"
-          onClick={onDelete}
-          title="Delete connection"
-          className="rounded p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
-        >
-          <FiTrash2 className="h-4 w-4" />
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            onClick={onDelete}
+            title="Delete connection"
+            className="rounded p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+          >
+            <FiTrash2 className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       <div className="border-b border-gray-200 px-4 py-3 dark:border-gray-700">
@@ -69,22 +74,24 @@ const EdgeInspector = ({
         </p>
       </div>
 
-      <div className="flex items-center space-x-2 border-b border-gray-200 px-4 py-2 dark:border-gray-700">
-        <button
-          type="button"
-          onClick={() => onChange(autoMapFields(source.data, target.data))}
-          className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
-        >
-          Auto-map by name
-        </button>
-        <button
-          type="button"
-          onClick={() => onChange({})}
-          className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
-        >
-          Clear
-        </button>
-      </div>
+      {!readOnly && (
+        <div className="flex items-center space-x-2 border-b border-gray-200 px-4 py-2 dark:border-gray-700">
+          <button
+            type="button"
+            onClick={() => onChange(autoMapFields(source.data, target.data))}
+            className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
+          >
+            Auto-map by name
+          </button>
+          <button
+            type="button"
+            onClick={() => onChange({})}
+            className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
+          >
+            Clear
+          </button>
+        </div>
+      )}
 
       <div className="flex-1 space-y-2 overflow-y-auto px-4 py-3">
         {targetFields.length === 0 && (
@@ -136,6 +143,7 @@ const EdgeInspector = ({
                 </span>
                 <select
                   value={sourceField ?? ""}
+                  disabled={readOnly}
                   onChange={(event) => setField(field, event.target.value)}
                   className={selectClass}
                   aria-label={`source field for ${field}`}

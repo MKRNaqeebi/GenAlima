@@ -43,6 +43,11 @@ export interface CodeNodeData extends Record<string, unknown> {
    * it is not part of the save payload.
    */
   error?: string | null
+  /**
+   * Whether this node is the entry or exit of the graph being published.
+   * Derived for rendering only: it is not part of the save payload.
+   */
+  boundary?: "in" | "out" | null
 }
 
 export type CodeNode = Node<CodeNodeData, "code">
@@ -393,4 +398,94 @@ export function remapEdgeAfterContractChange(
 
   if (!touched) return edge
   return { ...edge, data: { ...edge.data, mapping: next } }
+}
+
+/* ----------------------------------------------------------------- publish */
+
+/**
+ * Client mirror of the server's publish boundary rule.
+ *
+ * A component has no dedicated start/end node type: the entry is the single node
+ * nothing flows into and the exit is the single node nothing flows out of. The
+ * server is still the authority, but checking here means the author sees a
+ * second entry node while wiring rather than after pressing Publish.
+ */
+export interface GraphBoundaries {
+  entryId: string
+  exitId: string
+}
+
+/** Ids of every node with no inbound (entry) or no outbound (exit) edge. */
+export function boundaryCandidates(
+  nodes: CodeNode[],
+  edges: Edge[],
+): { entries: string[]; exits: string[] } {
+  const indegree = new Map<string, number>(nodes.map((node) => [node.id, 0]))
+  const outdegree = new Map<string, number>(nodes.map((node) => [node.id, 0]))
+
+  for (const edge of edges) {
+    if (outdegree.has(edge.source)) {
+      outdegree.set(edge.source, (outdegree.get(edge.source) ?? 0) + 1)
+    }
+    if (indegree.has(edge.target)) {
+      indegree.set(edge.target, (indegree.get(edge.target) ?? 0) + 1)
+    }
+  }
+
+  return {
+    entries: nodes.filter((node) => indegree.get(node.id) === 0).map((node) => node.id),
+    exits: nodes.filter((node) => outdegree.get(node.id) === 0).map((node) => node.id),
+  }
+}
+
+/** The single entry and exit, or null when the graph does not have exactly one. */
+export function publishShape(nodes: CodeNode[], edges: Edge[]): GraphBoundaries | null {
+  if (nodes.length === 0) return null
+  const { entries, exits } = boundaryCandidates(nodes, edges)
+  if (entries.length !== 1 || exits.length !== 1) return null
+  return { entryId: entries[0], exitId: exits[0] }
+}
+
+export interface PublishIssue {
+  message: string
+  nodeIds: string[]
+}
+
+/**
+ * Why this graph cannot be published yet, or null when it can.
+ *
+ * Mirrors the server's `publish_shape` messages so the dialog and the API agree;
+ * `nodeIds` lets the canvas point at the offending nodes.
+ */
+export function publishIssue(nodes: CodeNode[], edges: Edge[]): PublishIssue | null {
+  if (nodes.length === 0) {
+    return { message: "Add at least one node before publishing.", nodeIds: [] }
+  }
+  const { entries, exits } = boundaryCandidates(nodes, edges)
+  if (entries.length !== 1) {
+    return {
+      message: `A component needs exactly one entry node (nothing flows into it); this graph has ${entries.length}.`,
+      nodeIds: entries,
+    }
+  }
+  if (exits.length !== 1) {
+    return {
+      message: `A component needs exactly one exit node (nothing flows out of it); this graph has ${exits.length}.`,
+      nodeIds: exits,
+    }
+  }
+  return null
+}
+
+/** Names of the boundary nodes, for the publish form's read-only preview. */
+export function boundaryNodeNames(
+  nodes: CodeNode[],
+  shape: GraphBoundaries | null,
+): { entry: string; exit: string } {
+  if (!shape) return { entry: "—", exit: "—" }
+  const byId = new Map(nodes.map((node) => [node.id, node.data.name]))
+  return {
+    entry: byId.get(shape.entryId) ?? "—",
+    exit: byId.get(shape.exitId) ?? "—",
+  }
 }
