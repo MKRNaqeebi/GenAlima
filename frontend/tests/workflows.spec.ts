@@ -75,3 +75,45 @@ test("node settings panel expands to the left", async ({ page }) => {
   const after = (await inspector.boundingBox())?.width ?? 0
   expect(after).toBeGreaterThan(before + 100)
 })
+
+test("connect two code nodes by dragging between handles", async ({ page }) => {
+  await createWorkflowWithNode(page)
+  // A second node, placed to the right of the first.
+  await page.getByRole("button", { name: "Add code node" }).click()
+  await expect(page.getByText("Code 2")).toBeVisible()
+
+  const edges = page.locator(".react-flow__edge")
+  await expect(edges).toHaveCount(0)
+
+  const source = page
+    .locator(".react-flow__node", { hasText: "Code 1" })
+    .locator(".react-flow__handle-right")
+  const target = page
+    .locator(".react-flow__node", { hasText: "Code 2" })
+    .locator(".react-flow__handle-left")
+
+  const from = await source.boundingBox()
+  const to = await target.boundingBox()
+  expect(from).not.toBeNull()
+  expect(to).not.toBeNull()
+  if (!from || !to) return
+
+  // Drag from the source handle (right side of Code 1) to the target handle
+  // (left side of Code 2).
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 20 })
+  await page.mouse.up()
+
+  await expect(edges).toHaveCount(1)
+
+  // The connection must survive a save and a reload.
+  await page.getByRole("button", { name: "Save" }).click()
+  await expect(page.getByText(/Workflow is at version 2/)).toBeVisible({
+    timeout: 15_000,
+  })
+  await page.reload()
+  await expect(page.locator(".react-flow__edge")).toHaveCount(1, {
+    timeout: 15_000,
+  })
+})

@@ -25,7 +25,12 @@ const CodeNodeComponent = ({ data, selected }: NodeProps<CodeNode>) => {
             : "border-gray-200 dark:border-gray-700"
       }`}
     >
-      <Handle type="target" position={Position.Left} className="!bg-gray-400" />
+      <Handle
+        id="main"
+        type="target"
+        position={Position.Left}
+        className="!bg-gray-400"
+      />
 
       <div className="flex items-center justify-between border-b border-gray-200 px-3 py-2 dark:border-gray-700">
         <div className="flex min-w-0 items-center space-x-2">
@@ -59,7 +64,12 @@ const CodeNodeComponent = ({ data, selected }: NodeProps<CodeNode>) => {
         )}
       </div>
 
-      <Handle type="source" position={Position.Right} className="!bg-gray-400" />
+      <Handle
+        id="main"
+        type="source"
+        position={Position.Right}
+        className="!bg-gray-400"
+      />
     </div>
   )
 }

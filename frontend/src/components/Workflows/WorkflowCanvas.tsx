@@ -10,6 +10,7 @@ import {
   type NodeChange,
 } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
+import "./WorkflowCanvas.css"
 
 import CodeNodeComponent from "./CodeNodeComponent"
 import type { CodeNode } from "./types"
@@ -36,6 +37,7 @@ const WorkflowCanvas = ({
 
   return (
     <ReactFlow<CodeNode>
+      className="workflow-canvas"
       nodes={nodes}
       edges={edges}
       nodeTypes={nodeTypes}
@@ -44,6 +46,9 @@ const WorkflowCanvas = ({
       onConnect={onConnect}
       onNodeClick={(_, node) => onSelectNode(node.id)}
       onPaneClick={() => onSelectNode(null)}
+      // Snapping: a drop within this many pixels of a handle still connects.
+      connectionRadius={32}
+      deleteKeyCode={["Backspace", "Delete"]}
       fitView
       proOptions={{ hideAttribution: true }}
     >
