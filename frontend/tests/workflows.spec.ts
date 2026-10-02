@@ -3,10 +3,10 @@ import { type Page, expect, test } from "@playwright/test"
 /**
  * Authoring flow for code-node workflows.
  *
- * Running graphs is not covered: there is no run endpoint yet (that lands with
- * the execution engine). These tests cover creating a node, saving the graph,
- * and the two inspector behaviours that were reported broken: keeping focus in
- * the contract field inputs, and resizing the panel to the left.
+ * These tests cover creating a node, saving the graph, running a workflow from
+ * the run dialog, and the two inspector behaviours that were reported broken:
+ * keeping focus in the contract field inputs, and resizing the panel to the
+ * left.
  */
 
 async function createWorkflowWithNode(page: Page): Promise<void> {
@@ -152,6 +152,120 @@ async function selectOnlyEdge(page: Page): Promise<void> {
     .dispatchEvent("click")
   await expect(page.getByTestId("edge-inspector")).toBeVisible()
 }
+
+test("running a workflow asks for the first node's input", async ({ page }) => {
+  await createWorkflowWithNode(page)
+  // A declared field is what the run dialog turns into a form.
+  await declareField(page, "Code 1", "input", "customer_email")
+
+  await page.getByTestId("run-workflow").click()
+
+  const dialog = page.getByTestId("run-input-dialog")
+  await expect(dialog).toBeVisible()
+  await expect(dialog).toContainText("Code 1")
+  await expect(dialog).toContainText("customer_email")
+
+  const email = page.getByTestId("run-input-field-0-customer_email")
+  await expect(email).toBeEmpty()
+  await expect(email).toBeFocused()
+
+  // A missing required field blocks the run and says why, without closing.
+  await page.getByTestId("run-input-submit").click()
+  await expect(dialog).toContainText("This field is required.")
+  await expect(dialog).toBeVisible()
+
+  await email.fill("ada@example.com")
+  await page.getByTestId("run-input-submit").click()
+
+  // The dialog closes only once the run is under way. The default node code
+  // echoes its items, so a good input means a successful run.
+  await expect(dialog).toBeHidden({ timeout: 15_000 })
+  await expect(page.getByTestId("run-status")).toHaveAttribute(
+    "data-status",
+    "success",
+    { timeout: 15_000 },
+  )
+
+  // The trigger box keeps showing exactly what was sent.
+  await page.getByRole("button", { name: "Trigger input" }).click()
+  await expect(page.getByTestId("trigger-items")).toHaveValue(
+    /ada@example\.com/,
+  )
+})
+
+test("a node with no declared input opens the run dialog in JSON", async ({
+  page,
+}) => {
+  await createWorkflowWithNode(page)
+  await page.getByTestId("run-workflow").click()
+
+  const dialog = page.getByTestId("run-input-dialog")
+  await expect(dialog).toBeVisible()
+  // No contract means no fields to render, so the raw view is the useful one.
+  await expect(page.getByTestId("run-input-json")).toBeVisible()
+
+  await page
+    .getByTestId("run-input-json")
+    .fill('[{"json": {"customer_email": "ada@example.com"}}]')
+  await page.getByTestId("run-input-submit").click()
+
+  await expect(dialog).toBeHidden({ timeout: 15_000 })
+  await expect(page.getByTestId("run-status")).toHaveAttribute(
+    "data-status",
+    "success",
+    { timeout: 15_000 },
+  )
+})
+
+test("run dialog refuses to switch off an invalid JSON draft", async ({
+  page,
+}) => {
+  await createWorkflowWithNode(page)
+  await declareField(page, "Code 1", "input", "customer_email")
+
+  await page.getByTestId("run-workflow").click()
+  await page.getByTestId("run-input-mode-json").click()
+
+  await page.getByTestId("run-input-json").fill("not json")
+  await expect(page.getByTestId("run-input-json-error")).toBeVisible()
+  await expect(page.getByTestId("run-input-mode-fields")).toBeDisabled()
+
+  // The run never starts while the items cannot be parsed.
+  await page.getByTestId("run-input-submit").click()
+  await expect(page.getByTestId("run-input-dialog")).toBeVisible()
+})
+
+test("run dialog checks a value against its declared type", async ({
+  page,
+}) => {
+  await createWorkflowWithNode(page)
+  await declareField(page, "Code 1", "input", "retries")
+  // Declare the number type the dialog should hold the author to.
+  await page
+    .getByPlaceholder("field name")
+    .locator("..")
+    .locator("select")
+    .selectOption("int")
+
+  await page.getByTestId("run-workflow").click()
+  const field = page.getByTestId("run-input-field-0-retries")
+  await field.fill("many")
+  await page.getByTestId("run-input-submit").click()
+  await expect(page.getByTestId("run-input-dialog")).toContainText(
+    'Expected an integer, got "many".',
+  )
+
+  await field.fill("3")
+  await page.getByTestId("run-input-submit").click()
+  await expect(page.getByTestId("run-input-dialog")).toBeHidden({
+    timeout: 15_000,
+  })
+  await expect(page.getByTestId("run-status")).toHaveAttribute(
+    "data-status",
+    "success",
+    { timeout: 15_000 },
+  )
+})
 
 test("maps which output field feeds which input field", async ({ page }) => {
   await createWorkflowWithNode(page)

@@ -6,6 +6,7 @@ import type {
   WorkflowEdgePublic,
   WorkflowFieldSpec,
   WorkflowGraphIn,
+  WorkflowItem,
   WorkflowNodePublic,
 } from "./api"
 
@@ -186,6 +187,36 @@ export function toSavePayload(
       target_handle: edge.targetHandle ?? "main",
       mapping: edgeMapping(edge),
     })),
+  }
+}
+
+/**
+ * Parse the run-input text, which is always a JSON list of n8n-style items.
+ *
+ * Shared by the run dialog and the run panel's trigger box so the two agree on
+ * what an acceptable item looks like: `json` must be present and be an object.
+ */
+export function parseTriggerItems(text: string): {
+  items: WorkflowItem[] | null
+  error: string | null
+} {
+  try {
+    const value = JSON.parse(text)
+    if (!Array.isArray(value)) {
+      return { items: null, error: "Must be a JSON list of items." }
+    }
+    const bad = value.findIndex(
+      (item) =>
+        typeof item !== "object" ||
+        item === null ||
+        typeof item.json !== "object",
+    )
+    if (bad >= 0) {
+      return { items: null, error: `Item ${bad} needs a "json" object.` }
+    }
+    return { items: value as WorkflowItem[], error: null }
+  } catch (error) {
+    return { items: null, error: (error as Error).message }
   }
 }
 
@@ -446,8 +477,12 @@ export function boundaryCandidates(
   }
 
   return {
-    entries: nodes.filter((node) => indegree.get(node.id) === 0).map((node) => node.id),
-    exits: nodes.filter((node) => outdegree.get(node.id) === 0).map((node) => node.id),
+    entries: nodes
+      .filter((node) => indegree.get(node.id) === 0)
+      .map((node) => node.id),
+    exits: nodes
+      .filter((node) => outdegree.get(node.id) === 0)
+      .map((node) => node.id),
   }
 }
 

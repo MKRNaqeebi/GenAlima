@@ -399,7 +399,7 @@ const RunPanel = ({
                 className="mb-1 text-[11px] text-gray-500 dark:text-gray-400"
               >
                 Items entry nodes receive (JSON list of {"{"}"json": {"{…}"}
-                {"}"})
+                {"}"}), used to prefill the Run dialog
               </label>
               <textarea
                 id="trigger-items"
@@ -425,8 +425,8 @@ const RunPanel = ({
             </p>
           ) : !run ? (
             <p className="p-4 text-sm text-gray-500 dark:text-gray-400">
-              Press Run (⌘↵) to execute the workflow. Pending edits are saved
-              before it starts.
+              Press Run (⌘↵) to say what the first node receives, then execute
+              the workflow. Pending edits are saved before it starts.
             </p>
           ) : (
             <>

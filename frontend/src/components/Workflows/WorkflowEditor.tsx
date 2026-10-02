@@ -28,6 +28,7 @@ import EdgeInspector from "./EdgeInspector"
 import NodeInspector from "./NodeInspector"
 import NodePalette from "./NodePalette"
 import PublishDialog from "./PublishDialog"
+import RunInputDialog from "./RunInputDialog"
 import RunPanel from "./RunPanel"
 import WorkflowCanvas from "./WorkflowCanvas"
 import {
@@ -51,6 +52,7 @@ import {
   insertComponentGraph,
   newCodeNode,
   nodeCoverageIssue,
+  parseTriggerItems,
   remapEdgeAfterContractChange,
   toCanvasEdge,
   toCanvasNode,
@@ -108,29 +110,6 @@ interface GraphIssue {
   reason: string
 }
 
-/** Parse the trigger textarea; the error is shown under it. */
-function parseTrigger(text: string): {
-  items: WorkflowItem[] | null
-  error: string | null
-} {
-  try {
-    const value = JSON.parse(text)
-    if (!Array.isArray(value))
-      return { items: null, error: "Must be a JSON list of items." }
-    const bad = value.findIndex(
-      (item) =>
-        typeof item !== "object" ||
-        item === null ||
-        typeof item.json !== "object",
-    )
-    if (bad >= 0)
-      return { items: null, error: `Item ${bad} needs a "json" object.` }
-    return { items: value as WorkflowItem[], error: null }
-  } catch (error) {
-    return { items: null, error: (error as Error).message }
-  }
-}
-
 function readStoredBoolean(key: string, fallback: boolean): boolean {
   try {
     const stored = localStorage.getItem(key)
@@ -160,6 +139,8 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
   )
   const [currentRun, setCurrentRun] = useState<WorkflowRunPublic | null>(null)
   const [triggerText, setTriggerText] = useState(DEFAULT_TRIGGER)
+  /** The Run button asks for the first node's input before it starts. */
+  const [isRunInputOpen, setIsRunInputOpen] = useState(false)
   const [testResults, setTestResults] = useState<
     Record<string, WorkflowRunNodePublic>
   >({})
@@ -244,7 +225,7 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
       })
   }, [latestRunId, workflowId])
 
-  const trigger = useMemo(() => parseTrigger(triggerText), [triggerText])
+  const trigger = useMemo(() => parseTriggerItems(triggerText), [triggerText])
 
   // Hydrate the canvas whenever the server copy changes.
   useEffect(() => {
@@ -732,15 +713,15 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
   }, [dirty, isFrozen, saveGraph])
 
   const runWorkflow = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (items: WorkflowItem[]) => {
       await ensureSaved()
-      return WorkflowsService.runWorkflow({
-        id: workflowId,
-        items: trigger.items ?? [{ json: {} }],
-      })
+      return WorkflowsService.runWorkflow({ id: workflowId, items })
     },
     onMutate: () => setRunPanelOpen(true),
     onSuccess: (run) => {
+      // The dialog stays open until here, so a failed save does not discard
+      // what the author typed.
+      setIsRunInputOpen(false)
       setCurrentRun(run)
       queryClient.invalidateQueries({ queryKey: ["workflow-runs", workflowId] })
       queryClient.invalidateQueries({ queryKey: ["workflows"] })
@@ -801,6 +782,25 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
     [nodes, edges],
   )
 
+  // The "first node" the run dialog asks about. Execution order is topological,
+  // so the earliest entry node is the first thing the engine runs.
+  const entryNodes = useMemo(() => {
+    const entryIds = new Set(boundaryCandidates(nodes, edges).entries)
+    return orderedNodes.filter((node) => entryIds.has(node.id))
+  }, [nodes, edges, orderedNodes])
+
+  /** What the dialog opens with: the trigger box, else the run on screen. */
+  const runInputItems = useMemo(
+    () => trigger.items ?? currentRun?.trigger_items ?? [{ json: {} }],
+    [trigger.items, currentRun],
+  )
+
+  const startRun = (items: WorkflowItem[]) => {
+    // Keep the trigger box showing exactly what was sent.
+    setTriggerText(JSON.stringify(items, null, 2))
+    runWorkflow.mutate(items)
+  }
+
   const lastInputForSelected = useMemo(() => {
     if (!selectedId || !currentRun) return null
     return (
@@ -820,8 +820,9 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
       if (!isFrozen && dirty && !saveGraph.isPending) saveGraph.mutate()
     },
     run: () => {
-      if (!runWorkflow.isPending && nodes.length > 0 && !trigger.error)
-        runWorkflow.mutate()
+      // While the dialog is open it owns ⌘↵, so the two never fire together.
+      if (isRunInputOpen) return
+      if (!runWorkflow.isPending && nodes.length > 0) setIsRunInputOpen(true)
     },
     search: () => {
       setPaletteOpen(true)
@@ -953,12 +954,8 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
           <button
             type="button"
             data-testid="run-workflow"
-            onClick={() => runWorkflow.mutate()}
-            disabled={
-              runWorkflow.isPending ||
-              nodes.length === 0 ||
-              Boolean(trigger.error)
-            }
+            onClick={() => setIsRunInputOpen(true)}
+            disabled={runWorkflow.isPending || nodes.length === 0}
             title="Run workflow (⌘↵)"
             className="flex items-center space-x-1 rounded border border-emerald-300 px-3 py-1.5 text-sm text-emerald-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-950/40"
           >
@@ -1167,6 +1164,17 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
           )}
         </aside>
       </div>
+
+      {isRunInputOpen && (
+        <RunInputDialog
+          node={entryNodes[0] ?? null}
+          otherEntryNames={entryNodes.slice(1).map((node) => node.data.name)}
+          initialItems={runInputItems}
+          isRunning={runWorkflow.isPending}
+          onSubmit={startRun}
+          onClose={() => setIsRunInputOpen(false)}
+        />
+      )}
 
       {isPublishOpen && !isFrozen && (
         <PublishDialog
