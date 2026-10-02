@@ -4,12 +4,13 @@ The schema is used to validate the data that is sent to the application.
 """
 # Standard library imports
 from datetime import datetime
+import re
 from typing import Any, Dict, Optional
 import uuid
 
 # Third-party imports
 from pydantic import EmailStr, ConfigDict, field_validator, model_validator
-from sqlalchemy import Column, ForeignKey, Text, UniqueConstraint, Uuid
+from sqlalchemy import CheckConstraint, Column, ForeignKey, Text, UniqueConstraint, Uuid
 from sqlmodel import JSON, Field, Relationship, SQLModel
 
 
@@ -237,6 +238,7 @@ class Workflow(WorkflowBase, table=True):
     owner: User | None = Relationship(back_populates="workflows")
     nodes: list["WorkflowNode"] = Relationship(back_populates="workflow", cascade_delete=True)
     edges: list["WorkflowEdge"] = Relationship(back_populates="workflow", cascade_delete=True)
+    variables: list["WorkflowVariable"] = Relationship(back_populates="workflow", cascade_delete=True)
 
 
 class WorkflowPublic(WorkflowBase):
@@ -276,9 +278,14 @@ class WorkflowDetailPublic(WorkflowPublic):
     """
     A workflow plus its full graph, returned by GET /workflows/{id} so the
     editor loads everything in one request.
+
+    `variables` are declarations only, so the editor can render the environment
+    panel (and flag a required variable with no value) without a second request
+    and without ever receiving a secret.
     """
     nodes: list["WorkflowNodePublic"] = Field(default_factory=list)
     edges: list["WorkflowEdgePublic"] = Field(default_factory=list)
+    variables: list["WorkflowVariablePublic"] = Field(default_factory=list)
 
 
 class WorkflowFieldSpec(SQLModel):
@@ -328,6 +335,127 @@ class WorkflowFieldSpec(SQLModel):
         elif self.required and self.default is not None:
             raise ValueError(f"field of type {self.type!r} has a default and cannot be required")
         return self
+
+
+# ---------------------------------------------------------------------------
+# Per-workflow environment variables
+# ---------------------------------------------------------------------------
+# A name is used verbatim as an environment variable in the node subprocess, so
+# `=`, spaces, dashes and a leading digit are rejected here instead of being
+# handed to the OS malformed.
+ENV_KEY_PATTERN = r"^[A-Za-z_][A-Za-z0-9_]{0,63}$"
+MAX_VARIABLES_PER_WORKFLOW = 100
+MAX_VARIABLE_VALUE_LENGTH = 8192
+
+
+class WorkflowVariable(SQLModel, table=True):
+    """
+    One named environment variable belonging to one workflow.
+
+    `value_encrypted` holds a Fernet token, never plaintext, and is nullable: a
+    declaration without a value is how a published snapshot records what a
+    component needs. `is_secret` and `required` are declarative — a secret is
+    masked in the UI, and `required` makes a run refuse to start while the value
+    is missing. `(workflow_id, key)` is unique, so a name exists at most once per
+    workflow and setting it is an upsert.
+
+    `created_by_id` is `SET NULL` rather than `CASCADE`: deleting the author must
+    not delete the credentials a workflow runs on.
+
+    The name is constrained twice, because each layer catches a path the other
+    misses. The table model's validator only runs through ``model_validate``,
+    which is how routes build rows (constructing a table model directly skips
+    Pydantic entirely), so the database carries the same rule as a `CHECK`: a
+    name that is not a legal environment variable can never be stored, whatever
+    wrote it. `regex` on `Field` is deliberately not used — SQLModel 0.0.22 drops
+    it silently.
+    """
+    __table_args__ = (
+        UniqueConstraint("workflow_id", "key", name="uq_workflowvariable_workflow_key"),
+        CheckConstraint(f"key ~ '{ENV_KEY_PATTERN}'", name="ck_workflowvariable_key"),
+    )
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    workflow_id: uuid.UUID = Field(
+        foreign_key="workflow.id", nullable=False, ondelete="CASCADE", index=True)
+    key: str = Field(max_length=64)
+    value_encrypted: str | None = Field(default=None, sa_column=Column(Text))
+    is_secret: bool = Field(default=True)
+    required: bool = Field(default=False)
+    description: str | None = Field(default=None, max_length=255)
+    created_by_id: uuid.UUID | None = Field(
+        default=None, foreign_key="user.id", ondelete="SET NULL")
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    workflow: Workflow | None = Relationship(back_populates="variables")
+
+    @field_validator("key")
+    @classmethod
+    def _usable_as_env_name(cls, value: str) -> str:
+        """
+        Reject a name the subprocess cannot use as an environment variable.
+        """
+        if re.fullmatch(ENV_KEY_PATTERN, value) is None:
+            raise ValueError(
+                f"variable name {value!r} must match {ENV_KEY_PATTERN} "
+                "(a letter or underscore followed by letters, digits or underscores)"
+            )
+        return value
+
+
+class WorkflowVariablePublic(SQLModel):
+    """
+    Properties to return via API for one workflow variable.
+
+    There is deliberately no value field. A secret can be set, replaced or
+    cleared through `WorkflowVariableUpdate`, but never read back out: the
+    response says whether a value exists and nothing more, so every route that
+    serialises this model is safe by construction. The routes set `has_value`
+    from the row's ciphertext, and the default is the "not set" answer.
+    """
+    key: str
+    is_secret: bool = False
+    required: bool = False
+    has_value: bool = False
+    description: str | None = None
+    updated_at: datetime | None = None
+
+
+class WorkflowVariableUpdate(SQLModel):
+    """
+    Properties to receive when setting one variable, with PATCH semantics.
+
+    The route tells an omitted field from an explicit one through
+    ``model_fields_set``: leaving `value` out keeps the stored secret, an
+    explicit ``null`` clears it, and a string replaces it. That is what lets a
+    client that can never read a value still edit everything around it.
+    """
+    value: str | None = Field(default=None, max_length=MAX_VARIABLE_VALUE_LENGTH)
+    is_secret: bool | None = None
+    required: bool | None = None
+    description: str | None = Field(default=None, max_length=255)
+
+
+class WorkflowVariablesPublic(SQLModel):
+    """
+    Properties to return via API for a workflow's variables.
+    """
+    data: list[WorkflowVariablePublic]
+    count: int
+
+
+class WorkflowVariableSpec(SQLModel):
+    """
+    One variable a published component needs: name and flags, never a value.
+
+    Stored in `WorkflowComponent.variables` so the component palette can say what
+    to define without loading the snapshot's graph, and re-typed here in
+    responses — the same arrangement as `WorkflowFieldSpec`.
+    """
+    key: str
+    is_secret: bool = False
+    required: bool = True
+    description: str | None = None
 
 
 class WorkflowNodeBase(SQLModel):
@@ -663,6 +791,12 @@ class WorkflowComponent(WorkflowComponentBase, table=True):
     loading the graph. They are plain dicts for the same JSON-column reason as
     `WorkflowNode.input`/`output`; the public model re-types them as field specs.
 
+    `variables` is the same idea applied to credentials: the names, secret flags
+    and prose of the environment variables the published graph needs, keyed by
+    name. It is built from the source workflow's variables at publish time and
+    carries **no values** — the publisher's secrets stay in the publisher's
+    workflow, and whoever copies this component defines their own.
+
     `source_workflow_id` links back to the editable workflow the version came
     from. It is nullable and `SET NULL` so deleting the source keeps history.
 
@@ -682,6 +816,10 @@ class WorkflowComponent(WorkflowComponentBase, table=True):
     source_workflow_id: uuid.UUID | None = Field(default=None, foreign_key="workflow.id", ondelete="SET NULL")
     input: Dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
     output: Dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
+    # The names (never the values) of the variables the published graph needs,
+    # denormalized here for the same reason as `input`/`output`: the palette and
+    # the component list must show what to define without loading the snapshot.
+    variables: Dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
     release_notes: str | None = Field(default=None, max_length=2048)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     owner: User | None = Relationship(passive_deletes=True)
@@ -692,7 +830,10 @@ class WorkflowComponentPublic(WorkflowComponentBase):
     Properties to return via API for one published component version.
 
     `input` and `output` are the version's public contract, so a client can
-    render the component without loading the snapshot's graph.
+    render the component without loading the snapshot's graph. `variables` lists
+    the environment variables the component needs, again without values: a
+    consumer sees what to define in their own workflow, never what the publisher
+    set.
     """
     id: uuid.UUID
     owner_id: uuid.UUID
@@ -701,6 +842,7 @@ class WorkflowComponentPublic(WorkflowComponentBase):
     source_workflow_id: uuid.UUID | None = None
     input: Dict[str, WorkflowFieldSpec] = Field(default_factory=dict)
     output: Dict[str, WorkflowFieldSpec] = Field(default_factory=dict)
+    variables: Dict[str, WorkflowVariableSpec] = Field(default_factory=dict)
     release_notes: str | None = None
     created_at: datetime
 
