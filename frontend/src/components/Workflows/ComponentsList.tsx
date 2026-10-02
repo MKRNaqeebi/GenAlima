@@ -1,19 +1,18 @@
-import { useMemo } from "react"
-import { useNavigate } from "@tanstack/react-router"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useNavigate } from "@tanstack/react-router"
+import { useMemo } from "react"
 import { FiBox, FiEye, FiTrash2 } from "react-icons/fi"
 
-import useCustomToast from "../../hooks/useCustomToast"
 import useAuth from "../../hooks/useAuth"
-import {
-  ComponentsService,
-  type WorkflowComponentPublic,
-} from "./api"
+import useCustomToast from "../../hooks/useCustomToast"
+import { ComponentsService, type WorkflowComponentPublic } from "./api"
 
 const PER_PAGE = 100
 
 /** Contract as "name: type", or "anything" when nothing is declared. */
-function contractSummary(contract: WorkflowComponentPublic["input"]): string {
+export function contractSummary(
+  contract: WorkflowComponentPublic["input"],
+): string {
   const entries = Object.entries(contract ?? {})
   if (entries.length === 0) return "anything"
   return entries.map(([name, spec]) => `${name}: ${spec.type ?? "Any"}`).join(", ")
@@ -25,7 +24,7 @@ function contractSummary(contract: WorkflowComponentPublic["input"]): string {
  * The API returns every version as its own row, newest first, so the list shows
  * one card per name with its versions in the footer.
  */
-function groupByName(
+export function groupByName(
   components: WorkflowComponentPublic[],
 ): { name: string; versions: WorkflowComponentPublic[] }[] {
   const groups = new Map<string, WorkflowComponentPublic[]>()
@@ -63,7 +62,7 @@ function ComponentCard({ versions }: { versions: WorkflowComponentPublic[] }) {
   return (
     <div
       data-testid="component-card"
-      className="flex flex-col justify-between rounded-lg border border-gray-200 bg-white transition-all duration-200 hover:shadow-lg dark:border-gray-700 dark:bg-[#2f2f2f]"
+      className="flex flex-col justify-between rounded-lg border border-gray-200 bg-white transition-all duration-200 hover:shadow-lg dark:border-gray-700 dark:bg-app-surface"
     >
       <div className="p-5">
         <div className="flex items-start justify-between">
@@ -134,7 +133,11 @@ function ComponentCard({ versions }: { versions: WorkflowComponentPublic[] }) {
                     type="button"
                     title={`Delete v${version.version}`}
                     onClick={() => {
-                      if (window.confirm(`Delete v${version.version}? This cannot be undone.`)) {
+                      if (
+                        window.confirm(
+                          `Delete v${version.version}? This cannot be undone.`,
+                        )
+                      ) {
                         remove.mutate(version.id)
                       }
                     }}
@@ -172,7 +175,7 @@ const ComponentsList = () => {
         {Array.from({ length: 3 }).map((_, index) => (
           <div
             key={index}
-            className="h-40 animate-pulse rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-[#2f2f2f]"
+            className="h-40 animate-pulse rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-app-surface"
           />
         ))}
       </div>

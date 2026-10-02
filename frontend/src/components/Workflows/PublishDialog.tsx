@@ -1,18 +1,18 @@
-import { useMemo, useState } from "react"
 import { useMutation } from "@tanstack/react-query"
 import type { Edge } from "@xyflow/react"
+import { useMemo, useState } from "react"
 import { FiUpload, FiX } from "react-icons/fi"
 
 import { ApiError } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
-import { WorkflowsService, type WorkflowComponentPublic } from "./api"
+import { type WorkflowComponentPublic, WorkflowsService } from "./api"
 import {
+  type CodeNode,
+  type FieldContract,
   boundaryNodeNames,
   publishIssue,
   publishShape,
   toSavePayload,
-  type CodeNode,
-  type FieldContract,
 } from "./types"
 
 interface PublishDialogProps {
@@ -48,7 +48,11 @@ function parseConflict(error: unknown): VersionConflict | null {
   if (!(error instanceof ApiError) || error.status !== 409) return null
   const detail = (error.body as { detail?: unknown } | undefined)?.detail
   if (!detail || typeof detail !== "object") {
-    return { message: error.message, existingVersions: [], suggestedVersion: null }
+    return {
+      message: error.message,
+      existingVersions: [],
+      suggestedVersion: null,
+    }
   }
   const shaped = detail as {
     message?: string
@@ -92,8 +96,8 @@ const PublishDialog = ({
   const contracts = useMemo(() => {
     const byId = new Map(nodes.map((node) => [node.id, node.data]))
     return {
-      input: shape ? (byId.get(shape.entryId)?.input ?? {}) : {},
-      output: shape ? (byId.get(shape.exitId)?.output ?? {}) : {},
+      input: shape ? byId.get(shape.entryId)?.input ?? {} : {},
+      output: shape ? byId.get(shape.exitId)?.output ?? {} : {},
     }
   }, [nodes, shape])
 
@@ -131,7 +135,7 @@ const PublishDialog = ({
       const message =
         typeof detail?.detail === "string"
           ? detail.detail
-          : (detail?.detail?.message ?? "The workflow could not be published.")
+          : detail?.detail?.message ?? "The workflow could not be published."
       showToast("Could not publish", message, "error")
     },
   })
@@ -140,7 +144,7 @@ const PublishDialog = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-lg bg-white shadow-xl dark:bg-[#2f2f2f]">
+      <div className="flex max-h-[90vh] w-full max-w-lg flex-col rounded-lg bg-white shadow-xl dark:bg-app-surface">
         <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             Publish as component
@@ -195,7 +199,9 @@ const PublishDialog = ({
                 value={version}
                 onChange={(event) => {
                   setConflict(null)
-                  setVersion(Math.max(1, Math.floor(Number(event.target.value) || 1)))
+                  setVersion(
+                    Math.max(1, Math.floor(Number(event.target.value) || 1)),
+                  )
                 }}
                 className={inputClass}
               />
@@ -231,13 +237,17 @@ const PublishDialog = ({
               Component interface
             </p>
             <p className="text-sm text-gray-700 dark:text-gray-300">
-              <span className="text-gray-500 dark:text-gray-400">Input from </span>
+              <span className="text-gray-500 dark:text-gray-400">
+                Input from{" "}
+              </span>
               {names.entry}
               <span className="text-gray-500 dark:text-gray-400"> → </span>
               {contractSummary(contracts.input)}
             </p>
             <p className="text-sm text-gray-700 dark:text-gray-300">
-              <span className="text-gray-500 dark:text-gray-400">Output from </span>
+              <span className="text-gray-500 dark:text-gray-400">
+                Output from{" "}
+              </span>
               {names.exit}
               <span className="text-gray-500 dark:text-gray-400"> → </span>
               {contractSummary(contracts.output)}

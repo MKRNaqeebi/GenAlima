@@ -1,10 +1,10 @@
-import { useState } from "react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
+import { useState } from "react"
 import { FiX } from "react-icons/fi"
 
-import { WorkflowsService } from "./api"
 import useCustomToast from "../../hooks/useCustomToast"
+import { WorkflowsService } from "./api"
 
 interface AddWorkflowProps {
   isOpen: boolean
@@ -21,7 +21,10 @@ const AddWorkflow = ({ isOpen, onClose }: AddWorkflowProps) => {
   const createWorkflow = useMutation({
     mutationFn: () =>
       WorkflowsService.createWorkflow({
-        requestBody: { name: name.trim(), description: description.trim() || null },
+        requestBody: {
+          name: name.trim(),
+          description: description.trim() || null,
+        },
       }),
     onSuccess: (workflow) => {
       queryClient.invalidateQueries({ queryKey: ["workflows"] })
@@ -42,7 +45,7 @@ const AddWorkflow = ({ isOpen, onClose }: AddWorkflowProps) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-      <div className="w-full max-w-md rounded-lg bg-white shadow-xl dark:bg-[#2f2f2f]">
+      <div className="w-full max-w-md rounded-lg bg-white shadow-xl dark:bg-app-surface">
         <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-700">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
             New workflow

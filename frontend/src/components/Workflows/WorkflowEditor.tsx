@@ -5,21 +5,39 @@ import {
   type Edge,
   type EdgeChange,
   type NodeChange,
+  type ReactFlowInstance,
   addEdge,
   applyEdgeChanges,
   applyNodeChanges,
 } from "@xyflow/react"
-import { useCallback, useEffect, useMemo, useState } from "react"
-import { FiArrowLeft, FiPlus, FiSave, FiUpload } from "react-icons/fi"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import {
+  FiAlertTriangle,
+  FiArrowLeft,
+  FiCheckCircle,
+  FiPlay,
+  FiPlus,
+  FiSave,
+  FiUpload,
+} from "react-icons/fi"
 import { v4 as uuidv4 } from "uuid"
 
 import { ApiError } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
 import EdgeInspector from "./EdgeInspector"
 import NodeInspector from "./NodeInspector"
+import NodePalette from "./NodePalette"
 import PublishDialog from "./PublishDialog"
+import RunPanel from "./RunPanel"
 import WorkflowCanvas from "./WorkflowCanvas"
-import { WorkflowsService } from "./api"
+import {
+  ComponentsService,
+  type WorkflowComponentPublic,
+  type WorkflowItem,
+  type WorkflowRunNodePublic,
+  type WorkflowRunPublic,
+  WorkflowsService,
+} from "./api"
 import {
   type CodeNode,
   type CodeNodeData,
@@ -29,6 +47,8 @@ import {
   diffContract,
   edgeMapping,
   edgeMappingIssue,
+  executionOrder,
+  insertComponentGraph,
   newCodeNode,
   nodeCoverageIssue,
   remapEdgeAfterContractChange,
@@ -79,6 +99,46 @@ function parseSaveError(error: unknown): SaveProblem {
 const INSPECTOR_DEFAULT_WIDTH = 380
 const INSPECTOR_MIN_WIDTH = 320
 const INSPECTOR_MAX_WIDTH = 820
+const DEFAULT_TRIGGER = JSON.stringify([{ json: {} }], null, 2)
+
+/** One problem the issues button can jump to. */
+interface GraphIssue {
+  kind: "node" | "edge"
+  id: string
+  reason: string
+}
+
+/** Parse the trigger textarea; the error is shown under it. */
+function parseTrigger(text: string): {
+  items: WorkflowItem[] | null
+  error: string | null
+} {
+  try {
+    const value = JSON.parse(text)
+    if (!Array.isArray(value))
+      return { items: null, error: "Must be a JSON list of items." }
+    const bad = value.findIndex(
+      (item) =>
+        typeof item !== "object" ||
+        item === null ||
+        typeof item.json !== "object",
+    )
+    if (bad >= 0)
+      return { items: null, error: `Item ${bad} needs a "json" object.` }
+    return { items: value as WorkflowItem[], error: null }
+  } catch (error) {
+    return { items: null, error: (error as Error).message }
+  }
+}
+
+function readStoredBoolean(key: string, fallback: boolean): boolean {
+  try {
+    const stored = localStorage.getItem(key)
+    return stored === null ? fallback : stored === "true"
+  } catch {
+    return fallback
+  }
+}
 
 const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
   const queryClient = useQueryClient()
@@ -95,6 +155,22 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
   const [nodeErrors, setNodeErrors] = useState<Record<string, string>>({})
   const [resizing, setResizing] = useState(false)
   const [isPublishOpen, setIsPublishOpen] = useState(false)
+  const [runPanelOpen, setRunPanelOpen] = useState(() =>
+    readStoredBoolean("workflow-run-panel-open", true),
+  )
+  const [currentRun, setCurrentRun] = useState<WorkflowRunPublic | null>(null)
+  const [triggerText, setTriggerText] = useState(DEFAULT_TRIGGER)
+  const [testResults, setTestResults] = useState<
+    Record<string, WorkflowRunNodePublic>
+  >({})
+  const [issueCursor, setIssueCursor] = useState(-1)
+  const [highlightedId, setHighlightedId] = useState<string | null>(null)
+  const [isInserting, setIsInserting] = useState(false)
+  const [paletteOpen, setPaletteOpen] = useState(() =>
+    readStoredBoolean("workflow-palette-open", true),
+  )
+  const flow = useRef<ReactFlowInstance<CodeNode> | null>(null)
+  const paletteSearch = useRef<HTMLInputElement>(null)
   const [inspectorWidth, setInspectorWidth] = useState(() => {
     const stored = Number(localStorage.getItem("workflow-inspector-width"))
     return stored >= INSPECTOR_MIN_WIDTH && stored <= INSPECTOR_MAX_WIDTH
@@ -132,10 +208,43 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
     }
   }, [inspectorWidth])
 
+  useEffect(() => {
+    try {
+      localStorage.setItem("workflow-run-panel-open", String(runPanelOpen))
+      localStorage.setItem("workflow-palette-open", String(paletteOpen))
+    } catch {
+      // Storage unavailable; the panel just reopens in its default state.
+    }
+  }, [runPanelOpen, paletteOpen])
+
   const { data, isPending, isError } = useQuery({
     queryKey: ["workflow", workflowId],
     queryFn: () => WorkflowsService.readWorkflow({ id: workflowId }),
   })
+
+  const { data: runHistory } = useQuery({
+    queryKey: ["workflow-runs", workflowId],
+    queryFn: () => WorkflowsService.readRuns({ id: workflowId, limit: 20 }),
+  })
+
+  // Show the most recent full run on open, so the canvas reflects what last
+  // happened. Node tests only cover one node, so they are not a useful default.
+  const latestRunId = runHistory?.data.find((run) => run.mode === "manual")?.id
+  const loadedLatest = useRef(false)
+  useEffect(() => {
+    if (loadedLatest.current || !latestRunId) return
+    loadedLatest.current = true
+    WorkflowsService.readRun({ id: workflowId, runId: latestRunId })
+      .then((run) => {
+        setCurrentRun((current) => current ?? run)
+        setTriggerText(JSON.stringify(run.trigger_items, null, 2))
+      })
+      .catch(() => {
+        // History is a convenience; the editor works without it.
+      })
+  }, [latestRunId, workflowId])
+
+  const trigger = useMemo(() => parseTrigger(triggerText), [triggerText])
 
   // Hydrate the canvas whenever the server copy changes.
   useEffect(() => {
@@ -224,6 +333,16 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
     return reasons
   }, [nodes, inboundByTarget, nodeErrors])
 
+  // Node statuses from the full run on screen; node tests stay in the inspector.
+  const runStatusByNode = useMemo(() => {
+    const statuses = new Map<string, WorkflowRunNodePublic["status"]>()
+    if (currentRun?.mode === "manual") {
+      for (const result of currentRun.nodes)
+        statuses.set(result.node_id, result.status)
+    }
+    return statuses
+  }, [currentRun])
+
   const decoratedNodes = useMemo(
     () =>
       nodes.map((node) => {
@@ -234,16 +353,28 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
             : node.id === boundaryIds.exit
               ? ("out" as const)
               : null
-        if (!reason && !boundary) return node
-        return { ...node, data: { ...node.data, error: reason, boundary } }
+        const runStatus = runStatusByNode.get(node.id) ?? null
+        const highlighted = node.id === highlightedId
+        if (!reason && !boundary && !runStatus && !highlighted) return node
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            error: reason,
+            boundary,
+            runStatus,
+            highlighted,
+          },
+        }
       }),
-    [nodes, coverageByNode, boundaryIds],
+    [nodes, coverageByNode, boundaryIds, runStatusByNode, highlightedId],
   )
 
   // Per-edge faults: a dangling mapping reference or an incompatible pair.
-  const decoratedEdges = useMemo(() => {
+  const edgeIssues = useMemo(() => {
     const byId = new Map(nodes.map((node) => [node.id, node]))
-    return edges.map((edge) => {
+    const reasons = new Map<string, string>()
+    for (const edge of edges) {
       const source = byId.get(edge.source)
       const target = byId.get(edge.target)
       const live =
@@ -251,16 +382,84 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
           ? edgeMappingIssue(source.data, target.data, edgeMapping(edge))
           : null
       const reason = edgeErrors[edge.id] ?? live
-      if (!reason) return edge
-      return {
-        ...edge,
-        style: { stroke: "#ef4444", strokeWidth: 2 },
-        label: reason,
-        labelStyle: { fill: "#ef4444", fontSize: 10 },
-        labelBgStyle: { fill: "transparent" },
-      }
-    })
+      if (reason) reasons.set(edge.id, reason)
+    }
+    return reasons
   }, [nodes, edges, edgeErrors])
+
+  const decoratedEdges = useMemo(
+    () =>
+      edges.map((edge) => {
+        const reason = edgeIssues.get(edge.id)
+        if (!reason) return edge
+        // Full reason on hover; a short label keeps the canvas readable.
+        return {
+          ...edge,
+          style: { stroke: "#ef4444", strokeWidth: 2 },
+          label: reason.length > 48 ? `${reason.slice(0, 45)}…` : reason,
+          labelStyle: { fill: "#ef4444", fontSize: 10 },
+          labelBgStyle: { fill: "transparent" },
+          ariaLabel: reason,
+        }
+      }),
+    [edges, edgeIssues],
+  )
+
+  // Everything wrong with the graph, in canvas order, for the issues button.
+  const issues = useMemo<GraphIssue[]>(() => {
+    const list: GraphIssue[] = []
+    for (const node of executionOrder(nodes, edges)) {
+      const reason = coverageByNode.get(node.id)
+      if (reason) list.push({ kind: "node", id: node.id, reason })
+      for (const edge of edges) {
+        const edgeReason =
+          edge.target === node.id ? edgeIssues.get(edge.id) : undefined
+        if (edgeReason)
+          list.push({ kind: "edge", id: edge.id, reason: edgeReason })
+      }
+    }
+    return list
+  }, [nodes, edges, coverageByNode, edgeIssues])
+
+  const focusIssue = useCallback(
+    (index: number) => {
+      const issue = issues[index]
+      if (!issue) return
+      setIssueCursor(index)
+      const byId = new Map(nodes.map((node) => [node.id, node]))
+      let center: { x: number; y: number } | null = null
+      if (issue.kind === "node") {
+        setSelectedId(issue.id)
+        setSelectedEdgeId(null)
+        setHighlightedId(issue.id)
+        const node = byId.get(issue.id)
+        if (node) center = { x: node.position.x + 128, y: node.position.y + 70 }
+      } else {
+        setSelectedEdgeId(issue.id)
+        setSelectedId(null)
+        const edge = edges.find((candidate) => candidate.id === issue.id)
+        const source = edge && byId.get(edge.source)
+        const target = edge && byId.get(edge.target)
+        setHighlightedId(target?.id ?? null)
+        if (source && target) {
+          center = {
+            x: (source.position.x + target.position.x) / 2 + 128,
+            y: (source.position.y + target.position.y) / 2 + 70,
+          }
+        }
+      }
+      if (center)
+        flow.current?.setCenter(center.x, center.y, { zoom: 1, duration: 300 })
+    },
+    [issues, nodes, edges],
+  )
+
+  // The highlight ring is a pointer, not a state: let it fade.
+  useEffect(() => {
+    if (!highlightedId) return
+    const timer = window.setTimeout(() => setHighlightedId(null), 1600)
+    return () => window.clearTimeout(timer)
+  }, [highlightedId])
 
   // The edge inspector shows the worst thing it knows about the selected edge.
   const selectedEdgeIssue =
@@ -275,20 +474,23 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
         null
       : null
 
-  const onNodesChange = useCallback((changes: NodeChange<CodeNode>[]) => {
-    setNodes((current) => applyNodeChanges(changes, current))
-    // React Flow emits "dimensions" (and "select") changes on its own — on mount
-    // and while measuring. Only real edits should mark the graph dirty, or a
-    // freshly opened workflow would immediately look unsaved.
-    const edited = changes.some(
-      (change) =>
-        change.type === "position" ||
-        change.type === "add" ||
-        change.type === "remove" ||
-        change.type === "replace",
-    )
-    if (edited && !isFrozen) setDirty(true)
-  }, [isFrozen])
+  const onNodesChange = useCallback(
+    (changes: NodeChange<CodeNode>[]) => {
+      setNodes((current) => applyNodeChanges(changes, current))
+      // React Flow emits "dimensions" (and "select") changes on its own — on mount
+      // and while measuring. Only real edits should mark the graph dirty, or a
+      // freshly opened workflow would immediately look unsaved.
+      const edited = changes.some(
+        (change) =>
+          change.type === "position" ||
+          change.type === "add" ||
+          change.type === "remove" ||
+          change.type === "replace",
+      )
+      if (edited && !isFrozen) setDirty(true)
+    },
+    [isFrozen],
+  )
 
   const onEdgesChange = useCallback(
     (changes: EdgeChange[]) => {
@@ -373,7 +575,85 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
       return [...current, node]
     })
     setDirty(true)
+    // The canvas is narrow between the palette and inspector; keep the new
+    // node in view. React Flow queues this until the node has been measured.
+    flow.current?.fitView({ padding: 0.2, maxZoom: 1 })
   }, [isFrozen])
+
+  const insertComponent = useCallback(
+    async (
+      component: WorkflowComponentPublic,
+      position?: { x: number; y: number },
+    ) => {
+      if (isFrozen) return
+      setIsInserting(true)
+      try {
+        const snapshot = await WorkflowsService.readWorkflow({
+          id: component.snapshot_workflow_id,
+        })
+        const snapshotNodes = snapshot.nodes ?? []
+        if (snapshotNodes.length === 0) {
+          showToast(
+            "Nothing to insert",
+            `${component.name} has no nodes.`,
+            "error",
+          )
+          return
+        }
+        const origin = position ??
+          flow.current?.screenToFlowPosition({
+            x: window.innerWidth / 2,
+            y: window.innerHeight / 2,
+          }) ?? { x: 80, y: 80 }
+        const inserted = insertComponentGraph(
+          nodes,
+          snapshotNodes,
+          snapshot.edges ?? [],
+          origin,
+          component.name,
+        )
+        setNodes((current) => [...current, ...inserted.nodes])
+        setEdges((current) => [...current, ...inserted.edges])
+        setSelectedId(inserted.nodes[0].id)
+        setSelectedEdgeId(null)
+        setDirty(true)
+        showToast(
+          "Component inserted",
+          `${component.name} v${component.version} added as ${
+            inserted.nodes.length
+          } node${inserted.nodes.length === 1 ? "" : "s"}.`,
+          "success",
+        )
+      } catch {
+        showToast(
+          "Could not insert",
+          `${component.name} could not be loaded.`,
+          "error",
+        )
+      } finally {
+        setIsInserting(false)
+      }
+    },
+    [isFrozen, nodes, showToast],
+  )
+
+  const insertComponentById = useCallback(
+    async (componentId: string, position: { x: number; y: number }) => {
+      try {
+        const component = await ComponentsService.readComponent({
+          id: componentId,
+        })
+        await insertComponent(component, position)
+      } catch {
+        showToast(
+          "Could not insert",
+          "That component is no longer available.",
+          "error",
+        )
+      }
+    },
+    [insertComponent, showToast],
+  )
 
   const deleteNode = useCallback(
     (id: string) => {
@@ -446,6 +726,128 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
     },
   })
 
+  /** Save pending edits first: runs execute the saved graph. */
+  const ensureSaved = useCallback(async () => {
+    if (dirty && !isFrozen) await saveGraph.mutateAsync()
+  }, [dirty, isFrozen, saveGraph])
+
+  const runWorkflow = useMutation({
+    mutationFn: async () => {
+      await ensureSaved()
+      return WorkflowsService.runWorkflow({
+        id: workflowId,
+        items: trigger.items ?? [{ json: {} }],
+      })
+    },
+    onMutate: () => setRunPanelOpen(true),
+    onSuccess: (run) => {
+      setCurrentRun(run)
+      queryClient.invalidateQueries({ queryKey: ["workflow-runs", workflowId] })
+      queryClient.invalidateQueries({ queryKey: ["workflows"] })
+      const failed = run.nodes.find((result) => result.status === "error")
+      if (failed) setSelectedId(failed.node_id)
+    },
+    onError: (error) => {
+      // A failed save already toasted its own reason.
+      if (saveGraph.isError) return
+      const detail =
+        error instanceof ApiError
+          ? ((error.body as { detail?: unknown })?.detail as
+              | { message?: string }
+              | string)
+          : null
+      const message =
+        typeof detail === "string"
+          ? detail
+          : detail?.message ?? "The run could not start."
+      showToast("Run failed", message, "error")
+    },
+  })
+
+  const testNode = useMutation({
+    mutationFn: async ({
+      nodeId,
+      items,
+    }: { nodeId: string; items: WorkflowItem[] }) => {
+      await ensureSaved()
+      return WorkflowsService.runNode({ id: workflowId, nodeId, items })
+    },
+    onSuccess: (run, { nodeId }) => {
+      const result = run.nodes[0]
+      if (result)
+        setTestResults((current) => ({ ...current, [nodeId]: result }))
+      queryClient.invalidateQueries({ queryKey: ["workflow-runs", workflowId] })
+    },
+    onError: () => {
+      if (!saveGraph.isError)
+        showToast("Test failed", "The node could not be run.", "error")
+    },
+  })
+
+  const selectRun = useCallback(
+    (runId: string) => {
+      WorkflowsService.readRun({ id: workflowId, runId })
+        .then((run) => {
+          setCurrentRun(run)
+          setTriggerText(JSON.stringify(run.trigger_items, null, 2))
+        })
+        .catch(() => showToast("Could not load run", "Try again.", "error"))
+    },
+    [workflowId, showToast],
+  )
+
+  const orderedNodes = useMemo(
+    () => executionOrder(nodes, edges),
+    [nodes, edges],
+  )
+
+  const lastInputForSelected = useMemo(() => {
+    if (!selectedId || !currentRun) return null
+    return (
+      currentRun.nodes.find((result) => result.node_id === selectedId)
+        ?.input_items ?? null
+    )
+  }, [currentRun, selectedId])
+
+  // Keyboard shortcuts: ⌘S save, ⌘↵ run, ⌘K search components.
+  const shortcuts = useRef({
+    save: () => {},
+    run: () => {},
+    search: () => {},
+  })
+  shortcuts.current = {
+    save: () => {
+      if (!isFrozen && dirty && !saveGraph.isPending) saveGraph.mutate()
+    },
+    run: () => {
+      if (!runWorkflow.isPending && nodes.length > 0 && !trigger.error)
+        runWorkflow.mutate()
+    },
+    search: () => {
+      setPaletteOpen(true)
+      // The input mounts with the open palette.
+      window.requestAnimationFrame(() => paletteSearch.current?.focus())
+    },
+  }
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey)) return
+      const key = event.key.toLowerCase()
+      if (key === "s") {
+        event.preventDefault()
+        shortcuts.current.save()
+      } else if (key === "enter") {
+        event.preventDefault()
+        shortcuts.current.run()
+      } else if (key === "k") {
+        event.preventDefault()
+        shortcuts.current.search()
+      }
+    }
+    window.addEventListener("keydown", onKey)
+    return () => window.removeEventListener("keydown", onKey)
+  }, [])
+
   const rename = useMutation({
     mutationFn: (newName: string) =>
       WorkflowsService.updateWorkflow({
@@ -485,8 +887,8 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
   }
 
   return (
-    <div className="flex h-screen w-full flex-col bg-gray-50 dark:bg-chat-bg">
-      <header className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-2 dark:border-gray-700 dark:bg-[#2f2f2f]">
+    <div className="flex h-screen w-full flex-col bg-gray-50 dark:bg-app-bg">
+      <header className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-2 dark:border-app-border dark:bg-app-surface">
         <div className="flex min-w-0 items-center space-x-3">
           <Link
             to="/workflows"
@@ -505,14 +907,64 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
             disabled={isFrozen}
             className="min-w-0 rounded border border-transparent bg-transparent px-2 py-1 text-lg font-semibold text-gray-900 hover:border-gray-300 focus:border-blue-500 focus:outline-none disabled:cursor-default dark:text-white dark:hover:border-gray-600"
           />
+          <span className="flex-shrink-0 font-mono text-xs text-gray-400">
+            v{data?.version ?? 1}
+          </span>
           {dirty && !isFrozen && (
-            <span className="text-xs text-amber-600 dark:text-amber-400">
-              unsaved changes
+            <span className="flex flex-shrink-0 items-center space-x-1 text-xs text-amber-600 dark:text-amber-400">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+              <span>unsaved changes</span>
             </span>
           )}
         </div>
 
         <div className="flex items-center space-x-2">
+          {issues.length > 0 ? (
+            <button
+              type="button"
+              data-testid="issues-button"
+              onClick={() => focusIssue((issueCursor + 1) % issues.length)}
+              title={
+                issueCursor >= 0 && issues[issueCursor]
+                  ? issues[issueCursor].reason
+                  : "Jump to the next problem"
+              }
+              className="flex items-center space-x-1 rounded border border-red-200 px-2.5 py-1.5 text-sm text-red-700 hover:bg-red-50 dark:border-red-900 dark:text-red-300 dark:hover:bg-red-950/40"
+            >
+              <FiAlertTriangle className="h-4 w-4" />
+              <span>
+                {issueCursor >= 0 && issueCursor < issues.length
+                  ? `${issueCursor + 1}/${issues.length}`
+                  : issues.length}{" "}
+                {issues.length === 1 ? "issue" : "issues"}
+              </span>
+            </button>
+          ) : (
+            nodes.length > 0 && (
+              <span
+                className="flex items-center space-x-1 px-1 text-xs text-emerald-600 dark:text-emerald-400"
+                title="Every connection satisfies its target's contract"
+              >
+                <FiCheckCircle className="h-3.5 w-3.5" />
+                <span>Types OK</span>
+              </span>
+            )
+          )}
+          <button
+            type="button"
+            data-testid="run-workflow"
+            onClick={() => runWorkflow.mutate()}
+            disabled={
+              runWorkflow.isPending ||
+              nodes.length === 0 ||
+              Boolean(trigger.error)
+            }
+            title="Run workflow (⌘↵)"
+            className="flex items-center space-x-1 rounded border border-emerald-300 px-3 py-1.5 text-sm text-emerald-700 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-emerald-800 dark:text-emerald-300 dark:hover:bg-emerald-950/40"
+          >
+            <FiPlay className="h-4 w-4" />
+            <span>{runWorkflow.isPending ? "Running…" : "Run"}</span>
+          </button>
           {isFrozen ? (
             <span
               data-testid="read-only-badge"
@@ -543,6 +995,7 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
                 type="button"
                 onClick={() => saveGraph.mutate()}
                 disabled={!dirty || saveGraph.isPending}
+                title="Save (⌘S)"
                 className="flex items-center space-x-1 rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <FiSave className="h-4 w-4" />
@@ -564,22 +1017,57 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
       )}
 
       <div className="flex min-h-0 flex-1">
-        <div className="min-w-0 flex-1">
-          <WorkflowCanvas
-            nodes={decoratedNodes}
-            edges={decoratedEdges}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
+        {!isFrozen && (
+          <NodePalette
+            open={paletteOpen}
+            onToggle={() => setPaletteOpen((open) => !open)}
+            onAddCodeNode={addNode}
+            onInsertComponent={(component) => insertComponent(component)}
+            searchRef={paletteSearch}
+            busy={isInserting}
+          />
+        )}
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1">
+            <WorkflowCanvas
+              nodes={decoratedNodes}
+              edges={decoratedEdges}
+              onNodesChange={onNodesChange}
+              onEdgesChange={onEdgesChange}
+              onConnect={onConnect}
+              onSelectNode={(id) => {
+                setSelectedId(id)
+                setSelectedEdgeId(null)
+              }}
+              onSelectEdge={(id) => {
+                setSelectedEdgeId(id)
+                setSelectedId(null)
+              }}
+              onInit={(instance) => {
+                flow.current = instance
+              }}
+              onDropComponent={insertComponentById}
+              readOnly={isFrozen}
+            />
+          </div>
+
+          <RunPanel
+            open={runPanelOpen}
+            onToggle={() => setRunPanelOpen((open) => !open)}
+            run={currentRun}
+            history={runHistory?.data ?? []}
+            onSelectRun={selectRun}
+            orderedNodes={orderedNodes}
+            selectedNodeId={selectedId}
             onSelectNode={(id) => {
               setSelectedId(id)
               setSelectedEdgeId(null)
+              setHighlightedId(id)
             }}
-            onSelectEdge={(id) => {
-              setSelectedEdgeId(id)
-              setSelectedId(null)
-            }}
-            readOnly={isFrozen}
+            triggerText={triggerText}
+            onTriggerTextChange={setTriggerText}
+            triggerError={trigger.error}
+            isRunning={runWorkflow.isPending}
           />
         </div>
 
@@ -608,7 +1096,7 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
 
         <aside
           style={{ width: inspectorWidth }}
-          className="flex-shrink-0 overflow-hidden border-l border-gray-200 bg-white dark:border-gray-700 dark:bg-[#2f2f2f]"
+          className="flex-shrink-0 overflow-hidden border-l border-gray-200 bg-white dark:border-app-border dark:bg-app-surface"
           data-testid="node-inspector"
         >
           {selectedEdge && selectedEdgeSource && selectedEdgeTarget ? (
@@ -628,6 +1116,15 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
               node={selectedNode}
               onChange={(patch) => patchNode(selectedNode.id, patch)}
               onDelete={() => deleteNode(selectedNode.id)}
+              onTest={(items) =>
+                testNode.mutate({ nodeId: selectedNode.id, items })
+              }
+              isTesting={
+                testNode.isPending &&
+                testNode.variables?.nodeId === selectedNode.id
+              }
+              testResult={testResults[selectedNode.id] ?? null}
+              lastInput={lastInputForSelected}
               readOnly={isFrozen}
             />
           ) : (
@@ -640,6 +1137,32 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
                 edge to connect them, then click the connection to map which
                 output field feeds which input field.
               </p>
+              <ul className="space-y-1 pt-2 text-left text-xs text-gray-400 dark:text-gray-500">
+                <li>
+                  <kbd className="rounded border px-1 dark:border-app-border">
+                    ⌘S
+                  </kbd>{" "}
+                  save
+                </li>
+                <li>
+                  <kbd className="rounded border px-1 dark:border-app-border">
+                    ⌘↵
+                  </kbd>{" "}
+                  run
+                </li>
+                <li>
+                  <kbd className="rounded border px-1 dark:border-app-border">
+                    ⌘K
+                  </kbd>{" "}
+                  search components
+                </li>
+                <li>
+                  <kbd className="rounded border px-1 dark:border-app-border">
+                    Del
+                  </kbd>{" "}
+                  delete selection
+                </li>
+              </ul>
             </div>
           )}
         </aside>
@@ -658,7 +1181,9 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
             // Publishing saved the canvas, so there is nothing unsaved left.
             setDirty(false)
             queryClient.invalidateQueries({ queryKey: ["components"] })
-            queryClient.invalidateQueries({ queryKey: ["workflow", workflowId] })
+            queryClient.invalidateQueries({
+              queryKey: ["workflow", workflowId],
+            })
             queryClient.invalidateQueries({ queryKey: ["workflows"] })
           }}
         />

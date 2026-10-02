@@ -32,14 +32,13 @@ export default {
           900: '#111827',
           950: '#0f172a',
         },
-        chat: {
+        // Dark-theme neutrals for the app shell, editor panes and cards.
+        app: {
           bg: '#212121',
           sidebar: '#171717',
           surface: '#2f2f2f',
           hover: '#3f3f3f',
           border: '#404040',
-          user: '#343541',
-          assistant: '#444654',
           text: {
             primary: '#ffffff',
             secondary: '#c5c5d2',

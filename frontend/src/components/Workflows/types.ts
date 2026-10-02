@@ -2,6 +2,7 @@ import type { Edge, Node } from "@xyflow/react"
 import { v4 as uuidv4 } from "uuid"
 
 import type {
+  RunStatus,
   WorkflowEdgePublic,
   WorkflowFieldSpec,
   WorkflowGraphIn,
@@ -48,6 +49,13 @@ export interface CodeNodeData extends Record<string, unknown> {
    * Derived for rendering only: it is not part of the save payload.
    */
   boundary?: "in" | "out" | null
+  /**
+   * This node's status in the run the panel is showing. Derived for rendering
+   * only: it is not part of the save payload.
+   */
+  runStatus?: RunStatus | null
+  /** Whether the canvas is pointing at this node from the issues list. */
+  highlighted?: boolean
 }
 
 export type CodeNode = Node<CodeNodeData, "code">
@@ -80,9 +88,10 @@ export function newCodeNode(nodes: CodeNode[]): CodeNode {
   return {
     id: uuidv4(),
     type: "code",
+    // Cards are 256px wide (w-64); leave room between handles to drag a wire.
     position: {
-      x: 80 + (index % 4) * 260,
-      y: 80 + Math.floor(index / 4) * 200,
+      x: 80 + (index % 4) * 340,
+      y: 80 + Math.floor(index / 4) * 240,
     },
     data: {
       key: nextNodeKey(nodes),
@@ -276,12 +285,16 @@ export interface InboundContribution {
 /**
  * Faults of a target's coverage across every inbound edge: a required input no
  * edge maps, or an input two edges both map.
+ *
+ * Entry nodes (no inbound edges) are exempt, as on the server: their inputs
+ * come from the run's trigger items, which are checked when the run starts.
  */
 export function nodeCoverageIssue(
   target: CodeNodeData,
   inbound: InboundContribution[],
 ): string | null {
   if (skipsContractChecks(target)) return null
+  if (inbound.length === 0) return null
   if (Object.keys(target.input).length === 0) return null
 
   const providers = new Map<string, string[]>()
@@ -439,7 +452,10 @@ export function boundaryCandidates(
 }
 
 /** The single entry and exit, or null when the graph does not have exactly one. */
-export function publishShape(nodes: CodeNode[], edges: Edge[]): GraphBoundaries | null {
+export function publishShape(
+  nodes: CodeNode[],
+  edges: Edge[],
+): GraphBoundaries | null {
   if (nodes.length === 0) return null
   const { entries, exits } = boundaryCandidates(nodes, edges)
   if (entries.length !== 1 || exits.length !== 1) return null
@@ -457,7 +473,10 @@ export interface PublishIssue {
  * Mirrors the server's `publish_shape` messages so the dialog and the API agree;
  * `nodeIds` lets the canvas point at the offending nodes.
  */
-export function publishIssue(nodes: CodeNode[], edges: Edge[]): PublishIssue | null {
+export function publishIssue(
+  nodes: CodeNode[],
+  edges: Edge[],
+): PublishIssue | null {
   if (nodes.length === 0) {
     return { message: "Add at least one node before publishing.", nodeIds: [] }
   }
@@ -488,4 +507,106 @@ export function boundaryNodeNames(
     entry: byId.get(shape.entryId) ?? "—",
     exit: byId.get(shape.exitId) ?? "—",
   }
+}
+
+/* --------------------------------------------------------------------- run */
+
+/**
+ * Nodes in the order the engine runs them (Kahn, seeded in canvas order), so
+ * the run panel lists results top to bottom the way data flowed. Nodes in a
+ * cycle, which the server would reject, are appended at the end.
+ */
+export function executionOrder(nodes: CodeNode[], edges: Edge[]): CodeNode[] {
+  const indegree = new Map<string, number>(nodes.map((node) => [node.id, 0]))
+  const outgoing = new Map<string, string[]>()
+  for (const edge of edges) {
+    if (!indegree.has(edge.source) || !indegree.has(edge.target)) continue
+    indegree.set(edge.target, (indegree.get(edge.target) ?? 0) + 1)
+    outgoing.set(edge.source, [
+      ...(outgoing.get(edge.source) ?? []),
+      edge.target,
+    ])
+  }
+  const byId = new Map(nodes.map((node) => [node.id, node]))
+  const ready = nodes
+    .filter((node) => indegree.get(node.id) === 0)
+    .map((node) => node.id)
+  const order: CodeNode[] = []
+  while (ready.length > 0) {
+    const id = ready.shift() as string
+    order.push(byId.get(id) as CodeNode)
+    for (const next of outgoing.get(id) ?? []) {
+      const remaining = (indegree.get(next) ?? 0) - 1
+      indegree.set(next, remaining)
+      if (remaining === 0) ready.push(next)
+    }
+  }
+  const placed = new Set(order.map((node) => node.id))
+  return [...order, ...nodes.filter((node) => !placed.has(node.id))]
+}
+
+/* --------------------------------------------------------------- components */
+
+/**
+ * Copy a published component's graph onto the canvas.
+ *
+ * Components are inserted inline rather than referenced: there is no
+ * component node type yet, so the copy is ordinary code nodes the engine
+ * already runs. Ids are regenerated so the copy is independent of the
+ * snapshot, keys are made unique within the workflow, and the copy is placed
+ * with its top-left corner at `origin`.
+ */
+export function insertComponentGraph(
+  existing: CodeNode[],
+  snapshotNodes: WorkflowNodePublic[],
+  snapshotEdges: WorkflowEdgePublic[],
+  origin: { x: number; y: number },
+  label: string,
+): { nodes: CodeNode[]; edges: Edge[] } {
+  const usedKeys = new Set(existing.map((node) => node.data.key))
+  const minX = Math.min(...snapshotNodes.map((node) => node.position_x ?? 0))
+  const minY = Math.min(...snapshotNodes.map((node) => node.position_y ?? 0))
+  const idMap = new Map<string, string>()
+
+  const nodes = snapshotNodes.map((snapshot) => {
+    const node = toCanvasNode(snapshot)
+    const id = uuidv4()
+    idMap.set(snapshot.id, id)
+
+    let key = node.data.key
+    for (let suffix = 2; usedKeys.has(key); suffix += 1) {
+      key = `${node.data.key}_${suffix}`
+    }
+    usedKeys.add(key)
+
+    return {
+      ...node,
+      id,
+      selected: false,
+      position: {
+        x: origin.x + (node.position.x - minX),
+        y: origin.y + (node.position.y - minY),
+      },
+      data: {
+        ...node.data,
+        key,
+        name:
+          snapshotNodes.length === 1 ? label : `${label} · ${node.data.name}`,
+      },
+    }
+  })
+
+  const edges = snapshotEdges
+    .filter(
+      (edge) =>
+        idMap.has(edge.source_node_id) && idMap.has(edge.target_node_id),
+    )
+    .map((edge) => ({
+      ...toCanvasEdge(edge),
+      id: uuidv4(),
+      source: idMap.get(edge.source_node_id) as string,
+      target: idMap.get(edge.target_node_id) as string,
+    }))
+
+  return { nodes, edges }
 }

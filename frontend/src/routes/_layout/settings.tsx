@@ -25,7 +25,7 @@ function UserSettings() {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-chat-bg transition-colors">
+    <div className="min-h-screen bg-gray-50 dark:bg-app-bg transition-colors">
       <div className="max-w-5xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="mb-8">
@@ -56,7 +56,7 @@ function UserSettings() {
 
           {/* Content Area */}
           <div className="lg:col-span-3">
-            <div className="bg-white dark:bg-[#2f2f2f] rounded-xl p-6 border border-gray-200 dark:border-gray-700">
+            <div className="bg-white dark:bg-app-surface rounded-xl p-6 border border-gray-200 dark:border-gray-700">
               {activeTab === "profile" && (
                 <div>
                   <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Profile Information</h2>

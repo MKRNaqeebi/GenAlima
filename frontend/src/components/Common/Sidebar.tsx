@@ -64,7 +64,7 @@ const Sidebar = () => {
     <>
       {/* Desktop */}
       <div
-        className={`hidden md:flex flex-col bg-white dark:bg-chat-sidebar border-r border-gray-200 dark:border-chat-border h-screen transition-all duration-200 ease-in-out ${
+        className={`hidden md:flex flex-col bg-white dark:bg-app-sidebar border-r border-gray-200 dark:border-app-border h-screen transition-all duration-200 ease-in-out ${
           isCollapsed ? 'w-15' : 'w-[259px]'
         }`}
       >
@@ -72,18 +72,18 @@ const Sidebar = () => {
           {/* Logo Section */}
           <div className={`flex items-center px-3 py-4 ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
             {!isCollapsed && (
-              <div className="text-lg font-semibold text-gray-900 dark:text-chat-text-primary">
+              <div className="text-lg font-semibold text-gray-900 dark:text-app-text-primary">
                 GenAlima
               </div>
             )}
             <button 
-              className="w-8 h-8 border border-gray-300 dark:border-chat-border rounded-md flex items-center justify-center cursor-pointer hover:bg-gray-100 dark:hover:bg-chat-hover transition-all duration-150"
+              className="w-8 h-8 border border-gray-300 dark:border-app-border rounded-md flex items-center justify-center cursor-pointer hover:bg-gray-100 dark:hover:bg-app-hover transition-all duration-150"
               onClick={() => setIsCollapsed(!isCollapsed)}
             >
               {isCollapsed ? (
-                <FiMenu className="w-4 h-4 text-gray-600 dark:text-chat-text-secondary" />
+                <FiMenu className="w-4 h-4 text-gray-600 dark:text-app-text-secondary" />
               ) : (
-                <FiChevronLeft className="w-4 h-4 text-gray-600 dark:text-chat-text-secondary" />
+                <FiChevronLeft className="w-4 h-4 text-gray-600 dark:text-app-text-secondary" />
               )}
             </button>
           </div>
@@ -95,7 +95,7 @@ const Sidebar = () => {
           
           {/* User Profile Section */}
           {currentUser?.email && (
-            <div className="border-t border-gray-200 dark:border-chat-border p-2">
+            <div className="border-t border-gray-200 dark:border-app-border p-2">
               <div className="relative" ref={userMenuRef}>
                 <button
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
@@ -120,7 +120,7 @@ const Sidebar = () => {
                   </div>
                 </button>
                 {isUserMenuOpen && (
-                  <div className="absolute bottom-full left-0 mb-2 w-60 bg-white dark:bg-[#2f2f2f] border border-gray-200 dark:border-gray-600 rounded-xl shadow-xl py-2 z-50">
+                  <div className="absolute bottom-full left-0 mb-2 w-60 bg-white dark:bg-app-surface border border-gray-200 dark:border-gray-600 rounded-xl shadow-xl py-2 z-50">
                     <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-600">
                       <div className="flex items-center gap-2">
                         <FiMail className="w-4 h-4 text-gray-500 dark:text-gray-400" />

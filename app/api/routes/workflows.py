@@ -1,10 +1,10 @@
 """
 Workflow routes.
 
-CRUD over workflows plus the graph save endpoint. The graph save is where the
-strict typing pays off: a structurally invalid graph and an edge whose source
-output cannot satisfy its target input are both rejected with enough detail for
-the editor to point at the offending node or connection.
+CRUD over workflows, the graph save, manual runs and run history. The graph
+save is where the strict typing pays off: a structurally invalid graph and an
+edge whose source output cannot satisfy its target input are both rejected with
+enough detail for the editor to point at the offending node or connection.
 """
 # Standard library imports
 from datetime import datetime
@@ -33,10 +33,18 @@ from app.models import (
     WorkflowGraphPublic,
     WorkflowNode,
     WorkflowNodePublic,
+    WorkflowRun,
+    WorkflowRunIn,
+    WorkflowRunNode,
+    WorkflowRunNodePublic,
+    WorkflowRunPublic,
+    WorkflowRunsPublic,
     WorkflowsPublic,
     WorkflowPublic,
+    WorkflowSummaryPublic,
     WorkflowUpdate,
 )
+from app.services.workflow.engine import NodeResult, RunResult, execute_graph, execute_node
 from app.services.workflow.graph import GraphError, validate_and_order
 from app.services.workflow.publish import PublishShape, plan_snapshot, publish_shape
 from app.services.workflow.types import check_graph
@@ -178,7 +186,60 @@ def read_workflows(
         )
     count = session.exec(count_statement).one()
     workflows = session.exec(statement).all()
-    return WorkflowsPublic(data=workflows, count=count)
+    return WorkflowsPublic(data=_summaries(session, list(workflows)), count=count)
+
+
+def _summaries(
+    session: Session, workflows: list[Workflow]
+) -> list[WorkflowSummaryPublic]:
+    """
+    Attach each workflow's latest full run and newest published version.
+
+    Single-node test runs are ignored: they say nothing about whether the
+    workflow as a whole works.
+
+    Two grouped queries for the whole page rather than two per workflow.
+    """
+    ids = [workflow.id for workflow in workflows]
+    if not ids:
+        return []
+
+    latest_started = (
+        select(WorkflowRun.workflow_id, func.max(WorkflowRun.started_at).label("started_at"))
+        .where(col(WorkflowRun.workflow_id).in_(ids))
+        .where(col(WorkflowRun.mode) == "manual")
+        .group_by(WorkflowRun.workflow_id)
+        .subquery()
+    )
+    latest_runs = session.exec(
+        select(WorkflowRun.workflow_id, WorkflowRun.status, WorkflowRun.started_at).join(
+            latest_started,
+            (col(WorkflowRun.workflow_id) == latest_started.c.workflow_id)
+            & (col(WorkflowRun.started_at) == latest_started.c.started_at),
+        )
+    ).all()
+    runs = {workflow_id: (status, started) for workflow_id, status, started in latest_runs}
+
+    published = dict(
+        session.exec(
+            select(WorkflowComponent.source_workflow_id, func.max(WorkflowComponent.version))
+            .where(col(WorkflowComponent.source_workflow_id).in_(ids))
+            .group_by(WorkflowComponent.source_workflow_id)
+        ).all()
+    )
+
+    summaries = []
+    for workflow in workflows:
+        status, started = runs.get(workflow.id, (None, None))
+        summaries.append(
+            WorkflowSummaryPublic(
+                **workflow.model_dump(),
+                last_run_status=status,
+                last_run_at=started,
+                published_version=published.get(workflow.id),
+            )
+        )
+    return summaries
 
 
 @router.post("/", response_model=WorkflowPublic)
@@ -558,3 +619,166 @@ def publish_workflow(
 
     session.refresh(component)
     return component
+
+
+# ---------------------------------------------------------------------------
+# Runs
+# ---------------------------------------------------------------------------
+def _run_public(run: WorkflowRun, node_rows: list[WorkflowRunNode]) -> WorkflowRunPublic:
+    """
+    Build a run response, with node results when they were loaded.
+    """
+    return WorkflowRunPublic(
+        **run.model_dump(),
+        nodes=[WorkflowRunNodePublic.model_validate(row) for row in node_rows],
+    )
+
+
+def _start_run(
+    session: Session, workflow_id: uuid.UUID, mode: str, items: list[dict]
+) -> WorkflowRun:
+    """
+    Record a run as running before executing, so a crash leaves a trace.
+    """
+    run = WorkflowRun(workflow_id=workflow_id, mode=mode, trigger_items=items)
+    session.add(run)
+    session.commit()
+    session.refresh(run)
+    return run
+
+
+def _node_row(run_id: uuid.UUID, outcome: NodeResult) -> WorkflowRunNode:
+    return WorkflowRunNode(
+        run_id=run_id,
+        node_id=outcome.node_id,
+        status=outcome.status,
+        input_items=outcome.input_items,
+        output_items=outcome.output_items,
+        logs=outcome.logs or None,
+        error=outcome.error,
+        duration_ms=outcome.duration_ms,
+    )
+
+
+def _finish_run(session: Session, run: WorkflowRun, result: RunResult) -> WorkflowRunPublic:
+    """
+    Persist the per-node results and close the run.
+    """
+    rows = [_node_row(run.id, outcome) for outcome in result.nodes]
+    session.add_all(rows)
+    run.status = result.status
+    run.error = result.error
+    run.finished_at = datetime.utcnow()
+    session.add(run)
+    session.commit()
+    session.refresh(run)
+    for row in rows:
+        session.refresh(row)
+    return _run_public(run, rows)
+
+
+@router.post("/{id}/run", response_model=WorkflowRunPublic)
+def run_workflow(
+    *,
+    session: SessionDep,
+    current_user: CurrentUser,
+    # pylint: disable=redefined-builtin
+    id: uuid.UUID,
+    run_in: WorkflowRunIn,
+) -> Any:
+    """
+    Execute the saved graph synchronously and return every node's result.
+
+    The run uses the graph as last saved; the editor saves unsaved changes
+    first. Anyone who can read the workflow can run it, including an
+    organization member trying out a published snapshot.
+    """
+    _get_workflow(session, current_user, id)
+    node_dicts, edge_dicts = _graph_as_dicts(session, id)
+    if not node_dicts:
+        raise HTTPException(status_code=400, detail="Add a node before running the workflow")
+    try:
+        validate_and_order(node_dicts, edge_dicts)
+    except GraphError as exc:
+        raise HTTPException(status_code=400, detail=exc.as_detail()) from exc
+
+    run = _start_run(session, id, "manual", run_in.items)
+    result = execute_graph(node_dicts, edge_dicts, run_in.items)
+    return _finish_run(session, run, result)
+
+
+@router.post("/{id}/nodes/{node_id}/run", response_model=WorkflowRunPublic)
+def run_workflow_node(
+    *,
+    session: SessionDep,
+    current_user: CurrentUser,
+    # pylint: disable=redefined-builtin
+    id: uuid.UUID,
+    node_id: uuid.UUID,
+    run_in: WorkflowRunIn,
+) -> Any:
+    """
+    Run one saved node against caller-supplied items, ignoring its edges.
+
+    Recorded as a ``single_node`` run so the editor reads it like any other.
+    """
+    _get_workflow(session, current_user, id)
+    node = session.get(WorkflowNode, node_id)
+    if node is None or node.workflow_id != id:
+        raise HTTPException(status_code=404, detail="Node not found")
+
+    # Dump before _start_run commits: the commit expires the loaded row.
+    node_dict = node.model_dump()
+    run = _start_run(session, id, "single_node", run_in.items)
+    outcome = execute_node(node_dict, None, run_in.items)
+    result = RunResult(
+        status="error" if outcome.status == "error" else "success",
+        error=outcome.error,
+        nodes=[outcome],
+    )
+    return _finish_run(session, run, result)
+
+
+@router.get("/{id}/runs", response_model=WorkflowRunsPublic)
+def read_workflow_runs(
+    session: SessionDep,
+    current_user: CurrentUser,
+    # pylint: disable=redefined-builtin
+    id: uuid.UUID,
+    skip: int = 0,
+    limit: int = 20,
+) -> Any:
+    """
+    Run history, newest first. Node results are omitted; fetch one run for them.
+    """
+    _get_workflow(session, current_user, id)
+    count = session.exec(
+        select(func.count()).select_from(WorkflowRun).where(WorkflowRun.workflow_id == id)
+    ).one()
+    runs = session.exec(
+        select(WorkflowRun)
+        .where(WorkflowRun.workflow_id == id)
+        .order_by(col(WorkflowRun.started_at).desc())
+        .offset(skip)
+        .limit(limit)
+    ).all()
+    return WorkflowRunsPublic(data=[_run_public(run, []) for run in runs], count=count)
+
+
+@router.get("/{id}/runs/{run_id}", response_model=WorkflowRunPublic)
+def read_workflow_run(
+    session: SessionDep,
+    current_user: CurrentUser,
+    # pylint: disable=redefined-builtin
+    id: uuid.UUID,
+    run_id: uuid.UUID,
+) -> Any:
+    """
+    One run with every node's input, output, logs and error.
+    """
+    _get_workflow(session, current_user, id)
+    run = session.get(WorkflowRun, run_id)
+    if run is None or run.workflow_id != id:
+        raise HTTPException(status_code=404, detail="Run not found")
+    rows = session.exec(select(WorkflowRunNode).where(WorkflowRunNode.run_id == run_id)).all()
+    return _run_public(run, list(rows))

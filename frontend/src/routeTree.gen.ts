@@ -20,6 +20,7 @@ import { Route as LayoutImport } from './routes/_layout'
 import { Route as LayoutIndexImport } from './routes/_layout/index'
 import { Route as LayoutWorkflowsImport } from './routes/_layout/workflows'
 import { Route as LayoutSettingsImport } from './routes/_layout/settings'
+import { Route as LayoutComponentsImport } from './routes/_layout/components'
 import { Route as LayoutAdminImport } from './routes/_layout/admin'
 import { Route as LayoutWorkflowWorkflowIdImport } from './routes/_layout/workflow.$workflowId'
 
@@ -70,6 +71,11 @@ const LayoutSettingsRoute = LayoutSettingsImport.update({
   getParentRoute: () => LayoutRoute,
 } as any)
 
+const LayoutComponentsRoute = LayoutComponentsImport.update({
+  path: '/components',
+  getParentRoute: () => LayoutRoute,
+} as any)
+
 const LayoutAdminRoute = LayoutAdminImport.update({
   path: '/admin',
   getParentRoute: () => LayoutRoute,
@@ -112,6 +118,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutAdminImport
       parentRoute: typeof LayoutImport
     }
+    '/_layout/components': {
+      preLoaderRoute: typeof LayoutComponentsImport
+      parentRoute: typeof LayoutImport
+    }
     '/_layout/settings': {
       preLoaderRoute: typeof LayoutSettingsImport
       parentRoute: typeof LayoutImport
@@ -136,6 +146,7 @@ declare module '@tanstack/react-router' {
 export const routeTree = rootRoute.addChildren([
   LayoutRoute.addChildren([
     LayoutAdminRoute,
+    LayoutComponentsRoute,
     LayoutSettingsRoute,
     LayoutWorkflowsRoute,
     LayoutIndexRoute,

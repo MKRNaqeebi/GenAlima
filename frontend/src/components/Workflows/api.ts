@@ -93,8 +93,54 @@ export type WorkflowDetailPublic = WorkflowPublic & {
   edges?: WorkflowEdgePublic[]
 }
 
+/** A list row: metadata plus the latest full run and newest published version. */
+export type WorkflowSummaryPublic = WorkflowPublic & {
+  last_run_status?: RunStatus | null
+  last_run_at?: string | null
+  published_version?: number | null
+}
+
 export type WorkflowsPublic = {
-  data: WorkflowPublic[]
+  data: WorkflowSummaryPublic[]
+  count: number
+}
+
+/** n8n-style item: `json` is the payload every contract describes. */
+export type WorkflowItem = {
+  json: Record<string, unknown>
+  [key: string]: unknown
+}
+
+export type RunStatus = "running" | "success" | "error" | "skipped" | "pending"
+
+export type WorkflowRunNodePublic = {
+  id: string
+  run_id: string
+  node_id: string
+  status: RunStatus
+  input_items: WorkflowItem[]
+  output_items: WorkflowItem[]
+  logs?: string | null
+  error?: string | null
+  duration_ms?: number | null
+}
+
+export type WorkflowRunPublic = {
+  id: string
+  workflow_id: string
+  status: RunStatus
+  /** `manual` for a full run, `single_node` for a node test. */
+  mode: "manual" | "single_node"
+  trigger_items: WorkflowItem[]
+  error?: string | null
+  started_at: string
+  finished_at?: string | null
+  /** Empty in the history listing; fetch one run for its node results. */
+  nodes: WorkflowRunNodePublic[]
+}
+
+export type WorkflowRunsPublic = {
+  data: WorkflowRunPublic[]
   count: number
 }
 
@@ -224,6 +270,68 @@ export const WorkflowsService = {
       body: data.requestBody,
       mediaType: "application/json",
       errors: { 400: "Invalid graph", 422: "Validation Error" },
+    })
+  },
+
+  /** Run the saved graph synchronously; entry nodes receive `items`. */
+  runWorkflow(data: {
+    id: string
+    items: WorkflowItem[]
+  }): CancelablePromise<WorkflowRunPublic> {
+    return request<WorkflowRunPublic>(OpenAPI, {
+      method: "POST",
+      url: `${BASE_URL}/{id}/run`,
+      path: { id: data.id },
+      body: { items: data.items },
+      mediaType: "application/json",
+      errors: {
+        400: "Invalid graph",
+        404: "Workflow not found",
+        422: "Validation Error",
+      },
+    })
+  },
+
+  /** Run one saved node against `items`, ignoring its edges. */
+  runNode(data: {
+    id: string
+    nodeId: string
+    items: WorkflowItem[]
+  }): CancelablePromise<WorkflowRunPublic> {
+    return request<WorkflowRunPublic>(OpenAPI, {
+      method: "POST",
+      url: `${BASE_URL}/{id}/nodes/{node_id}/run`,
+      path: { id: data.id, node_id: data.nodeId },
+      body: { items: data.items },
+      mediaType: "application/json",
+      errors: { 404: "Node not found", 422: "Validation Error" },
+    })
+  },
+
+  /** Run history, newest first, without node results. */
+  readRuns(data: {
+    id: string
+    limit?: number
+  }): CancelablePromise<WorkflowRunsPublic> {
+    return request<WorkflowRunsPublic>(OpenAPI, {
+      method: "GET",
+      url: `${BASE_URL}/{id}/runs`,
+      path: { id: data.id },
+      query: { limit: data.limit },
+      errors: { 404: "Workflow not found" },
+    })
+  },
+
+  /** One run with every node's items, logs and error. */
+  readRun(data: {
+    id: string
+    runId: string
+  }): CancelablePromise<WorkflowRunPublic> {
+    return request<WorkflowRunPublic>(OpenAPI, {
+      method: "GET",
+      url: `${BASE_URL}/{id}/runs/{run_id}`,
+      path: { id: data.id, run_id: data.runId },
+      errors: { 404: "Run not found" },
     })
   },
 

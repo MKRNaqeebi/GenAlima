@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react"
 import { FiPlus, FiTrash2 } from "react-icons/fi"
 
-import { FIELD_TYPES, type FieldContract } from "./types"
 import type { WorkflowFieldSpec } from "./api"
+import { FIELD_TYPES, type FieldContract } from "./types"
 
 interface FieldContractEditorProps {
   value: FieldContract

@@ -254,11 +254,21 @@ class WorkflowPublic(WorkflowBase):
     updated_at: datetime | None = None
 
 
+class WorkflowSummaryPublic(WorkflowPublic):
+    """
+    A workflow as the list shows it: metadata plus its latest run and the newest
+    component version published from it, so the table needs no extra requests.
+    """
+    last_run_status: str | None = None
+    last_run_at: datetime | None = None
+    published_version: int | None = None
+
+
 class WorkflowsPublic(SQLModel):
     """
     Properties to return via API for workflow listing
     """
-    data: list[WorkflowPublic]
+    data: list[WorkflowSummaryPublic]
     count: int
 
 
