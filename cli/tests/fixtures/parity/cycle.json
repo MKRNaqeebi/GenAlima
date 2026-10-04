@@ -1,0 +1,113 @@
+{
+  "name": "cycle",
+  "nodes": [
+    {
+      "id": "00000001-0000-4000-8000-000000000000",
+      "key": "code_1",
+      "name": "A",
+      "type": "code",
+      "type_version": 1,
+      "position_x": 80.0,
+      "position_y": 80.0,
+      "disabled": false,
+      "code": "result = []\n",
+      "input": {
+        "x": {
+          "type": "int",
+          "required": true,
+          "default": null,
+          "description": null,
+          "enum": null
+        }
+      },
+      "output": {
+        "x": {
+          "type": "int",
+          "required": true,
+          "default": null,
+          "description": null,
+          "enum": null
+        }
+      },
+      "type_enforcement": "strict",
+      "parameters": {
+        "language": "python",
+        "mode": "runOnceForAllItems",
+        "timeout": 30,
+        "onError": "stopWorkflow"
+      },
+      "notes": null
+    },
+    {
+      "id": "00000002-0000-4000-8000-000000000000",
+      "key": "code_2",
+      "name": "B",
+      "type": "code",
+      "type_version": 1,
+      "position_x": 80.0,
+      "position_y": 80.0,
+      "disabled": false,
+      "code": "result = []\n",
+      "input": {
+        "x": {
+          "type": "int",
+          "required": true,
+          "default": null,
+          "description": null,
+          "enum": null
+        }
+      },
+      "output": {
+        "x": {
+          "type": "int",
+          "required": true,
+          "default": null,
+          "description": null,
+          "enum": null
+        }
+      },
+      "type_enforcement": "strict",
+      "parameters": {
+        "language": "python",
+        "mode": "runOnceForAllItems",
+        "timeout": 30,
+        "onError": "stopWorkflow"
+      },
+      "notes": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "00000065-0000-4000-8000-000000000000",
+      "source_node_id": "00000001-0000-4000-8000-000000000000",
+      "target_node_id": "00000002-0000-4000-8000-000000000000",
+      "source_handle": "main",
+      "target_handle": "main",
+      "mapping": {
+        "x": "x"
+      }
+    },
+    {
+      "id": "00000066-0000-4000-8000-000000000000",
+      "source_node_id": "00000002-0000-4000-8000-000000000000",
+      "target_node_id": "00000001-0000-4000-8000-000000000000",
+      "source_handle": "main",
+      "target_handle": "main",
+      "mapping": {
+        "x": "x"
+      }
+    }
+  ],
+  "expect": {
+    "graph_error": "the graph contains a cycle",
+    "graph_error_node_ids": [
+      "00000001-0000-4000-8000-000000000000",
+      "00000002-0000-4000-8000-000000000000"
+    ],
+    "graph_error_edge_ids": [],
+    "edges": [],
+    "nodes": [],
+    "publish_error": null,
+    "node_validation_error": null
+  }
+}

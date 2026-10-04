@@ -1,0 +1,95 @@
+{
+  "name": "dangling-target-field",
+  "note": "A mapping naming an undeclared target input is an edge fault, and the target's required input is then uncovered too.",
+  "nodes": [
+    {
+      "id": "00000001-0000-4000-8000-000000000000",
+      "key": "code_1",
+      "name": "A",
+      "type": "code",
+      "type_version": 1,
+      "position_x": 80.0,
+      "position_y": 80.0,
+      "disabled": false,
+      "code": "result = []\n",
+      "input": {},
+      "output": {
+        "rows": {
+          "type": "int",
+          "required": true,
+          "default": null,
+          "description": null,
+          "enum": null
+        }
+      },
+      "type_enforcement": "strict",
+      "parameters": {
+        "language": "python",
+        "mode": "runOnceForAllItems",
+        "timeout": 30,
+        "onError": "stopWorkflow"
+      },
+      "notes": null
+    },
+    {
+      "id": "00000002-0000-4000-8000-000000000000",
+      "key": "code_2",
+      "name": "B",
+      "type": "code",
+      "type_version": 1,
+      "position_x": 80.0,
+      "position_y": 80.0,
+      "disabled": false,
+      "code": "result = []\n",
+      "input": {
+        "count": {
+          "type": "int",
+          "required": true,
+          "default": null,
+          "description": null,
+          "enum": null
+        }
+      },
+      "output": {},
+      "type_enforcement": "strict",
+      "parameters": {
+        "language": "python",
+        "mode": "runOnceForAllItems",
+        "timeout": 30,
+        "onError": "stopWorkflow"
+      },
+      "notes": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "00000065-0000-4000-8000-000000000000",
+      "source_node_id": "00000001-0000-4000-8000-000000000000",
+      "target_node_id": "00000002-0000-4000-8000-000000000000",
+      "source_handle": "main",
+      "target_handle": "main",
+      "mapping": {
+        "rows": "rows"
+      }
+    }
+  ],
+  "expect": {
+    "graph_error": null,
+    "graph_error_node_ids": [],
+    "graph_error_edge_ids": [],
+    "edges": [
+      {
+        "edge_id": "00000065-0000-4000-8000-000000000000",
+        "reason": "mapping names input field 'rows', which the target does not declare"
+      }
+    ],
+    "nodes": [
+      {
+        "node_id": "00000002-0000-4000-8000-000000000000",
+        "reason": "required input field 'count' is not mapped from any upstream node"
+      }
+    ],
+    "publish_error": null,
+    "node_validation_error": null
+  }
+}

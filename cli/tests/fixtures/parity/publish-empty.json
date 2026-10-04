@@ -1,0 +1,14 @@
+{
+  "name": "publish-empty",
+  "nodes": [],
+  "edges": [],
+  "expect": {
+    "graph_error": null,
+    "graph_error_node_ids": [],
+    "graph_error_edge_ids": [],
+    "edges": [],
+    "nodes": [],
+    "publish_error": "a workflow needs at least one node before it can be published",
+    "node_validation_error": null
+  }
+}

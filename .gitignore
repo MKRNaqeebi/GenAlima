@@ -14,3 +14,7 @@ coverage/
 *.key.json
 *secret*.json
 posts/
+# Rust CLI: build artifacts and the workspace-local toolchain.
+# `workflow.json` files are committed on purpose — they are the source of truth.
+cli/target/
+.toolchain/

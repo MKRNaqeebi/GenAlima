@@ -1,0 +1,60 @@
+{
+  "name": "duplicate-key",
+  "nodes": [
+    {
+      "id": "00000001-0000-4000-8000-000000000000",
+      "key": "code_1",
+      "name": "A",
+      "type": "code",
+      "type_version": 1,
+      "position_x": 80.0,
+      "position_y": 80.0,
+      "disabled": false,
+      "code": "result = []\n",
+      "input": {},
+      "output": {},
+      "type_enforcement": "strict",
+      "parameters": {
+        "language": "python",
+        "mode": "runOnceForAllItems",
+        "timeout": 30,
+        "onError": "stopWorkflow"
+      },
+      "notes": null
+    },
+    {
+      "id": "00000002-0000-4000-8000-000000000000",
+      "key": "code_1",
+      "name": "B",
+      "type": "code",
+      "type_version": 1,
+      "position_x": 80.0,
+      "position_y": 80.0,
+      "disabled": false,
+      "code": "result = []\n",
+      "input": {},
+      "output": {},
+      "type_enforcement": "strict",
+      "parameters": {
+        "language": "python",
+        "mode": "runOnceForAllItems",
+        "timeout": 30,
+        "onError": "stopWorkflow"
+      },
+      "notes": null
+    }
+  ],
+  "edges": [],
+  "expect": {
+    "graph_error": "duplicate node key 'code_1'",
+    "graph_error_node_ids": [
+      "00000001-0000-4000-8000-000000000000",
+      "00000002-0000-4000-8000-000000000000"
+    ],
+    "graph_error_edge_ids": [],
+    "edges": [],
+    "nodes": [],
+    "publish_error": null,
+    "node_validation_error": null
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "name": "edge-unknown-node",
+  "nodes": [
+    {
+      "id": "00000001-0000-4000-8000-000000000000",
+      "key": "code_1",
+      "name": "A",
+      "type": "code",
+      "type_version": 1,
+      "position_x": 80.0,
+      "position_y": 80.0,
+      "disabled": false,
+      "code": "result = []\n",
+      "input": {},
+      "output": {},
+      "type_enforcement": "strict",
+      "parameters": {
+        "language": "python",
+        "mode": "runOnceForAllItems",
+        "timeout": 30,
+        "onError": "stopWorkflow"
+      },
+      "notes": null
+    }
+  ],
+  "edges": [
+    {
+      "id": "00000065-0000-4000-8000-000000000000",
+      "source_node_id": "00000001-0000-4000-8000-000000000000",
+      "target_node_id": "000003e7-0000-4000-8000-000000000000",
+      "source_handle": "main",
+      "target_handle": "main",
+      "mapping": {}
+    }
+  ],
+  "expect": {
+    "graph_error": "edge references a node that is not part of the graph",
+    "graph_error_node_ids": [],
+    "graph_error_edge_ids": [
+      "00000065-0000-4000-8000-000000000000"
+    ],
+    "edges": [],
+    "nodes": [],
+    "publish_error": null,
+    "node_validation_error": null
+  }
+}

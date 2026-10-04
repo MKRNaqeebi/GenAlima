@@ -88,13 +88,43 @@ frontend/src/
 | `POST` | `/api/v1/workflows/{id}/publish` | publish as a component version |
 | `GET` | `/api/v1/components/` | components shared with your organization |
 
+## 🧑💻 CLI
+
+A Rust CLI does everything the editor does to a workflow — create, edit, test,
+save, run and publish — plus a few things the editor cannot (node notes,
+workflow settings, deleting a single-version component). See
+[cli/README.md](cli/README.md) for the reference and
+[docs/cli-plan.md](docs/cli-plan.md) for the design.
+
+```bash
+cargo install --path cli                    # Rust 1.75+; adds `genalima`
+genalima login --email you@example.com      # or export GENALIMA_TOKEN=...
+genalima workflow init "Daily report"
+genalima workflow validate                  # offline: no server, no token
+genalima workflow push                      # creates it on the server
+genalima workflow run --field date=2025-10-02
+genalima workflow publish --name "Daily report" --version auto
+```
+
+`workflow.json` is the API's own JSON in canonical form, so `pull` → edit →
+`push` diffs cleanly in git. With `--json` every command prints exactly one
+envelope on stdout, and exit codes are stable (3 invalid file, 4 unauthorized,
+5 not found, 6 version conflict, 7 rejected graph, 8 the run failed), which is
+what makes it usable from an agent or a CI job.
+
+```bash
+GENALIMA_SERVER_URL=http://localhost:8000 GENALIMA_EMAIL=… GENALIMA_PASSWORD=… \
+  scripts/cli-e2e.sh                        # end-to-end; cleans up after itself
+```
+
 ## Development
 
 ```bash
-pytest                                     # backend unit tests
+pytest                                     # backend unit tests (+ the CLI parity fixtures)
 cd frontend && npx tsc -p tsconfig.build.json --noEmit
 cd frontend && npx playwright test         # end-to-end (needs both servers running)
 alembic revision --autogenerate -m "..."   # new migration
+cd cli && cargo test                       # CLI unit + integration + parity tests
 ```
 
 Issues: [GitHub Issues](https://github.com/MKRNaqeebi/GenAlima/issues)
