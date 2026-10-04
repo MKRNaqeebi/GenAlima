@@ -18,6 +18,7 @@ import {
   WorkflowsService,
 } from "../../components/Workflows/api"
 import useCustomToast from "../../hooks/useCustomToast"
+import { relativeTime } from "../../utils"
 
 const workflowsSearchSchema = z.object({
   page: z.number().catch(1),
@@ -64,30 +65,20 @@ function StatusPill({ status }: { status?: string | null }) {
   )
 }
 
-/** "3 min ago" for recent times, a date otherwise. API times are naive UTC. */
-function relativeTime(iso?: string | null): string {
-  if (!iso) return "—"
-  const date = new Date(iso.endsWith("Z") ? iso : `${iso}Z`)
-  const seconds = Math.round((Date.now() - date.getTime()) / 1000)
-  if (seconds < 60) return "just now"
-  if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)} h ago`
-  if (seconds < 7 * 86400) return `${Math.floor(seconds / 86400)} d ago`
-  return date.toLocaleDateString()
-}
-
 function WorkflowRow({ workflow }: { workflow: WorkflowSummaryPublic }) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
 
   const removeWorkflow = useMutation({
-    mutationFn: () => WorkflowsService.deleteWorkflow({ id: workflow.id ?? "" }),
+    mutationFn: () =>
+      WorkflowsService.deleteWorkflow({ id: workflow.id ?? "" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["workflows"] })
       showToast("Deleted", "Workflow removed.", "success")
     },
-    onError: () => showToast("Error", "Could not delete the workflow.", "error"),
+    onError: () =>
+      showToast("Error", "Could not delete the workflow.", "error"),
   })
 
   const open = () =>

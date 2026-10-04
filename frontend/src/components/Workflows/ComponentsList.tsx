@@ -5,6 +5,7 @@ import { FiBox, FiEye, FiTrash2 } from "react-icons/fi"
 
 import useAuth from "../../hooks/useAuth"
 import useCustomToast from "../../hooks/useCustomToast"
+import { relativeTime } from "../../utils"
 import { ComponentsService, type WorkflowComponentPublic } from "./api"
 
 const PER_PAGE = 100
@@ -15,14 +16,16 @@ export function contractSummary(
 ): string {
   const entries = Object.entries(contract ?? {})
   if (entries.length === 0) return "anything"
-  return entries.map(([name, spec]) => `${name}: ${spec.type ?? "Any"}`).join(", ")
+  return entries
+    .map(([name, spec]) => `${name}: ${spec.type ?? "Any"}`)
+    .join(", ")
 }
 
 /**
  * Group versions under their component name.
  *
  * The API returns every version as its own row, newest first, so the list shows
- * one card per name with its versions in the footer.
+ * one row per name with its versions in the version column.
  */
 export function groupByName(
   components: WorkflowComponentPublic[],
@@ -40,7 +43,7 @@ export function groupByName(
   }))
 }
 
-function ComponentCard({ versions }: { versions: WorkflowComponentPublic[] }) {
+function ComponentRow({ versions }: { versions: WorkflowComponentPublic[] }) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const showToast = useCustomToast()
@@ -59,99 +62,109 @@ function ComponentCard({ versions }: { versions: WorkflowComponentPublic[] }) {
       showToast("Error", "Could not delete this component version.", "error"),
   })
 
+  const openVersion = (version: WorkflowComponentPublic) =>
+    navigate({
+      to: "/workflow/$workflowId",
+      params: { workflowId: version.snapshot_workflow_id },
+    })
+
   return (
-    <div
-      data-testid="component-card"
-      className="flex flex-col justify-between rounded-lg border border-gray-200 bg-white transition-all duration-200 hover:shadow-lg dark:border-gray-700 dark:bg-app-surface"
+    <tr
+      data-testid="component-row"
+      tabIndex={0}
+      onClick={() => openVersion(latest)}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" && event.target === event.currentTarget)
+          openVersion(latest)
+      }}
+      className="cursor-pointer border-t border-gray-100 focus:bg-gray-50 focus:outline-none dark:focus:bg-app-hover/50 hover:bg-gray-50 dark:border-app-border dark:hover:bg-app-hover/50"
     >
-      <div className="p-5">
-        <div className="flex items-start justify-between">
-          <div className="flex min-w-0 items-center space-x-3">
-            <FiBox className="h-5 w-5 flex-shrink-0 text-purple-600" />
-            <span className="truncate text-lg font-semibold text-gray-900 dark:text-white">
-              {latest.name}
-            </span>
-          </div>
-          <span className="flex-shrink-0 rounded bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
-            v{latest.version}
-          </span>
+      <td className="max-w-0 py-2.5 pl-4 pr-3">
+        <div className="truncate font-medium text-gray-900 dark:text-white">
+          {latest.name}
         </div>
-
-        <p className="mt-2 line-clamp-2 text-sm text-gray-600 dark:text-gray-400">
+        <div className="truncate text-xs text-gray-500 dark:text-gray-400">
           {latest.description || "No description"}
-        </p>
-
-        <dl className="mt-3 space-y-1 text-xs text-gray-500 dark:text-gray-400">
-          <div className="truncate" title={contractSummary(latest.input)}>
-            <dt className="inline text-gray-400 dark:text-gray-500">in </dt>
-            <dd className="inline">{contractSummary(latest.input)}</dd>
-          </div>
-          <div className="truncate" title={contractSummary(latest.output)}>
-            <dt className="inline text-gray-400 dark:text-gray-500">out </dt>
-            <dd className="inline">{contractSummary(latest.output)}</dd>
-          </div>
-        </dl>
-      </div>
-
-      <div className="space-y-2 border-t border-gray-100 px-5 py-3 dark:border-gray-700">
-        <button
-          type="button"
-          onClick={() =>
-            navigate({
-              to: "/workflow/$workflowId",
-              params: { workflowId: latest.snapshot_workflow_id },
-            })
-          }
-          className="flex w-full items-center justify-center space-x-1 rounded bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700"
+        </div>
+      </td>
+      <td className="whitespace-nowrap px-3 py-2.5 text-xs">
+        <div className="flex items-center space-x-1">
+          {versions.map((version) => (
+            <button
+              key={version.id}
+              type="button"
+              title={version.release_notes || `View v${version.version}`}
+              onClick={(event) => {
+                event.stopPropagation()
+                openVersion(version)
+              }}
+              className={`rounded px-1.5 py-0.5 font-mono font-medium ${
+                version.id === latest.id
+                  ? "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300"
+                  : "text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-app-hover"
+              }`}
+            >
+              v{version.version}
+            </button>
+          ))}
+        </div>
+      </td>
+      <td className="max-w-0 px-3 py-2.5">
+        <div
+          className="truncate font-mono text-xs text-gray-500 dark:text-gray-400"
+          title={contractSummary(latest.input)}
         >
-          <FiEye className="h-4 w-4" />
-          <span>View code</span>
-        </button>
-
-        {versions.length > 1 && (
-          <ul
-            data-testid="component-versions"
-            className="space-y-1 pt-1 text-xs text-gray-500 dark:text-gray-400"
+          {contractSummary(latest.input)}
+        </div>
+      </td>
+      <td className="max-w-0 px-3 py-2.5">
+        <div
+          className="truncate font-mono text-xs text-gray-500 dark:text-gray-400"
+          title={contractSummary(latest.output)}
+        >
+          {contractSummary(latest.output)}
+        </div>
+      </td>
+      <td className="whitespace-nowrap px-3 py-2.5 text-xs text-gray-500 dark:text-gray-400">
+        {relativeTime(latest.created_at)}
+      </td>
+      <td className="whitespace-nowrap py-2.5 pl-3 pr-4 text-right">
+        <div className="flex items-center justify-end space-x-1">
+          <button
+            type="button"
+            title="View code"
+            aria-label={`View ${latest.name}`}
+            onClick={(event) => {
+              event.stopPropagation()
+              openVersion(latest)
+            }}
+            className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-blue-600 dark:hover:bg-app-hover"
           >
-            {versions.map((version) => (
-              <li key={version.id} className="flex items-center justify-between">
-                <button
-                  type="button"
-                  onClick={() =>
-                    navigate({
-                      to: "/workflow/$workflowId",
-                      params: { workflowId: version.snapshot_workflow_id },
-                    })
-                  }
-                  className="hover:text-blue-600 dark:hover:text-blue-400"
-                >
-                  v{version.version}
-                  {version.release_notes ? ` — ${version.release_notes}` : ""}
-                </button>
-                {ownedByMe && (
-                  <button
-                    type="button"
-                    title={`Delete v${version.version}`}
-                    onClick={() => {
-                      if (
-                        window.confirm(
-                          `Delete v${version.version}? This cannot be undone.`,
-                        )
-                      ) {
-                        remove.mutate(version.id)
-                      }
-                    }}
-                    className="rounded p-0.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
-                  >
-                    <FiTrash2 className="h-3 w-3" />
-                  </button>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-    </div>
+            <FiEye className="h-4 w-4" />
+          </button>
+          {ownedByMe && (
+            <button
+              type="button"
+              title={`Delete v${latest.version}`}
+              aria-label={`Delete ${latest.name} v${latest.version}`}
+              onClick={(event) => {
+                event.stopPropagation()
+                if (
+                  window.confirm(
+                    `Delete "${latest.name}" v${latest.version}? This cannot be undone.`,
+                  )
+                ) {
+                  remove.mutate(latest.id)
+                }
+              }}
+              className="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-900/20"
+            >
+              <FiTrash2 className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      </td>
+    </tr>
   )
 }
 
@@ -161,7 +174,7 @@ function ComponentCard({ versions }: { versions: WorkflowComponentPublic[] }) {
  * Opening one reuses the workflow editor route, which detects `is_frozen` and
  * renders the snapshot read-only.
  */
-const ComponentsList = () => {
+const ComponentsList = ({ searchQuery = "" }: { searchQuery?: string }) => {
   const { data, isPending } = useQuery({
     queryKey: ["components"],
     queryFn: () => ComponentsService.readComponents({ limit: PER_PAGE }),
@@ -169,38 +182,68 @@ const ComponentsList = () => {
 
   const groups = useMemo(() => groupByName(data?.data ?? []), [data])
 
+  const filtered = useMemo(() => {
+    if (!searchQuery.trim()) return groups
+    const query = searchQuery.toLowerCase()
+    return groups.filter(
+      (group) =>
+        group.name.toLowerCase().includes(query) ||
+        (group.versions[0].description ?? "").toLowerCase().includes(query),
+    )
+  }, [groups, searchQuery])
+
   if (isPending) {
     return (
-      <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 3 }).map((_, index) => (
+      <div className="space-y-2">
+        {Array.from({ length: 5 }).map((_, index) => (
           <div
             key={index}
-            className="h-40 animate-pulse rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-app-surface"
+            className="h-12 animate-pulse rounded bg-white dark:bg-app-surface"
           />
         ))}
       </div>
     )
   }
 
-  if (groups.length === 0) {
+  if (filtered.length === 0) {
     return (
-      <div className="flex flex-col items-center space-y-4 py-16">
-        <FiBox className="h-16 w-16 text-gray-400 dark:text-gray-600" />
-        <h3 className="text-xl text-gray-900 dark:text-white">
-          No published components yet
+      <div className="flex flex-col items-center space-y-3 py-16">
+        <FiBox className="h-12 w-12 text-gray-400 dark:text-gray-600" />
+        <h3 className="text-lg text-gray-900 dark:text-white">
+          {searchQuery.trim()
+            ? "No matching components"
+            : "No published components yet"}
         </h3>
-        <p className="text-gray-600 dark:text-gray-400">
-          Open a workflow and press Publish to share it with your organization.
+        <p className="text-sm text-gray-600 dark:text-gray-400">
+          {searchQuery.trim()
+            ? "Try a different search."
+            : "Open a workflow and press Publish to share it with your organization."}
         </p>
       </div>
     )
   }
 
   return (
-    <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-      {groups.map((group) => (
-        <ComponentCard key={group.name} versions={group.versions} />
-      ))}
+    <div className="overflow-hidden rounded-lg border border-gray-200 bg-white dark:border-app-border dark:bg-app-surface">
+      <table className="w-full table-fixed text-left text-sm">
+        <thead className="bg-gray-50 text-[11px] uppercase tracking-wide text-gray-500 dark:bg-app-bg/40 dark:text-gray-400">
+          <tr>
+            <th className="py-2 pl-4 pr-3 font-medium">Name</th>
+            <th className="w-40 px-3 py-2 font-medium">Versions</th>
+            <th className="w-52 px-3 py-2 font-medium">Input</th>
+            <th className="w-52 px-3 py-2 font-medium">Output</th>
+            <th className="w-28 px-3 py-2 font-medium">Published</th>
+            <th className="w-20 py-2 pl-3 pr-4">
+              <span className="sr-only">Actions</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {filtered.map((group) => (
+            <ComponentRow key={group.name} versions={group.versions} />
+          ))}
+        </tbody>
+      </table>
     </div>
   )
 }

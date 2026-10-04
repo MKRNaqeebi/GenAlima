@@ -43,6 +43,18 @@ export const confirmPasswordRules = (
   return rules
 }
 
+/** "3 min ago" for recent times, a date otherwise. API times are naive UTC. */
+export const relativeTime = (iso?: string | null): string => {
+  if (!iso) return "—"
+  const date = new Date(iso.endsWith("Z") ? iso : `${iso}Z`)
+  const seconds = Math.round((Date.now() - date.getTime()) / 1000)
+  if (seconds < 60) return "just now"
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} h ago`
+  if (seconds < 7 * 86400) return `${Math.floor(seconds / 86400)} d ago`
+  return date.toLocaleDateString()
+}
+
 export const handleError = (err: ApiError, showToast: any) => {
   const errDetail = (err.body as any)?.detail
   let errorMessage = errDetail || "Something went wrong."
