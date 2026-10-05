@@ -3,6 +3,8 @@ This file contains the schema for the different models in the application.
 The schema is used to validate the data that is sent to the application.
 """
 # Standard library imports
+import base64
+import binascii
 from datetime import datetime
 import re
 from typing import Any, Dict, Optional
@@ -10,7 +12,14 @@ import uuid
 
 # Third-party imports
 from pydantic import EmailStr, ConfigDict, field_validator, model_validator
-from sqlalchemy import CheckConstraint, Column, ForeignKey, Text, UniqueConstraint, Uuid
+from sqlalchemy import (
+    CheckConstraint,
+    Column,
+    ForeignKey,
+    Text,
+    UniqueConstraint,
+    Uuid,
+)
 from sqlmodel import JSON, Field, Relationship, SQLModel
 
 
@@ -737,6 +746,78 @@ class WorkflowRunsPublic(SQLModel):
 # ---------------------------------------------------------------------------
 # Published workflow components
 # ---------------------------------------------------------------------------
+ICON_MAX_CHARS = 100_000
+"""
+Longest incoming icon accepted: the publish dialog scales a picked file to 128px
+and sends it as an inline PNG data URL, so anything longer is not an icon.
+"""
+
+ICON_MAX_BYTES = 100_000
+"""Largest stored PNG, checked after decoding the data URL."""
+
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+"""A PNG always starts with these bytes, so the stored file really is one."""
+
+ICON_DATA_URL = re.compile(
+    r"^data:image/png;base64,(?P<payload>.+)$",
+    re.IGNORECASE | re.DOTALL,
+)
+"""
+The only data URL accepted: a base64 PNG, which is what the browser canvas
+produces. Restricting the type server-side is not cosmetic — an SVG or an HTML
+document served from the media prefix would run in the application's own origin.
+"""
+
+
+def check_icon(value: str | None) -> str | None:
+    """
+    Validate a component icon as it arrives: an inline PNG or an image URL.
+
+    An empty string means "no icon" rather than an error, so a publish form can
+    send the field unconditionally.
+    """
+    if value is None:
+        return None
+    icon = value.strip()
+    if not icon:
+        return None
+    if not icon.lower().startswith(("data:image/png;base64,", "http://", "https://")):
+        raise ValueError("icon must be an http(s) URL or a base64 PNG data URL")
+    if len(icon) > ICON_MAX_CHARS:
+        raise ValueError(f"icon is too large (limit {ICON_MAX_CHARS} characters)")
+    return icon
+
+
+def split_icon(value: str | None) -> tuple[bytes | None, str | None]:
+    """
+    Turn an incoming icon into either the PNG to store or the URL to keep.
+
+    Returns the image when the form sent one inline, or the URL when the author
+    pasted a link instead, or nothing. An http(s) URL stays a link because the
+    server never fetches remote images.
+    """
+    icon = check_icon(value)
+    if icon is None:
+        return None, None
+    if not icon.lower().startswith("data:"):
+        return None, icon
+
+    match = ICON_DATA_URL.match(icon)
+    if match is None:
+        raise ValueError("icon must be base64 PNG data or an http(s) image URL")
+    try:
+        image = base64.b64decode(match.group("payload"), validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise ValueError("icon is not valid base64 image data") from exc
+    if not image:
+        raise ValueError("icon is empty")
+    if len(image) > ICON_MAX_BYTES:
+        raise ValueError(f"icon is too large (limit {ICON_MAX_BYTES} bytes)")
+    if not image.startswith(PNG_SIGNATURE):
+        raise ValueError("icon must be a PNG image")
+    return image, None
+
+
 class WorkflowComponentBase(SQLModel):
     """
     Shared schema for a published, reusable workflow component.
@@ -771,7 +852,21 @@ class WorkflowComponentPublishIn(SQLModel):
     version: int = Field(ge=1)
     description: str | None = Field(default=None, max_length=1024)
     release_notes: str | None = Field(default=None, max_length=2048)
+    icon: str | None = Field(default=None)
     graph: WorkflowGraphIn | None = Field(default=None)
+
+    @field_validator("icon")
+    @classmethod
+    def _validate_icon(cls, value: str | None) -> str | None:
+        """
+        Accept only a decodable inline image or an image URL.
+
+        Decoding happens here as well as in the publish route so a malformed or
+        oversized icon is a 422 with its reason, not a 500 mid-publish.
+        """
+        icon = check_icon(value)
+        split_icon(icon)
+        return icon
 
 
 class WorkflowComponent(WorkflowComponentBase, table=True):
@@ -800,6 +895,13 @@ class WorkflowComponent(WorkflowComponentBase, table=True):
     `source_workflow_id` links back to the editable workflow the version came
     from. It is nullable and `SET NULL` so deleting the source keeps history.
 
+    `icon` is the public URL of the PNG shown for the component in the palette
+    and on every node copied from it. Only the URL is stored: the image itself
+    goes to object storage in production and to disk in development, and a node
+    copied from this component carries the URL into its own graph. An author may
+    also paste a link, which lands in the same column — the app never needs to
+    tell the two apart, since it only ever renders the URL.
+
     `(owner_id, name, version)` is unique. The constraint is exact-match and
     owner-scoped; routes additionally trim and lowercase the name and resolve
     the publisher's organization on lookup, so the intended case-insensitive,
@@ -814,6 +916,7 @@ class WorkflowComponent(WorkflowComponentBase, table=True):
     version: int = Field(ge=1)
     snapshot_workflow_id: uuid.UUID = Field(foreign_key="workflow.id", nullable=False, ondelete="CASCADE")
     source_workflow_id: uuid.UUID | None = Field(default=None, foreign_key="workflow.id", ondelete="SET NULL")
+    icon: str | None = Field(default=None, max_length=2048)
     input: Dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
     output: Dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
     # The names (never the values) of the variables the published graph needs,
@@ -834,12 +937,16 @@ class WorkflowComponentPublic(WorkflowComponentBase):
     the environment variables the component needs, again without values: a
     consumer sees what to define in their own workflow, never what the publisher
     set.
+
+    `icon` is simply the URL the row stores, so the response needs no
+    translation: it is what the browser renders and what a copied node keeps.
     """
     id: uuid.UUID
     owner_id: uuid.UUID
     version: int
     snapshot_workflow_id: uuid.UUID
     source_workflow_id: uuid.UUID | None = None
+    icon: str | None = None
     input: Dict[str, WorkflowFieldSpec] = Field(default_factory=dict)
     output: Dict[str, WorkflowFieldSpec] = Field(default_factory=dict)
     variables: Dict[str, WorkflowVariableSpec] = Field(default_factory=dict)

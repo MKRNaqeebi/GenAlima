@@ -66,6 +66,38 @@ class Settings(BaseSettings):
     POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD", "change-this")
     POSTGRES_DB: str = os.getenv("POSTGRES_DB", "fastapi_template")
 
+    # ---------------------------------------------------------- component icons
+    # A component icon is a PNG kept out of the database: in object storage in
+    # production and staging, on disk everywhere else. ICON_STORAGE overrides
+    # that choice ("local" or "s3"), which is what a local MinIO run or a test
+    # wants.
+    ICON_STORAGE: str = os.getenv("ICON_STORAGE", "")
+    # Where the local backend writes, and the URL prefix it is served under. The
+    # prefix is mounted from the path in `main.py`, so the two agree by
+    # construction, and `frontend/vite.config.ts` proxies the prefix to the API
+    # so `npm run dev` can render icons too.
+    ICON_LOCAL_PATH: str = os.getenv("ICON_LOCAL_PATH", "media")
+    ICON_URL_PREFIX: str = os.getenv("ICON_URL_PREFIX", "/media")
+    # Object storage. Credentials come from the standard AWS chain (environment,
+    # shared config, instance or task role); the bucket — or the CDN in front of
+    # it — has to serve the objects, because these URLs are handed to browsers.
+    S3_BUCKET: str = os.getenv("S3_BUCKET", "")
+    S3_REGION: str = os.getenv("S3_REGION", os.getenv("AWS_REGION", "us-east-1"))
+    S3_ENDPOINT_URL: str = os.getenv("S3_ENDPOINT_URL", "")
+    S3_PUBLIC_BASE_URL: str = os.getenv("S3_PUBLIC_BASE_URL", "")
+
+    @computed_field
+    @property
+    def icon_storage(self) -> str:
+        """
+        Where icons live: object storage in production and staging, disk else.
+        """
+        if self.ICON_STORAGE:
+            return self.ICON_STORAGE.strip().lower()
+        if self.ENVIRONMENT in (Environment.PRODUCTION, Environment.STAGING):
+            return "s3"
+        return "local"
+
     @computed_field
     @property
     def sqlalchemy_database_uri(self) -> PostgresDsn:

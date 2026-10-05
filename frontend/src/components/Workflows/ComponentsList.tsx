@@ -6,6 +6,7 @@ import { FiBox, FiEye, FiTrash2 } from "react-icons/fi"
 import useAuth from "../../hooks/useAuth"
 import useCustomToast from "../../hooks/useCustomToast"
 import { relativeTime } from "../../utils"
+import ComponentIcon from "./ComponentIcon"
 import { ComponentsService, type WorkflowComponentPublic } from "./api"
 
 const PER_PAGE = 100
@@ -80,11 +81,20 @@ function ComponentRow({ versions }: { versions: WorkflowComponentPublic[] }) {
       className="cursor-pointer border-t border-gray-100 focus:bg-gray-50 focus:outline-none dark:focus:bg-app-hover/50 hover:bg-gray-50 dark:border-app-border dark:hover:bg-app-hover/50"
     >
       <td className="max-w-0 py-2.5 pl-4 pr-3">
-        <div className="truncate font-medium text-gray-900 dark:text-white">
-          {latest.name}
-        </div>
-        <div className="truncate text-xs text-gray-500 dark:text-gray-400">
-          {latest.description || "No description"}
+        <div className="flex items-center space-x-2">
+          <ComponentIcon
+            icon={latest.icon}
+            testId="component-icon"
+            className="h-6 w-6 flex-shrink-0 rounded object-contain"
+          />
+          <div className="min-w-0 flex-1">
+            <div className="truncate font-medium text-gray-900 dark:text-white">
+              {latest.name}
+            </div>
+            <div className="truncate text-xs text-gray-500 dark:text-gray-400">
+              {latest.description || "No description"}
+            </div>
+          </div>
         </div>
       </td>
       <td className="whitespace-nowrap px-3 py-2.5 text-xs">

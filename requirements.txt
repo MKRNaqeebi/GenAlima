@@ -5,6 +5,7 @@ anyio==4.8.0
 azure-core==1.35.0
 azure-devops==7.1.0b4
 bcrypt==4.0.1
+boto3==1.35.90
 CacheControl==0.14.2
 cachetools==5.5.1
 certifi==2024.12.14

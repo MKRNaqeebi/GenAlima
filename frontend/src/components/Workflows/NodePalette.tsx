@@ -9,6 +9,7 @@ import {
   FiSearch,
 } from "react-icons/fi"
 
+import ComponentIcon from "./ComponentIcon"
 import { contractSummary, groupByName } from "./ComponentsList"
 import { COMPONENT_DRAG_TYPE } from "./WorkflowCanvas"
 import { ComponentsService, type WorkflowComponentPublic } from "./api"
@@ -52,7 +53,11 @@ function ComponentItem({
     >
       <div className="flex items-center justify-between space-x-2">
         <div className="flex min-w-0 items-center space-x-2">
-          <FiBox className="h-4 w-4 flex-shrink-0 text-violet-500" />
+          <ComponentIcon
+            icon={component.icon}
+            testId="palette-icon"
+            className="h-4 w-4 flex-shrink-0 rounded object-contain"
+          />
           <span className="truncate text-sm text-gray-800 dark:text-gray-100">
             {component.name}
           </span>

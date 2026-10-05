@@ -43,7 +43,9 @@ from app.models import (
     WorkflowPublic,
     WorkflowSummaryPublic,
     WorkflowUpdate,
+    split_icon,
 )
+from app.services.icon_storage import IconStorageError, save_icon
 from app.services.workflow.engine import NodeResult, RunResult, execute_graph, execute_node
 from app.services.workflow.graph import GraphError, validate_and_order
 from app.services.workflow.publish import PublishShape, plan_snapshot, publish_shape
@@ -596,6 +598,15 @@ def publish_workflow(
     snapshot = _copy_graph_into_snapshot(
         session, workflow, node_dicts, edge_dicts, component_in.description
     )
+    # The form sends an inline PNG or a link; the row keeps one public URL.
+    image, pasted_url = split_icon(component_in.icon)
+    try:
+        icon = save_icon(image) if image else pasted_url
+    except IconStorageError as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=f"The component icon could not be stored: {exc}",
+        ) from exc
     component = WorkflowComponent(
         name=name,
         description=component_in.description,
@@ -606,6 +617,7 @@ def publish_workflow(
         input=component_input,
         output=component_output,
         release_notes=component_in.release_notes,
+        icon=icon,
     )
     session.add(component)
 

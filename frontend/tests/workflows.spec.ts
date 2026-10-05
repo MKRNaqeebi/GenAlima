@@ -21,7 +21,8 @@ async function createWorkflowWithNode(page: Page): Promise<void> {
   // Creating navigates straight into the editor.
   await expect(page).toHaveURL(/\/workflow\//)
   await page.getByRole("button", { name: "Add code node" }).click()
-  await expect(page.getByText("Code 1")).toBeVisible()
+  // The card reads `name:version` and carries nothing else.
+  await expect(page.getByTestId("code-node-code_1")).toHaveText("Code 1:1")
 }
 
 test("create a workflow, add a code node and save the graph", async ({
@@ -36,7 +37,9 @@ test("create a workflow, add a code node and save the graph", async ({
 
   // The graph must come back from the database unchanged.
   await page.reload()
-  await expect(page.getByText("Code 1")).toBeVisible({ timeout: 15_000 })
+  await expect(page.getByTestId("code-node-code_1")).toHaveText("Code 1:1", {
+    timeout: 15_000,
+  })
   await expect(page.getByText("unsaved changes")).toBeHidden()
 })
 
@@ -55,6 +58,20 @@ test("contract field name keeps focus while typing", async ({ page }) => {
 
   await expect(fieldName).toHaveValue("customer_email")
   await expect(fieldName).toBeFocused()
+})
+
+test("node settings can attach the node to a published component", async ({
+  page,
+}) => {
+  await createWorkflowWithNode(page)
+
+  await page.getByRole("tab", { name: "settings" }).click()
+  const picker = page.getByTestId("node-component")
+  // A hand-written node belongs to no component until the author says so.
+  await expect(picker).toHaveValue("")
+  await expect(picker.locator("option").first()).toHaveText(
+    "Not a component copy",
+  )
 })
 
 test("node settings panel expands to the left", async ({ page }) => {

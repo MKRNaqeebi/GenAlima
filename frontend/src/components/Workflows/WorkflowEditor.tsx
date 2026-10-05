@@ -240,16 +240,6 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
   // editable: changes belong in the source workflow and ship as a new version.
   const isFrozen = data?.is_frozen === true
 
-  // Which nodes form the component boundary, so the interface the publish form
-  // will use is visible on the canvas before it is opened.
-  const boundaryIds = useMemo(() => {
-    const { entries, exits } = boundaryCandidates(nodes, edges)
-    return {
-      entry: entries.length === 1 ? entries[0] : null,
-      exit: exits.length === 1 ? exits[0] : null,
-    }
-  }, [nodes, edges])
-
   const selectedNode = useMemo(
     () => nodes.find((node) => node.id === selectedId) ?? null,
     [nodes, selectedId],
@@ -328,27 +318,20 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
     () =>
       nodes.map((node) => {
         const reason = coverageByNode.get(node.id)
-        const boundary =
-          node.id === boundaryIds.entry
-            ? ("in" as const)
-            : node.id === boundaryIds.exit
-              ? ("out" as const)
-              : null
         const runStatus = runStatusByNode.get(node.id) ?? null
         const highlighted = node.id === highlightedId
-        if (!reason && !boundary && !runStatus && !highlighted) return node
+        if (!reason && !runStatus && !highlighted) return node
         return {
           ...node,
           data: {
             ...node.data,
             error: reason,
-            boundary,
             runStatus,
             highlighted,
           },
         }
       }),
-    [nodes, coverageByNode, boundaryIds, runStatusByNode, highlightedId],
+    [nodes, coverageByNode, runStatusByNode, highlightedId],
   )
 
   // Per-edge faults: a dangling mapping reference or an incompatible pair.
@@ -591,7 +574,11 @@ const WorkflowEditor = ({ workflowId }: WorkflowEditorProps) => {
           snapshotNodes,
           snapshot.edges ?? [],
           origin,
-          component.name,
+          {
+            name: component.name,
+            version: component.version,
+            icon: component.icon ?? null,
+          },
         )
         setNodes((current) => [...current, ...inserted.nodes])
         setEdges((current) => [...current, ...inserted.edges])

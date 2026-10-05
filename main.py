@@ -1,6 +1,9 @@
 """
 This is the main file for the FastAPI application. It contains the routes for the API endpoints.
 """
+# Standard library imports
+from pathlib import Path
+
 # Third-party imports
 from fastapi import FastAPI, Request
 from fastapi.routing import APIRoute
@@ -35,6 +38,18 @@ app = FastAPI(
 app.mount(
     "/assets", StaticFiles(directory=f"{settings.BUILD_PATH}/assets"), name="assets")
 templates = Jinja2Templates(directory=settings.BUILD_PATH)
+
+# Component icons live in object storage in production, and on disk everywhere
+# else — where the app has to serve them itself. The prefix and the directory are
+# one setting each, kept in step by mounting the former from the latter, and
+# Vite proxies the same prefix so `npm run dev` renders icons too.
+if settings.icon_storage == "local":
+    Path(settings.ICON_LOCAL_PATH).mkdir(parents=True, exist_ok=True)
+    app.mount(
+        settings.ICON_URL_PREFIX,
+        StaticFiles(directory=settings.ICON_LOCAL_PATH),
+        name="icons",
+    )
 
 # Set all CORS enabled origins
 if settings.all_cors_origins:

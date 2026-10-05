@@ -18,3 +18,5 @@ posts/
 # `workflow.json` files are committed on purpose — they are the source of truth.
 cli/target/
 .toolchain/
+# Component icons, written here by the local storage backend in development.
+media/

@@ -27,10 +27,26 @@ export type FieldType = (typeof FIELD_TYPES)[number]
 /** A node's input or output contract: field name -> Pydantic-style spec. */
 export type FieldContract = Record<string, WorkflowFieldSpec>
 
+/** The published component a node was copied from, kept as its provenance. */
+export interface ComponentSource {
+  name: string
+  version: number
+  /** The component's image, so a copy keeps its icon: URL or `data:image/…`. */
+  icon?: string | null
+}
+
 /** Everything the canvas and inspector need to know about one code node. */
 export interface CodeNodeData extends Record<string, unknown> {
   key: string
   name: string
+  /** The node's own version: the API's `type_version`, 1 for every code node. */
+  version: number
+  /**
+   * Set when this node was copied in from a published component. The canvas
+   * labels the copy with this name and version rather than the snapshot's
+   * placeholder name, so a node says which released version it came from.
+   */
+  component?: ComponentSource | null
   code: string
   input: FieldContract
   output: FieldContract
@@ -45,11 +61,6 @@ export interface CodeNodeData extends Record<string, unknown> {
    * it is not part of the save payload.
    */
   error?: string | null
-  /**
-   * Whether this node is the entry or exit of the graph being published.
-   * Derived for rendering only: it is not part of the save payload.
-   */
-  boundary?: "in" | "out" | null
   /**
    * This node's status in the run the panel is showing. Derived for rendering
    * only: it is not part of the save payload.
@@ -97,6 +108,8 @@ export function newCodeNode(nodes: CodeNode[]): CodeNode {
     data: {
       key: nextNodeKey(nodes),
       name: `Code ${index + 1}`,
+      version: 1,
+      component: null,
       code: DEFAULT_CODE,
       input: {},
       output: {},
@@ -110,6 +123,32 @@ export function newCodeNode(nodes: CodeNode[]): CodeNode {
   }
 }
 
+/** The component provenance a node carries inside its `parameters`, if any. */
+export function componentSource(
+  parameters: Record<string, unknown> | undefined,
+): ComponentSource | null {
+  const raw = parameters?.component
+  if (typeof raw !== "object" || raw === null) return null
+  const { name, version, icon } = raw as {
+    name?: unknown
+    version?: unknown
+    icon?: unknown
+  }
+  if (typeof name !== "string" || typeof version !== "number") return null
+  return { name, version, icon: typeof icon === "string" ? icon : null }
+}
+
+/**
+ * What the canvas prints on a node: its name and version, e.g.
+ * `sum-two-number:1`.
+ *
+ * A node copied from a component is labelled with that component's version, so
+ * the copy keeps saying which published version it came from.
+ */
+export function nodeLabel(data: CodeNodeData): string {
+  return `${data.name}:${data.component?.version ?? data.version}`
+}
+
 /** Server node -> React Flow node. */
 export function toCanvasNode(node: WorkflowNodePublic): CodeNode {
   const params = (node.parameters ?? {}) as Record<string, unknown>
@@ -120,6 +159,8 @@ export function toCanvasNode(node: WorkflowNodePublic): CodeNode {
     data: {
       key: node.key,
       name: node.name,
+      version: node.type_version ?? 1,
+      component: componentSource(params),
       code: node.code ?? "",
       input: (node.input ?? {}) as FieldContract,
       output: (node.output ?? {}) as FieldContract,
@@ -164,7 +205,7 @@ export function toSavePayload(
       key: node.data.key,
       name: node.data.name,
       type: "code",
-      type_version: 1,
+      type_version: node.data.version,
       position_x: node.position.x,
       position_y: node.position.y,
       disabled: node.data.disabled,
@@ -177,6 +218,9 @@ export function toSavePayload(
         mode: node.data.mode,
         timeout: node.data.timeout,
         onError: node.data.onError,
+        // Provenance, so an inserted copy can be labelled `name:version` again
+        // after a reload. The engine only reads the keys above.
+        ...(node.data.component ? { component: node.data.component } : {}),
       },
     })),
     edges: edges.map((edge) => ({
@@ -589,19 +633,28 @@ export function executionOrder(nodes: CodeNode[], edges: Edge[]): CodeNode[] {
  * component node type yet, so the copy is ordinary code nodes the engine
  * already runs. Ids are regenerated so the copy is independent of the
  * snapshot, keys are made unique within the workflow, and the copy is placed
- * with its top-left corner at `origin`.
+ * with its top-left corner at `origin`. Every copy records the component it came
+ * from — name, version and icon — so the canvas can label and mark it the way
+ * the palette does.
  */
 export function insertComponentGraph(
   existing: CodeNode[],
   snapshotNodes: WorkflowNodePublic[],
   snapshotEdges: WorkflowEdgePublic[],
   origin: { x: number; y: number },
-  label: string,
+  component: ComponentSource,
 ): { nodes: CodeNode[]; edges: Edge[] } {
   const usedKeys = new Set(existing.map((node) => node.data.key))
   const minX = Math.min(...snapshotNodes.map((node) => node.position_x ?? 0))
   const minY = Math.min(...snapshotNodes.map((node) => node.position_y ?? 0))
   const idMap = new Map<string, string>()
+  // One provenance object shared by every copy, normalised so a component
+  // without an icon still records `icon: null` rather than leaving the key out.
+  const provenance: ComponentSource = {
+    name: component.name,
+    version: component.version,
+    icon: component.icon ?? null,
+  }
 
   const nodes = snapshotNodes.map((snapshot) => {
     const node = toCanvasNode(snapshot)
@@ -626,7 +679,12 @@ export function insertComponentGraph(
         ...node.data,
         key,
         name:
-          snapshotNodes.length === 1 ? label : `${label} · ${node.data.name}`,
+          snapshotNodes.length === 1
+            ? provenance.name
+            : `${provenance.name} · ${node.data.name}`,
+        // The node keeps its own type version; the label and the inspector read
+        // the component's version from here instead.
+        component: provenance,
       },
     }
   })

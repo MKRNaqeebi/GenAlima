@@ -162,6 +162,11 @@ export type WorkflowComponentPublic = {
   id: string
   name: string
   description?: string | null
+  /**
+   * The component's image: an http(s) URL or a small inline `data:image/…` URL,
+   * shown in the palette and on every node copied from it.
+   */
+  icon?: string | null
   owner_id: string
   version: number
   snapshot_workflow_id: string
@@ -182,6 +187,8 @@ export type WorkflowComponentPublishIn = {
   version: number
   description?: string | null
   release_notes?: string | null
+  /** The component's image; omit or send null for no icon. */
+  icon?: string | null
   /** The canvas to save before snapshotting; omit to publish the saved graph. */
   graph?: WorkflowGraphIn | null
 }

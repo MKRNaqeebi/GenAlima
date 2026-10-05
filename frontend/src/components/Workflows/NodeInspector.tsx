@@ -1,12 +1,18 @@
 import { python } from "@codemirror/lang-python"
+import { useQuery } from "@tanstack/react-query"
 import CodeMirror from "@uiw/react-codemirror"
 import { useEffect, useState } from "react"
 import { FiPlay, FiTrash2 } from "react-icons/fi"
 
 import { useTheme } from "../../contexts/ThemeContext"
+import ComponentIcon from "./ComponentIcon"
 import FieldContractEditor from "./FieldContractEditor"
 import { StatusIcon, observedShape } from "./RunPanel"
-import type { WorkflowItem, WorkflowRunNodePublic } from "./api"
+import {
+  ComponentsService,
+  type WorkflowItem,
+  type WorkflowRunNodePublic,
+} from "./api"
 import {
   type CodeNode,
   type CodeNodeData,
@@ -36,6 +42,108 @@ const TABS: Tab[] = ["code", "input", "output", "settings", "test"]
 
 const inputClass =
   "w-full rounded border border-gray-300 bg-transparent px-2 py-1 text-sm text-gray-900 disabled:opacity-60 dark:border-app-border dark:text-white"
+
+/** `name:version` — how a component version is identified everywhere else. */
+const versionKey = (component: { name: string; version: number }): string =>
+  `${component.name}:${component.version}`
+
+/**
+ * Attach a node to a published component version, or detach it.
+ *
+ * A node copied from the palette already knows its component; this is for the
+ * copies made before that was recorded, and for correcting one. Attaching sets
+ * the provenance a copy would have carried, which is what puts the component's
+ * icon and its version on the card — the node keeps its own name.
+ */
+function ComponentPicker({
+  data,
+  onChange,
+  readOnly,
+}: {
+  data: CodeNodeData
+  onChange: (patch: Partial<CodeNodeData>) => void
+  readOnly: boolean
+}) {
+  // The palette fetches the same query key, so this is usually already cached.
+  const { data: page } = useQuery({
+    queryKey: ["components"],
+    queryFn: () => ComponentsService.readComponents({ limit: 100 }),
+  })
+
+  const versions = page?.data ?? []
+  const current = data.component ?? null
+  const currentKey = current ? versionKey(current) : ""
+  const options = [...versions].sort(
+    (a, b) => a.name.localeCompare(b.name) || b.version - a.version,
+  )
+  // A component version can be deleted after it was copied: keep showing it.
+  const gone =
+    current !== null &&
+    !versions.some((version) => versionKey(version) === currentKey)
+
+  return (
+    <label className="block space-y-1">
+      <span className="text-xs text-gray-500 dark:text-gray-400">
+        Component
+      </span>
+      <div className="flex items-center space-x-2">
+        <ComponentIcon
+          icon={current?.icon}
+          className={`h-4 w-4 flex-shrink-0 rounded object-contain ${
+            current ? "" : "opacity-30"
+          }`}
+        />
+        <select
+          value={currentKey}
+          disabled={readOnly}
+          aria-label="Component"
+          data-testid="node-component"
+          onChange={(event) => {
+            const value = event.target.value
+            const picked = versions.find(
+              (version) => versionKey(version) === value,
+            )
+            if (!picked) {
+              onChange({ component: null })
+              return
+            }
+            onChange({
+              component: {
+                name: picked.name,
+                version: picked.version,
+                icon: picked.icon ?? null,
+              },
+            })
+          }}
+          className={inputClass}
+        >
+          <option value="" className="text-black">
+            Not a component copy
+          </option>
+          {gone && current && (
+            <option value={currentKey} className="text-black">
+              {currentKey} (no longer published)
+            </option>
+          )}
+          {options.map((version) => (
+            <option
+              key={version.id}
+              value={versionKey(version)}
+              className="text-black"
+            >
+              {versionKey(version)}
+            </option>
+          ))}
+        </select>
+      </div>
+      <span className="block text-[11px] text-gray-400 dark:text-gray-500">
+        {current
+          ? "The card shows this node's name with the component's version and icon."
+          : "Copied nodes carry their component automatically; set it here for older copies."}
+      </span>
+    </label>
+  )
+}
 
 function Settings({
   data,
@@ -118,6 +226,18 @@ function Settings({
             ))}
           </select>
         </label>
+      </div>
+
+      <ComponentPicker data={data} onChange={onChange} readOnly={readOnly} />
+
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-gray-500 dark:text-gray-400">Node version</span>
+        <span
+          title="The code node type and its version"
+          className="font-mono text-gray-700 dark:text-gray-200"
+        >
+          code v{data.version}
+        </span>
       </div>
 
       <label className="flex items-center space-x-2 text-sm text-gray-700 dark:text-gray-300">

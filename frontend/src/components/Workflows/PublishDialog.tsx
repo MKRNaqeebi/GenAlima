@@ -1,11 +1,13 @@
 import { useMutation } from "@tanstack/react-query"
 import type { Edge } from "@xyflow/react"
-import { useMemo, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { FiUpload, FiX } from "react-icons/fi"
 
 import { ApiError } from "../../client"
 import useCustomToast from "../../hooks/useCustomToast"
+import ComponentIcon from "./ComponentIcon"
 import { type WorkflowComponentPublic, WorkflowsService } from "./api"
+import { checkIconUrl, readIconFile } from "./icon"
 import {
   type CodeNode,
   type FieldContract,
@@ -87,7 +89,36 @@ const PublishDialog = ({
   const [version, setVersion] = useState(1)
   const [description, setDescription] = useState(defaultDescription)
   const [releaseNotes, setReleaseNotes] = useState("")
+  const [icon, setIcon] = useState<string | null>(null)
+  const [iconUrl, setIconUrl] = useState("")
+  const [iconError, setIconError] = useState<string | null>(null)
   const [conflict, setConflict] = useState<VersionConflict | null>(null)
+  const iconFile = useRef<HTMLInputElement>(null)
+
+  /** Scale a picked file down in the browser; nothing is uploaded. */
+  const pickIcon = async (file: File | undefined) => {
+    if (!file) return
+    const result = await readIconFile(file)
+    setIconError(result.error)
+    if (result.icon) {
+      setIcon(result.icon)
+      setIconUrl("")
+    }
+  }
+
+  /** A pasted URL replaces a picked file, and vice versa. */
+  const applyIconUrl = (value: string) => {
+    setIconUrl(value)
+    const problem = checkIconUrl(value)
+    setIconError(problem)
+    setIcon(problem || !value.trim() ? null : value.trim())
+  }
+
+  const clearIcon = () => {
+    setIcon(null)
+    setIconUrl("")
+    setIconError(null)
+  }
 
   const shape = useMemo(() => publishShape(nodes, edges), [nodes, edges])
   const issue = useMemo(() => publishIssue(nodes, edges), [nodes, edges])
@@ -110,6 +141,7 @@ const PublishDialog = ({
           version,
           description: description.trim() || null,
           release_notes: releaseNotes.trim() || null,
+          icon,
           graph: toSavePayload(nodes, edges),
         },
       }),
@@ -140,7 +172,8 @@ const PublishDialog = ({
     },
   })
 
-  const canSubmit = name.trim().length > 0 && version >= 1 && !issue
+  const canSubmit =
+    name.trim().length > 0 && version >= 1 && !issue && !iconError
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
@@ -231,6 +264,80 @@ const PublishDialog = ({
               className={inputClass}
             />
           </label>
+
+          <div className="space-y-2">
+            <span className="text-sm text-gray-700 dark:text-gray-300">
+              Icon
+            </span>
+            <div className="flex items-center space-x-3">
+              <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded border border-gray-200 bg-gray-50 dark:border-gray-600 dark:bg-app-bg">
+                {icon ? (
+                  <img
+                    src={icon}
+                    alt=""
+                    data-testid="publish-icon-preview"
+                    className="h-10 w-10 object-contain"
+                  />
+                ) : (
+                  // What the component will actually show: the shared default.
+                  <ComponentIcon
+                    icon={null}
+                    testId="publish-icon-default"
+                    className="h-10 w-10 object-contain opacity-60"
+                  />
+                )}
+              </span>
+              <div className="flex min-w-0 flex-1 flex-col space-y-1">
+                <div className="flex items-center space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => iconFile.current?.click()}
+                    className="rounded border border-gray-300 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
+                  >
+                    Choose image
+                  </button>
+                  {icon && (
+                    <button
+                      type="button"
+                      onClick={clearIcon}
+                      className="text-xs text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-100"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+                <input
+                  ref={iconFile}
+                  type="file"
+                  accept="image/*"
+                  aria-label="Component icon file"
+                  className="hidden"
+                  onChange={(event) => {
+                    void pickIcon(event.target.files?.[0])
+                    // Let the same file be picked again after a Remove.
+                    event.target.value = ""
+                  }}
+                />
+                <input
+                  value={iconUrl}
+                  onChange={(event) => applyIconUrl(event.target.value)}
+                  placeholder="…or paste an image URL"
+                  aria-label="Component icon URL"
+                  className={inputClass}
+                />
+              </div>
+            </div>
+            {iconError && (
+              <p className="text-xs text-red-600 dark:text-red-400">
+                {iconError}
+              </p>
+            )}
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              Shown in the palette and on every node copied from this component.
+              Leave it empty to use the default icon; a chosen file is scaled to
+              128px and stored as a PNG with the component.
+            </p>
+          </div>
 
           <div className="space-y-2 rounded border border-gray-200 px-3 py-2 dark:border-gray-700">
             <p className="text-xs font-medium uppercase text-gray-500 dark:text-gray-400">

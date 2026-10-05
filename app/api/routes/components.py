@@ -118,7 +118,10 @@ def read_components(
         .limit(limit)
     )
     components = session.exec(statement).all()
-    return WorkflowComponentsPublic(data=components, count=count)
+    return WorkflowComponentsPublic(
+        data=components,
+        count=count,
+    )
 
 
 @router.get("/{id}", response_model=WorkflowComponentPublic)
